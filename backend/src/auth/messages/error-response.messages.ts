@@ -1,0 +1,18 @@
+export const AuthErrorMessages = {
+  invalidEmail: 'Invalid email address.',
+  emailExists: 'Email already exists or linked to another account.',
+  accountVerified: 'Account already verified.',
+  invalidCode: 'Invalid code.',
+  invalidPassCode: 'Invalid passcode.',
+  invalidAuthentication: 'Invalid authentication.',
+  accessDenied: 'Access denied.',
+  emailVerified: 'Email already verified.',
+  invalidPassword: 'Invalid password.',
+  accountNotVerified: 'Account not verified.',
+  passCodeNotVerified: 'Passcode not verified.',
+  passwordNotMatch: 'Password does not match.',
+  currentPassword: 'Invalid current password',
+  invalidProvider: 'Invalid provider.',
+  codeIsRequired: 'Code is required for social login',
+  passwordIsRequired: 'Password is required for local login',
+};

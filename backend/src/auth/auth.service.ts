@@ -1,0 +1,194 @@
+import { BadRequestException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { Repository } from 'typeorm';
+import { SignupDto, ResendCodeDto, EmailVerificationDto, LoginDto, ForgotPasswordDto, ValidateCodeDto, ForgotPassChangeDto, UpdatePasswordDto } from './dto';
+import { InjectRepository } from '@nestjs/typeorm';
+import { User } from '@entities';
+import { AppHelper } from '@helpers/app.helper';
+import { AuthErrorMessages, SuccessResponseMessages, UserErrorMessages } from '@messages';
+import { ApiMessageData, ApiMessage } from '@types';
+
+@Injectable()
+export class AuthService {
+  constructor(
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
+
+    private appHelper: AppHelper,
+  ) {}
+
+  async signUp(signUpObj: SignupDto): Promise<ApiMessageData> {
+    const { firstName, lastName, email, password } = signUpObj;
+
+    const existingUser = await this.userRepository.findOne({ where: { email } });
+    if (existingUser) throw new BadRequestException(AuthErrorMessages.emailExists);
+
+    const verificationCode: string = await this.appHelper.generateCode();
+
+    const createdUser = await this.userRepository.save({
+      firstName,
+      lastName,
+      email,
+      password: await this.appHelper.hashData(password),
+      verificationCode,
+      isVerified: false,
+    });
+
+    const mailSubject: string = 'Email Verification - ILC Therapist App';
+    const replacements = 'Your verification token is: ' + verificationCode;
+
+    await this.appHelper.sendMail(createdUser.email, mailSubject, replacements);
+
+    const { access_token } = await this.appHelper.getTokens(createdUser.id.toString());
+
+    createdUser.password = undefined;
+    createdUser.verificationCode = undefined;
+    createdUser.isPassCodeValid = undefined;
+    createdUser.createdAt = undefined;
+    createdUser.updatedAt = undefined;
+
+    const user = { ...createdUser };
+
+    return { message: SuccessResponseMessages.successGeneral, data: { user, access_token } };
+  }
+
+  async resendCode(resendCodeBody: ResendCodeDto): Promise<ApiMessage> {
+    const { email } = resendCodeBody;
+
+    const userExists = await this.userRepository.findOne({ where: { email } });
+    if (!userExists) throw new NotFoundException(UserErrorMessages.userNotExists);
+
+    if (userExists.verificationCode === null || userExists.verificationCode === '') throw new BadRequestException(AuthErrorMessages.accessDenied);
+
+    const verificationCode: string = await this.appHelper.generateCode();
+
+    await this.userRepository.update(userExists.id, {
+      verificationCode,
+    });
+
+    const mailSubject: string = 'Resend Verification Code - ILC Therapist App';
+    const replacements = 'Your verification token is: ' + verificationCode;
+
+    await this.appHelper.sendMail(userExists.email, mailSubject, replacements);
+
+    return {
+      message: SuccessResponseMessages.successGeneral,
+    };
+  }
+
+  async verifyEmail(emailVerificationBody: EmailVerificationDto) {
+    const { code, email } = emailVerificationBody;
+    const user = await this.userRepository.findOne({ where: { email } });
+    if (!user) throw new NotFoundException(UserErrorMessages.userNotExists);
+    if (user.isVerified) throw new BadRequestException(AuthErrorMessages.emailVerified);
+    if (code !== user.verificationCode) throw new BadRequestException(AuthErrorMessages.invalidCode);
+    user.verificationCode = '';
+    user.isVerified = true;
+    await this.userRepository.save(user);
+    return { message: SuccessResponseMessages.emailVerification };
+  }
+
+  async login(loginDto: LoginDto): Promise<ApiMessageData> {
+    const { email, password } = loginDto;
+
+    const user = await this.userRepository
+      .createQueryBuilder('user')
+      .select(['user.id', 'user.firstName', 'user.lastName', 'user.password', 'user.email', 'user.isVerified', 'user.isActive'])
+      .where('user.email = :email', { email })
+      .getOne();
+
+    if (!user) throw new BadRequestException(AuthErrorMessages.invalidEmail);
+
+    const passwordMatches = await this.appHelper.compareData(password, user.password);
+    if (!passwordMatches) throw new BadRequestException(AuthErrorMessages.invalidPassword);
+
+    const { access_token } = await this.appHelper.getTokens(user.id.toString());
+
+    user.password = undefined;
+    
+    return {
+      message: SuccessResponseMessages.successGeneral,
+      data: { user, access_token },
+    };
+  }
+
+  async forgotPassword(forgotPasswordBody: ForgotPasswordDto) {
+    const { email } = forgotPasswordBody;
+
+    const user = await this.userRepository.findOne({
+      where: { email, isActive: true },
+    });
+    if (!user) throw new BadRequestException(AuthErrorMessages.invalidEmail);
+    if (!user.isVerified) throw new BadRequestException(AuthErrorMessages.accountNotVerified);
+    const passwordChangeCode: string = await this.appHelper.generateCode();
+    user.verificationCode = passwordChangeCode;
+
+    const mailSubject: string = 'Forgot Password - ILC Therapist App';
+    const replacements = {
+      userName: user.firstName,
+      text: `You requested a forgot password request.<br/>Use the token ${passwordChangeCode} below to complete the password reset process.`,
+      verificationCode: passwordChangeCode,
+    };
+
+    await this.appHelper.sendMail(user.email, mailSubject, replacements.text);
+
+    await this.userRepository.save(user);
+    return { message: SuccessResponseMessages.mailSent };
+  }
+
+  async validateCode(validateCodeBody: ValidateCodeDto) {
+    const { email, code } = validateCodeBody;
+
+    const user = await this.userRepository.findOne({ where: { email } });
+    if (!user) throw new BadRequestException(AuthErrorMessages.invalidEmail);
+    if (code !== user.verificationCode) {
+      throw new UnauthorizedException(AuthErrorMessages.invalidPassCode);
+    }
+    user.verificationCode = '';
+    user.isPassCodeValid = true;
+    await this.userRepository.save(user);
+    return { message: SuccessResponseMessages.codeIsValid };
+  }
+
+  async changePassword(changePasswordBody: ForgotPassChangeDto) {
+    const { email, newPassword, confirmPassword } = changePasswordBody;
+
+    const user = await this.userRepository.findOne({ where: { email } });
+    if (!user) throw new BadRequestException(AuthErrorMessages.invalidEmail);
+    if (!user.isPassCodeValid) throw new BadRequestException(AuthErrorMessages.passCodeNotVerified);
+    if (newPassword !== confirmPassword) {
+      throw new UnauthorizedException(AuthErrorMessages.passwordNotMatch);
+    }
+    user.password = await this.appHelper.hashData(newPassword);
+    user.isPassCodeValid = false;
+    await this.userRepository.save(user);
+
+    return { message: SuccessResponseMessages.passChanged };
+  }
+
+  async updatePassword(id: string, updatePasswordBody: UpdatePasswordDto) {
+    const { currentPassword, newPassword, confirmPassword } = updatePasswordBody;
+
+    const user = await this.userRepository.findOne({ where: { id } });
+    if (!user) throw new BadRequestException(AuthErrorMessages.invalidEmail);
+
+    if (!(await this.appHelper.compareData(currentPassword, user.password))) {
+      throw new UnauthorizedException(AuthErrorMessages.currentPassword);
+    }
+    if (newPassword !== confirmPassword) {
+      throw new UnauthorizedException(AuthErrorMessages.passwordNotMatch);
+    }
+
+    user.password = await this.appHelper.hashData(newPassword);
+    await this.userRepository.save(user);
+
+    const mailSubject: string = 'Password Update - ILC Therapist App';
+    const replacements = {
+      userName: user.firstName,
+      text: 'You password has been updated successfully',
+    };
+
+    await this.appHelper.sendMail(user.email, mailSubject, replacements.text);
+
+    return { message: SuccessResponseMessages.passChanged };
+  }
+}

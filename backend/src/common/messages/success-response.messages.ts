@@ -1,0 +1,16 @@
+export const SuccessResponseMessages = {
+  successGeneral: 'Success',
+  emailVerification: 'Email verified successfully',
+  verificationCodeSent: 'Verification code has been sent to the email address',
+  created: 'Created successfully',
+  updated: 'Updated successfully',
+  deleted: 'Deleted successfully',
+  mailSent: 'Email sent successfully with password change code',
+  passChanged: 'Your password has been changed successfully',
+  codeIsValid: 'Your verification code matched successfully',
+  userVerified: 'User verified successfully',
+  fcmTokenAdded: 'FCM token added successfully',
+  noRecordsFound: 'No records were found',
+  notificationRead: 'Notification read successfully',
+  agentUpdated: 'Agent updated successfully',
+};
