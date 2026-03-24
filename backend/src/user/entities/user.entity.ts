@@ -1,5 +1,5 @@
-import { Entity, Column } from 'typeorm';
-import { BaseEntity } from '@entities';
+import { Entity, Column, ManyToOne, OneToOne, JoinColumn } from 'typeorm';
+import { BaseEntity, Role, Profile } from '@entities';
 import { Exclude } from 'class-transformer';
 import { ApiHideProperty, ApiProperty } from '@nestjs/swagger';
 
@@ -44,4 +44,14 @@ export class User extends BaseEntity {
   @Column({ type: 'varchar', nullable: true })
   picture: string;
 
+  @ApiProperty({ type: () => Role })
+  @ManyToOne(() => Role)
+  @JoinColumn({ name: 'roleId' })
+  role: Role;
+
+  @Column({ nullable: true })
+  roleId: string;
+
+  @OneToOne(() => Profile, (profile) => profile.user)
+  profile: Profile;
 }

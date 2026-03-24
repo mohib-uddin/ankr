@@ -1,0 +1,353 @@
+{
+	"info": {
+		"_postman_id": "8b7d4c2e-9f3a-4d1c-8b2e-7f4d3c2b1a0e",
+		"name": "Anker",
+		"description": "Exhaustive Anker API collection including every single endpoint from Auth, User, Roles, and the full 8-step Onboarding modules (Common Profile, Accounts, Properties, Assets, etc.)",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Login",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"Password123!\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": { "raw": "{{BASE_URL}}/auth/login" }
+					}
+				},
+				{
+					"name": "Signup",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"email\": \"john.doe@example.com\",\n  \"password\": \"Password123!\",\n  \"roleId\": \"uuid-of-role\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": { "raw": "{{BASE_URL}}/auth/signup" }
+					}
+				},
+				{
+					"name": "Verify Email",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"john.doe@example.com\",\n  \"code\": \"123456\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": { "raw": "{{BASE_URL}}/auth/email-verification" }
+					}
+				},
+				{
+					"name": "Forgot Password (Request)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"john.doe@example.com\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": { "raw": "{{BASE_URL}}/auth/forgot-password" }
+					}
+				},
+				{
+					"name": "Forgot Password - Validate Code",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"john.doe@example.com\",\n  \"code\": \"123456\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": { "raw": "{{BASE_URL}}/auth/forgot-password/validate-code" }
+					}
+				},
+				{
+					"name": "Forgot Password - Change Password",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"john.doe@example.com\",\n  \"code\": \"123456\",\n  \"newPassword\": \"NewSecuredPassword1!\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": { "raw": "{{BASE_URL}}/auth/forgot-password/change-password" }
+					}
+				},
+				{
+					"name": "Resend Verification Code",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"john.doe@example.com\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": { "raw": "{{BASE_URL}}/auth/verification-code" }
+					}
+				},
+				{
+					"name": "Update Password (Logged In)",
+					"request": {
+						"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{ACCESS_TOKEN}}", "type": "string" }] },
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"oldPassword\": \"Password123!\",\n  \"newPassword\": \"NewPassword456!\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": { "raw": "{{BASE_URL}}/auth/password/update" }
+					}
+				}
+			]
+		},
+		{
+			"name": "User",
+			"item": [
+				{
+					"name": "Get Current User",
+					"request": {
+						"auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{ACCESS_TOKEN}}", "type": "string" }] },
+						"method": "GET",
+						"header": [],
+						"url": { "raw": "{{BASE_URL}}/user" }
+					}
+				}
+			]
+		},
+		{
+			"name": "Roles",
+			"item": [
+				{
+					"name": "Get All Roles",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": { "raw": "{{BASE_URL}}/roles" }
+					}
+				}
+			]
+		},
+		{
+			"name": "Profile",
+			"item": [
+				{
+					"name": "Get Profile by User ID (Nested)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": { "raw": "{{BASE_URL}}/profile/user/{{USER_ID}}" }
+					}
+				},
+				{
+					"name": "Update Profile",
+					"request": {
+						"method": "PATCH",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"type\": \"Investor\"\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": { "raw": "{{BASE_URL}}/profile/user/{{USER_ID}}" }
+					}
+				},
+				{
+					"name": "Attach Investor extension (Step 1/8)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"fullLegalName\": \"Jane Smith\",\n  \"primaryAddress\": \"123 Oak St\",\n  \"phone\": \"555-0100\",\n  \"ssn\": \"***-**-****\",\n  \"profileId\": \"{{PROFILE_ID}}\"\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": { "raw": "{{BASE_URL}}/profile/{{PROFILE_ID}}/investor" }
+					}
+				},
+				{
+					"name": "Complete Onboarding Sync (Full Data)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"userId\": \"{{USER_ID}}\",\n  \"investorProfile\": {\n    \"fullLegalName\": \"Jane Doe\",\n    \"isGuarantor\": false\n  },\n  \"accounts\": [{ \"institution\": \"Chase\", \"currentBalance\": 5000 }],\n  \"asset\": { \"publicInvestmentsTotal\": 100000 }\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": { "raw": "{{BASE_URL}}/profile/complete" }
+					}
+				}
+			]
+		},
+		{
+			"name": "Accounts",
+			"item": [
+				{
+					"name": "Create Account",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"institution\": \"Chase\",\n  \"accountType\": \"Savings\",\n  \"currentBalance\": 50000,\n  \"profileId\": \"{{PROFILE_ID}}\"\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": { "raw": "{{BASE_URL}}/accounts" }
+					}
+				},
+				{
+					"name": "Get Accounts by Profile",
+					"request": { "method": "GET", "url": { "raw": "{{BASE_URL}}/accounts/profile/{{PROFILE_ID}}" } }
+				},
+				{
+					"name": "Update Account",
+					"request": {
+						"method": "PATCH",
+						"body": { "mode": "raw", "raw": "{\n  \"currentBalance\": 55000\n}", "options": { "raw": { "language": "json" } } },
+						"url": { "raw": "{{BASE_URL}}/accounts/{{ACCOUNT_ID}}" }
+					}
+				},
+				{
+					"name": "Delete Account",
+					"request": { "method": "DELETE", "url": { "raw": "{{BASE_URL}}/accounts/{{ACCOUNT_ID}}" } }
+				}
+			]
+		},
+		{
+			"name": "Properties",
+			"item": [
+				{
+					"name": "Create Property",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"address\": \"123 Oak Ave\",\n  \"estimatedValue\": 450000,\n  \"profileId\": \"{{PROFILE_ID}}\"\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": { "raw": "{{BASE_URL}}/properties" }
+					}
+				},
+				{
+					"name": "Get Properties by Profile",
+					"request": { "method": "GET", "url": { "raw": "{{BASE_URL}}/properties/profile/{{PROFILE_ID}}" } }
+				},
+				{
+					"name": "Update Property",
+					"request": {
+						"method": "PATCH",
+						"body": { "mode": "raw", "raw": "{\n  \"estimatedValue\": 460000\n}", "options": { "raw": { "language": "json" } } },
+						"url": { "raw": "{{BASE_URL}}/properties/{{PROPERTY_ID}}" }
+					}
+				},
+				{
+					"name": "Delete Property",
+					"request": { "method": "DELETE", "url": { "raw": "{{BASE_URL}}/properties/{{PROPERTY_ID}}" } }
+				}
+			]
+		},
+		{
+			"name": "Business Entities",
+			"item": [
+				{
+					"name": "Create Entity",
+					"request": {
+						"method": "POST",
+						"body": { "mode": "raw", "raw": "{\n \"entityName\": \"LLC\", \"profileId\": \"{{PROFILE_ID}}\"\n}", "options": { "raw": { "language": "json" } } },
+						"url": { "raw": "{{BASE_URL}}/businesses-entities" }
+					}
+				},
+				{
+					"name": "Get by Profile",
+					"request": { "method": "GET", "url": { "raw": "{{BASE_URL}}/businesses-entities/profile/{{PROFILE_ID}}" } }
+				}
+			]
+		},
+		{
+			"name": "Summary Steps (Assets, Liab, Inc)",
+			"item": [
+				{
+					"name": "Update Assets",
+					"request": {
+						"method": "POST",
+						"body": { "mode": "raw", "raw": "{\n \"publicInvestmentsTotal\": 200000, \"profileId\": \"{{PROFILE_ID}}\"\n}", "options": { "raw": { "language": "json" } } },
+						"url": { "raw": "{{BASE_URL}}/assets" }
+					}
+				},
+				{
+					"name": "Update Liabilities",
+					"request": {
+						"method": "POST",
+						"body": { "mode": "raw", "raw": "{\n \"creditCardsTotal\": 10000, \"profileId\": \"{{PROFILE_ID}}\"\n}", "options": { "raw": { "language": "json" } } },
+						"url": { "raw": "{{BASE_URL}}/liabilities" }
+					}
+				},
+				{
+					"name": "Update Income",
+					"request": {
+						"method": "POST",
+						"body": { "mode": "raw", "raw": "{\n \"primaryIncome\": 120000, \"profileId\": \"{{PROFILE_ID}}\"\n}", "options": { "raw": { "language": "json" } } },
+						"url": { "raw": "{{BASE_URL}}/income" }
+					}
+				}
+			]
+		}
+	],
+	"variable": [
+		{ "key": "BASE_URL", "value": "http://localhost:3000/api", "type": "string" },
+		{ "key": "USER_ID", "value": "", "type": "string" },
+		{ "key": "PROFILE_ID", "value": "", "type": "string" },
+		{ "key": "ACCESS_TOKEN", "value": "", "type": "string" },
+		{ "key": "ACCOUNT_ID", "value": "", "type": "string" },
+		{ "key": "PROPERTY_ID", "value": "", "type": "string" }
+	]
+}
