@@ -1,7 +1,10 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, HttpStatus, Req } from '@nestjs/common';
 import { IncomeService } from './income.service';
 import { CreateIncomeDto, UpdateIncomeDto } from '@dtos';
-import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { ApiTags } from '@nestjs/swagger';
+import { SwaggerApiResponse } from '@decorators';
+import { Income } from '@entities';
+import { Request } from 'express';
 
 @ApiTags('Income')
 @Controller('income')
@@ -10,35 +13,35 @@ export class IncomeController {
 
   @Post()
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Create a new income entry (linked to common profile)' })
+  @SwaggerApiResponse({ description: 'Create a new income entry (linked to common profile)', type: Income })
   createIncome(@Body() createIncomeDto: CreateIncomeDto) {
     return this.incomeService.createIncome(createIncomeDto);
   }
 
-  @Get('profile/:profileId')
+  @Get()
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Retrieve all income records for a specific common profile' })
-  getIncomesByProfileId(@Param('profileId') profileId: string) {
-    return this.incomeService.getIncomesByProfileId(profileId);
+  @SwaggerApiResponse({ description: 'Retrieve all income records for the current user', type: Income })
+  getIncomes(@Req() req: Request) {
+    return this.incomeService.getIncomes(req.user.id);
   }
 
   @Get(':id')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Retrieve a single income record' })
-  getIncomeById(@Param('id') id: string) {
-    return this.incomeService.getIncomeById(id);
+  @SwaggerApiResponse({ description: 'Retrieve a single income record', type: Income })
+  getIncomeById(@Param('id') id: string, @Req() req: Request) {
+    return this.incomeService.getIncomeById(id, req.user.id);
   }
 
   @Patch(':id')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Update an income record' })
+  @SwaggerApiResponse({ description: 'Update an income record', type: Income })
   updateIncome(@Param('id') id: string, @Body() updateIncomeDto: UpdateIncomeDto) {
     return this.incomeService.updateIncome(id, updateIncomeDto);
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Remove an income record' })
+  @SwaggerApiResponse({ description: 'Remove an income record' })
   deleteIncome(@Param('id') id: string) {
     return this.incomeService.deleteIncome(id);
   }

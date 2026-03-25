@@ -1,7 +1,10 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, HttpStatus, Req } from '@nestjs/common';
 import { BusinessesEntitiesService } from './businesses-entities.service';
-import { CreateBusinessEntityDto, UpdateBusinessEntityDto } from '@dtos';
-import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { CreateBusinessesEntityDto, UpdateBusinessesEntityDto } from '@dtos';
+import { ApiTags } from '@nestjs/swagger';
+import { SwaggerApiResponse } from '@decorators';
+import { BusinessEntity } from '@entities';
+import { Request } from 'express';
 
 @ApiTags('Business Entities')
 @Controller('businesses-entities')
@@ -10,35 +13,35 @@ export class BusinessesEntitiesController {
 
   @Post()
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Create a new business entity (linked to common profile)' })
-  createBusinessEntity(@Body() createBusinessEntityDto: CreateBusinessEntityDto) {
-    return this.businessesEntitiesService.createBusinessEntity(createBusinessEntityDto);
+  @SwaggerApiResponse({ description: 'Create a new business entity (linked to common profile)', type: BusinessEntity })
+  createBusinessEntity(@Body() createBusinessesEntityDto: CreateBusinessesEntityDto) {
+    return this.businessesEntitiesService.createBusinessEntity(createBusinessesEntityDto);
   }
 
-  @Get('profile/:profileId')
+  @Get()
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Retrieve all business entities for a specific common profile' })
-  getBusinessEntitiesByProfileId(@Param('profileId') profileId: string) {
-    return this.businessesEntitiesService.getBusinessEntitiesByProfileId(profileId);
+  @SwaggerApiResponse({ description: 'Retrieve all business entities for the current user', type: BusinessEntity })
+  getBusinessEntities(@Req() req: Request) {
+    return this.businessesEntitiesService.getBusinessEntities(req.user.id);
   }
 
   @Get(':id')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Retrieve a single business entity' })
-  getBusinessEntityById(@Param('id') id: string) {
-    return this.businessesEntitiesService.getBusinessEntityById(id);
+  @SwaggerApiResponse({ description: 'Retrieve a single business entity', type: BusinessEntity })
+  getBusinessEntityById(@Param('id') id: string, @Req() req: Request) {
+    return this.businessesEntitiesService.getBusinessEntityById(id, req.user.id);
   }
 
   @Patch(':id')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Update a business entity' })
-  updateBusinessEntity(@Param('id') id: string, @Body() updateBusinessEntityDto: UpdateBusinessEntityDto) {
-    return this.businessesEntitiesService.updateBusinessEntity(id, updateBusinessEntityDto);
+  @SwaggerApiResponse({ description: 'Update a business entity', type: BusinessEntity })
+  updateBusinessEntity(@Param('id') id: string, @Body() updateBusinessesEntityDto: UpdateBusinessesEntityDto) {
+    return this.businessesEntitiesService.updateBusinessEntity(id, updateBusinessesEntityDto);
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Remove a business entity' })
+  @SwaggerApiResponse({ description: 'Remove a business entity' })
   deleteBusinessEntity(@Param('id') id: string) {
     return this.businessesEntitiesService.deleteBusinessEntity(id);
   }

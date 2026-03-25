@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, OmitType } from '@nestjs/swagger';
 import { IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class CreateLiabilityDto {
@@ -17,18 +17,18 @@ export class CreateLiabilityDto {
   @IsOptional()
   otherDebt?: number;
 
-  @ApiProperty({ example: 'None' })
+  @ApiProperty({ example: 'Chase Auto Loan', description: 'Link other debt to specific assets if applicable' })
   @IsString()
   @IsOptional()
   linkedAsset?: string;
-
-  @ApiProperty({ example: 'path/to/statement.pdf' })
-  @IsString()
-  @IsOptional()
-  statementUrl?: string;
 
   @ApiProperty({ example: 'uuid-of-common-profile' })
   @IsString()
   @IsNotEmpty()
   profileId: string;
 }
+
+export class CreateLiabilityWithoutProfileDto extends OmitType(
+  CreateLiabilityDto,
+  ['profileId'] as const,
+) {}

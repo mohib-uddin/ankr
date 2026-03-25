@@ -1,64 +1,69 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString, IsOptional, IsBoolean } from 'class-validator';
+import { ApiProperty, OmitType } from '@nestjs/swagger';
+import { IsBoolean, IsNotEmpty, IsOptional, IsString, IsMobilePhone } from 'class-validator';
 
 export class CreateInvestorProfileDto {
-  @ApiProperty({ example: 'Jane A. Smith' })
+  @ApiProperty({ example: 'Mohammad Mohib Uddin' })
   @IsString()
   @IsNotEmpty()
   fullLegalName: string;
 
-  @ApiProperty({ example: '123 Main Street, New York' })
+  @ApiProperty({ example: '123 Oak Ave, Austin, TX' })
   @IsString()
   @IsNotEmpty()
   primaryAddress: string;
 
-  @ApiProperty({ example: '(555) 000 - 0000' })
-  @IsString()
+  @ApiProperty({ example: '+15550109999' })
+  @IsMobilePhone()
   @IsNotEmpty()
   phone: string;
 
-  @ApiProperty({ example: '***-**-****' })
+  @ApiProperty({ example: '***-**-1234' })
   @IsString()
   @IsNotEmpty()
   ssn: string;
 
-  @ApiProperty()
+  @ApiProperty({ example: false })
   @IsBoolean()
   @IsOptional()
   isGuarantor?: boolean;
 
-  @ApiProperty()
+  @ApiProperty({ example: false })
   @IsBoolean()
   @IsOptional()
   hasLegalActions?: boolean;
 
-  @ApiProperty()
+  @ApiProperty({ example: false })
   @IsBoolean()
   @IsOptional()
   hasFiledBankruptcy?: boolean;
 
-  @ApiProperty()
+  @ApiProperty({ example: false })
   @IsBoolean()
   @IsOptional()
   isObligatedForSupport?: boolean;
 
-  @ApiProperty()
+  @ApiProperty({ example: false })
   @IsBoolean()
   @IsOptional()
   hasPledgedAssets?: boolean;
 
-  @ApiProperty()
+  @ApiProperty({ example: false })
   @IsBoolean()
   @IsOptional()
   hasForeclosures?: boolean;
 
-  @ApiProperty()
+  @ApiProperty({ example: false })
   @IsBoolean()
   @IsOptional()
   isPartyToLawsuit?: boolean;
 
-  @ApiProperty({ example: 'uuid-of-common-profile' })
+  @ApiProperty({ example: 'uuid-of-profile' })
   @IsString()
   @IsNotEmpty()
   profileId: string;
 }
+
+export class CreateInvestorProfileWithoutProfileDto extends OmitType(
+  CreateInvestorProfileDto,
+  ['profileId'] as const,
+) {}

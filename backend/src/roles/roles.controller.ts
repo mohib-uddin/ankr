@@ -1,39 +1,27 @@
-import { Controller, Get, Param } from '@nestjs/common';
+import { Controller, Get, HttpCode, HttpStatus, Param } from '@nestjs/common';
 import { RolesService } from './roles.service';
-import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { ApiTags } from '@nestjs/swagger';
+import { Public, SwaggerApiResponse } from '@decorators';
+import { Role } from '@entities';
 
 @ApiTags('Roles')
 @Controller('roles')
 export class RolesController {
   constructor(private readonly rolesService: RolesService) {}
 
-  // @Post()
-  // @ApiOperation({ summary: 'Create a new role' })
-  // createRole(@Body() createRoleDto: CreateRoleDto) {
-  //   return this.rolesService.createRole(createRoleDto);
-  // }
-
+  @Public()
   @Get()
-  @ApiOperation({ summary: 'Retrieve all roles' })
+  @HttpCode(HttpStatus.OK)
+  @SwaggerApiResponse({ description: 'Retrieve all roles', type: Role })
   getRoles() {
     return this.rolesService.getRoles();
   }
 
+  @Public()
   @Get(':id')
-  @ApiOperation({ summary: 'Retrieve a single role' })
+  @HttpCode(HttpStatus.OK)
+  @SwaggerApiResponse({ description: 'Retrieve a single role', type: Role })
   getRoleById(@Param('id') id: string) {
     return this.rolesService.getRoleById(id);
   }
-
-  // @Patch(':id')
-  // @ApiOperation({ summary: 'Update a role' })
-  // updateRole(@Param('id') id: string, @Body() updateRoleDto: UpdateRoleDto) {
-  //   return this.rolesService.updateRole(id, updateRoleDto);
-  // }
-
-  // @Delete(':id')
-  // @ApiOperation({ summary: 'Remove a role' })
-  // deleteRole(@Param('id') id: string) {
-  //   return this.rolesService.deleteRole(id);
-  // }
 }

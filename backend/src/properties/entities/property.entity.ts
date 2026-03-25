@@ -1,6 +1,8 @@
 import { Entity, Column, ManyToOne, JoinColumn } from 'typeorm';
 import { BaseEntity, Profile } from '@entities';
 import { ApiProperty } from '@nestjs/swagger';
+import { PropertyTypeEnum } from '@types';
+import { Exclude } from 'class-transformer';
 
 @Entity({ name: 'property' })
 export class Property extends BaseEntity {
@@ -8,9 +10,9 @@ export class Property extends BaseEntity {
   @Column({ type: 'text' })
   address: string;
 
-  @ApiProperty({ example: 'Single Family' })
-  @Column({ type: 'varchar' })
-  propertyType: string;
+  @ApiProperty({ enum: PropertyTypeEnum, example: PropertyTypeEnum.SINGLE_FAMILY })
+  @Column({ type: 'varchar', default: PropertyTypeEnum.SINGLE_FAMILY })
+  propertyType: PropertyTypeEnum;
 
   @ApiProperty({ example: 450000.00 })
   @Column({ type: 'decimal', precision: 15, scale: 2 })
@@ -44,10 +46,7 @@ export class Property extends BaseEntity {
   @Column({ type: 'integer', default: 100 })
   ownershipPercentage: number;
 
-  @ApiProperty({ example: 'path/to/mortgage.pdf' })
-  @Column({ type: 'varchar', nullable: true })
-  mortgageStatementUrl: string;
-
+  @Exclude()
   @ManyToOne(() => Profile, (profile) => profile.properties)
   @JoinColumn({ name: 'profileId' })
   profile: Profile;

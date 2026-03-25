@@ -1,10 +1,10 @@
-import { Controller, Get, HttpCode, HttpStatus, Query, Req, Post, Body, Param, Put, Delete } from '@nestjs/common';
+import { Controller, Get, HttpCode, HttpStatus, Req } from '@nestjs/common';
 import { UserService } from './user.service';
 import { SwaggerApiResponse } from '@decorators';
 import { Request } from 'express';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { CreateApiKeyDto, GetApiKeyDto, UpdateApiKeyDto } from '@dtos';
-import { ApiMessage, ApiMessageData } from '@types';
+import { ApiMessageData } from '@types';
+import { User } from '@entities';
 
 @ApiTags('User')
 @ApiBearerAuth('JWT-auth')
@@ -14,7 +14,7 @@ export class UserController {
 
   @Get('/')
   @HttpCode(HttpStatus.OK)
-  @SwaggerApiResponse('Get current user')
+  @SwaggerApiResponse({ description: 'Get current user', type: User })
   async getCurrentUser(@Req() req: Request): Promise<ApiMessageData> {
     return await this.userService.getUser(req.user.id);
   }

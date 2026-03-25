@@ -1,6 +1,7 @@
 import { Entity, Column, OneToOne, JoinColumn } from 'typeorm';
 import { BaseEntity, Profile } from '@entities';
 import { ApiProperty } from '@nestjs/swagger';
+import { Exclude } from 'class-transformer';
 
 @Entity({ name: 'investor_profile' })
 export class InvestorProfile extends BaseEntity {
@@ -50,6 +51,7 @@ export class InvestorProfile extends BaseEntity {
   isPartyToLawsuit: boolean;
 
   // --- Relations ---
+  @Exclude()
   @OneToOne(() => Profile, (profile) => profile.investorProfile)
   @JoinColumn({ name: 'profileId' })
   @ApiProperty({ type: () => Profile })

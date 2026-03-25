@@ -1,15 +1,5 @@
 import { Entity, Column, OneToOne, OneToMany, JoinColumn } from 'typeorm';
-import { 
-  BaseEntity, 
-  User, 
-  InvestorProfile, 
-  Account, 
-  Property, 
-  BusinessEntity, 
-  Asset, 
-  Liability, 
-  Income 
-} from '@entities';
+import { BaseEntity, User, InvestorProfile, Account, Property, BusinessEntity, Asset, Liability, Income } from '@entities';
 import { ApiProperty } from '@nestjs/swagger';
 import { ProfileTypeEnum } from '@types';
 

@@ -1,5 +1,6 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString, IsNumber, IsOptional } from 'class-validator';
+import { ApiProperty, OmitType } from '@nestjs/swagger';
+import { IsNotEmpty, IsString, IsNumber, IsEnum } from 'class-validator';
+import { AccountTypeEnum } from '@types';
 
 export class CreateAccountDto {
   @ApiProperty({ example: 'Chase' })
@@ -7,23 +8,23 @@ export class CreateAccountDto {
   @IsNotEmpty()
   institution: string;
 
-  @ApiProperty({ example: 'Saving Account' })
-  @IsString()
+  @ApiProperty({ enum: AccountTypeEnum, example: AccountTypeEnum.CHECKING_ACCOUNT })
+  @IsEnum(AccountTypeEnum)
   @IsNotEmpty()
-  accountType: string;
+  accountType: AccountTypeEnum;
 
   @ApiProperty({ example: 50000 })
   @IsNumber()
   @IsNotEmpty()
   currentBalance: number;
 
-  @ApiProperty({ example: 'path/to/statement.pdf' })
-  @IsString()
-  @IsOptional()
-  statementUrl?: string;
-
   @ApiProperty({ example: 'uuid-of-common-profile' })
   @IsString()
   @IsNotEmpty()
   profileId: string;
 }
+
+export class CreateAccountWithoutProfileDto extends OmitType(
+  CreateAccountDto,
+  ['profileId'] as const,
+) {}

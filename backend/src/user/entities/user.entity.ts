@@ -19,7 +19,7 @@ export class User extends BaseEntity {
 
   @Exclude()
   @ApiHideProperty()
-  @Column({ type: 'varchar', nullable: true })
+  @Column({ type: 'varchar', nullable: true, select: false })
   password: string;
 
   @ApiProperty({ example: true, description: 'True if email is verified' })
@@ -28,12 +28,12 @@ export class User extends BaseEntity {
 
   @Exclude()
   @ApiHideProperty()
-  @Column({ type: 'varchar', default: '' })
+  @Column({ type: 'varchar', default: '', select: false })
   verificationCode: string;
 
   @Exclude()
   @ApiHideProperty()
-  @Column({ type: 'boolean', default: false })
+  @Column({ type: 'boolean', default: false, select: false })
   isPassCodeValid: boolean;
 
   @ApiProperty({ example: true, description: 'True if account is active' })
@@ -49,9 +49,11 @@ export class User extends BaseEntity {
   @JoinColumn({ name: 'roleId' })
   role: Role;
 
+  @ApiProperty({ example: 'uuid-of-role' })
   @Column({ nullable: true })
   roleId: string;
 
+  @ApiProperty({ type: () => Profile })
   @OneToOne(() => Profile, (profile) => profile.user)
   profile: Profile;
 }

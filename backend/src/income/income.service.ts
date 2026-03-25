@@ -2,7 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ApiMessage, ApiMessageData } from '@types';
 import { Repository } from 'typeorm';
-import { Income } from '@entities';
+import { Income, Profile } from '@entities';
 import { SuccessResponseMessages } from '@messages';
 import { CreateIncomeDto, UpdateIncomeDto } from '@dtos';
 
@@ -11,6 +11,8 @@ export class IncomeService {
   constructor(
     @InjectRepository(Income)
     private readonly incomeRepository: Repository<Income>,
+    @InjectRepository(Profile)
+    private readonly profileRepository: Repository<Profile>,
   ) {}
 
   async createIncome(createIncomeDto: CreateIncomeDto): Promise<ApiMessageData<Income>> {
@@ -19,12 +21,34 @@ export class IncomeService {
     return { message: SuccessResponseMessages.successGeneral, data: savedIncome };
   }
 
-  async getIncomesByProfileId(profileId: string): Promise<ApiMessageData<Income[]>> {
-    const incomes = await this.incomeRepository.find({ where: { profileId } });
+  /**
+   * Get all income records.
+   * If userId is provided, filters by that user's profile.
+   * If userId is undefined (admin), returns all.
+   */
+  async getIncomes(userId?: string): Promise<ApiMessageData<Income[]>> {
+    if (userId) {
+      const profile = await this.profileRepository.findOne({ where: { userId } });
+      if (!profile) throw new NotFoundException('Profile not found');
+      const incomes = await this.incomeRepository.find({ where: { profileId: profile.id } });
+      return { message: SuccessResponseMessages.successGeneral, data: incomes };
+    }
+    const incomes = await this.incomeRepository.find();
     return { message: SuccessResponseMessages.successGeneral, data: incomes };
   }
 
-  async getIncomeById(id: string): Promise<ApiMessageData<Income>> {
+  /**
+   * Get a single income record by id.
+   * If userId is provided, validates ownership.
+   */
+  async getIncomeById(id: string, userId?: string): Promise<ApiMessageData<Income>> {
+    if (userId) {
+      const profile = await this.profileRepository.findOne({ where: { userId } });
+      if (!profile) throw new NotFoundException('Profile not found');
+      const income = await this.incomeRepository.findOne({ where: { id, profileId: profile.id } });
+      if (!income) throw new NotFoundException('Income record not found');
+      return { message: SuccessResponseMessages.successGeneral, data: income };
+    }
     const income = await this.incomeRepository.findOne({ where: { id } });
     if (!income) throw new NotFoundException('Income record not found');
     return { message: SuccessResponseMessages.successGeneral, data: income };

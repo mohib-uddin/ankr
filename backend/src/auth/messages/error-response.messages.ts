@@ -15,4 +15,5 @@ export const AuthErrorMessages = {
   invalidProvider: 'Invalid provider.',
   codeIsRequired: 'Code is required for social login',
   passwordIsRequired: 'Password is required for local login',
+  roleNotExists: 'Role not exists.',
 };

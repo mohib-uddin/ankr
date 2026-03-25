@@ -1,7 +1,10 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, HttpStatus, Req } from '@nestjs/common';
 import { AccountsService } from './accounts.service';
 import { CreateAccountDto, UpdateAccountDto } from '@dtos';
-import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { ApiTags } from '@nestjs/swagger';
+import { SwaggerApiResponse } from '@decorators';
+import { Account } from '@entities';
+import { Request } from 'express';
 
 @ApiTags('Accounts')
 @Controller('accounts')
@@ -10,35 +13,35 @@ export class AccountsController {
 
   @Post()
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Create a new account (linked to common profile)' })
+  @SwaggerApiResponse({ description: 'Create a new account (linked to common profile)', type: Account })
   createAccount(@Body() createAccountDto: CreateAccountDto) {
     return this.accountsService.createAccount(createAccountDto);
   }
 
-  @Get('profile/:profileId')
+  @Get()
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Retrieve all accounts for a specific common profile' })
-  getAccountsByProfileId(@Param('profileId') profileId: string) {
-    return this.accountsService.getAccountsByProfileId(profileId);
+  @SwaggerApiResponse({ description: 'Retrieve all accounts for the current user', type: Account })
+  getAccounts(@Req() req: Request) {
+    return this.accountsService.getAccounts(req.user.id);
   }
 
   @Get(':id')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Retrieve a single account' })
-  getAccountById(@Param('id') id: string) {
-    return this.accountsService.getAccountById(id);
+  @SwaggerApiResponse({ description: 'Retrieve a single account', type: Account })
+  getAccountById(@Param('id') id: string, @Req() req: Request) {
+    return this.accountsService.getAccountById(id, req.user.id);
   }
 
   @Patch(':id')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Update an account' })
+  @SwaggerApiResponse({ description: 'Update an account', type: Account })
   updateAccount(@Param('id') id: string, @Body() updateAccountDto: UpdateAccountDto) {
     return this.accountsService.updateAccount(id, updateAccountDto);
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Remove an account' })
+  @SwaggerApiResponse({ description: 'Remove an account' })
   deleteAccount(@Param('id') id: string) {
     return this.accountsService.deleteAccount(id);
   }

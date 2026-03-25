@@ -2,7 +2,7 @@ import { BadRequestException, Injectable, NotFoundException, UnauthorizedExcepti
 import { Repository } from 'typeorm';
 import { SignupDto, ResendCodeDto, EmailVerificationDto, LoginDto, ForgotPasswordDto, ValidateCodeDto, ForgotPassChangeDto, UpdatePasswordDto } from './dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { User } from '@entities';
+import { Role, User } from '@entities';
 import { AppHelper } from '@helpers/app.helper';
 import { AuthErrorMessages, SuccessResponseMessages, UserErrorMessages } from '@messages';
 import { ApiMessageData, ApiMessage } from '@types';
@@ -12,6 +12,8 @@ export class AuthService {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    @InjectRepository(Role)
+    private readonly roleRepository: Repository<Role>,
 
     private appHelper: AppHelper,
   ) {}
@@ -22,6 +24,9 @@ export class AuthService {
     const existingUser = await this.userRepository.findOne({ where: { email } });
     if (existingUser) throw new BadRequestException(AuthErrorMessages.emailExists);
 
+    const role = await this.roleRepository.findOne({ where: { key: 'investor-role' } });
+    if (!role) throw new BadRequestException(AuthErrorMessages.roleNotExists);
+
     const verificationCode: string = await this.appHelper.generateCode();
 
     const createdUser = await this.userRepository.save({
@@ -31,6 +36,7 @@ export class AuthService {
       password: await this.appHelper.hashData(password),
       verificationCode,
       isVerified: false,
+      role
     });
 
     const mailSubject: string = 'Email Verification - ILC Therapist App';
@@ -40,15 +46,10 @@ export class AuthService {
 
     const { access_token } = await this.appHelper.getTokens(createdUser.id.toString());
 
-    createdUser.password = undefined;
-    createdUser.verificationCode = undefined;
-    createdUser.isPassCodeValid = undefined;
-    createdUser.createdAt = undefined;
-    createdUser.updatedAt = undefined;
+    // Sanitize user object for response
+    const { password: _, verificationCode: __, isPassCodeValid: ___, ...safeUser } = createdUser;
 
-    const user = { ...createdUser };
-
-    return { message: SuccessResponseMessages.successGeneral, data: { user, access_token } };
+    return { message: SuccessResponseMessages.successGeneral, data: { user: safeUser, access_token } };
   }
 
   async resendCode(resendCodeBody: ResendCodeDto): Promise<ApiMessage> {
@@ -90,11 +91,20 @@ export class AuthService {
   async login(loginDto: LoginDto): Promise<ApiMessageData> {
     const { email, password } = loginDto;
 
-    const user = await this.userRepository
-      .createQueryBuilder('user')
-      .select(['user.id', 'user.firstName', 'user.lastName', 'user.password', 'user.email', 'user.isVerified', 'user.isActive'])
-      .where('user.email = :email', { email })
-      .getOne();
+    const user = await this.userRepository.findOne({
+      where: { email },
+      select: ['id', 'firstName', 'lastName', 'email', 'password', 'isVerified', 'isActive'], // Explicitly select safe fields + password for comparison
+      relations: [
+        'profile',
+        'profile.investorProfile',
+        'profile.accounts',
+        'profile.properties',
+        'profile.businessEntities',
+        'profile.asset',
+        'profile.liability',
+        'profile.income'
+      ]
+    });
 
     if (!user) throw new BadRequestException(AuthErrorMessages.invalidEmail);
 
@@ -103,6 +113,7 @@ export class AuthService {
 
     const { access_token } = await this.appHelper.getTokens(user.id.toString());
 
+    // Sanitize user object for response
     user.password = undefined;
     
     return {

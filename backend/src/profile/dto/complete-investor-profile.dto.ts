@@ -1,63 +1,58 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { ValidateNested, IsOptional, IsArray, IsNotEmpty, IsString } from 'class-validator';
 import { Type } from 'class-transformer';
-import { 
-  CreateInvestorProfileDto, 
-  CreateAccountDto, 
-  CreatePropertyDto, 
-  CreateBusinessEntityDto, 
-  CreateAssetDto, 
-  CreateLiabilityDto, 
-  CreateIncomeDto 
+import {
+  CreateAccountWithoutProfileDto,
+  CreatePropertyWithoutProfileDto,
+  CreateBusinessesEntityWithoutProfileDto,
+  CreateAssetWithoutProfileDto,
+  CreateLiabilityWithoutProfileDto,
+  CreateIncomeWithoutProfileDto,
 } from '@dtos';
+import { CreateInvestorProfileWithoutProfileDto } from './create-investor-profile.dto';
 
-export class CompleteInvestorProfileDto {
+export class CompleteInvestorProfileDto extends CreateInvestorProfileWithoutProfileDto {
   @ApiProperty({ example: 'uuid-of-user' })
   @IsString()
   @IsNotEmpty()
   userId: string;
 
-  @ApiProperty({ type: CreateInvestorProfileDto })
-  @ValidateNested()
-  @Type(() => CreateInvestorProfileDto)
-  investorProfile: CreateInvestorProfileDto;
-
-  @ApiProperty({ type: [CreateAccountDto], required: false })
+  @ApiProperty({ type: [CreateAccountWithoutProfileDto], required: false })
   @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => CreateAccountDto)
-  accounts?: CreateAccountDto[];
+  @Type(() => CreateAccountWithoutProfileDto)
+  accounts?: CreateAccountWithoutProfileDto[];
 
-  @ApiProperty({ type: [CreatePropertyDto], required: false })
+  @ApiProperty({ type: [CreatePropertyWithoutProfileDto], required: false })
   @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => CreatePropertyDto)
-  properties?: CreatePropertyDto[];
+  @Type(() => CreatePropertyWithoutProfileDto)
+  properties?: CreatePropertyWithoutProfileDto[];
 
-  @ApiProperty({ type: [CreateBusinessEntityDto], required: false })
+  @ApiProperty({ type: [CreateBusinessesEntityWithoutProfileDto], required: false })
   @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => CreateBusinessEntityDto)
-  businessEntities?: CreateBusinessEntityDto[];
+  @Type(() => CreateBusinessesEntityWithoutProfileDto)
+  businessEntities?: CreateBusinessesEntityWithoutProfileDto[];
 
-  @ApiProperty({ type: CreateAssetDto, required: false })
+  @ApiProperty({ type: CreateAssetWithoutProfileDto, required: false })
   @IsOptional()
   @ValidateNested()
-  @Type(() => CreateAssetDto)
-  asset?: CreateAssetDto;
+  @Type(() => CreateAssetWithoutProfileDto)
+  asset?: CreateAssetWithoutProfileDto;
 
-  @ApiProperty({ type: CreateLiabilityDto, required: false })
+  @ApiProperty({ type: CreateLiabilityWithoutProfileDto, required: false })
   @IsOptional()
   @ValidateNested()
-  @Type(() => CreateLiabilityDto)
-  liability?: CreateLiabilityDto;
+  @Type(() => CreateLiabilityWithoutProfileDto)
+  liability?: CreateLiabilityWithoutProfileDto;
 
-  @ApiProperty({ type: CreateIncomeDto, required: false })
+  @ApiProperty({ type: CreateIncomeWithoutProfileDto, required: false })
   @IsOptional()
   @ValidateNested()
-  @Type(() => CreateIncomeDto)
-  income?: CreateIncomeDto;
+  @Type(() => CreateIncomeWithoutProfileDto)
+  income?: CreateIncomeWithoutProfileDto;
 }

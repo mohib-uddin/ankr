@@ -1,2 +1,2 @@
-export * from './create-business-entity.dto';
-export * from './update-business-entity.dto';
+export * from './create-businesses-entity.dto';
+export * from './update-businesses-entity.dto';

@@ -1,6 +1,8 @@
 import { Entity, Column, ManyToOne, JoinColumn } from 'typeorm';
 import { BaseEntity, Profile } from '@entities';
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiHideProperty, ApiProperty } from '@nestjs/swagger';
+import { Exclude } from 'class-transformer';
+import { AccountTypeEnum } from '@types';
 
 @Entity({ name: 'account' })
 export class Account extends BaseEntity {
@@ -8,18 +10,16 @@ export class Account extends BaseEntity {
   @Column({ type: 'varchar' })
   institution: string;
 
-  @ApiProperty({ example: 'Saving Account', description: 'Type of account' })
-  @Column({ type: 'varchar' })
-  accountType: string;
+  @ApiProperty({ enum: AccountTypeEnum, example: AccountTypeEnum.CHECKING_ACCOUNT })
+  @Column({ type: 'varchar', default: AccountTypeEnum.CHECKING_ACCOUNT })
+  accountType: AccountTypeEnum;
 
   @ApiProperty({ example: 50000, description: 'Current account balance' })
   @Column({ type: 'decimal', precision: 12, scale: 2 })
   currentBalance: number;
 
-  @ApiProperty({ example: 'path/to/statement.pdf', description: 'URL to bank statement' })
-  @Column({ type: 'varchar', nullable: true })
-  statementUrl: string;
-
+  @ApiHideProperty()
+  @Exclude()
   @ManyToOne(() => Profile, (profile) => profile.accounts)
   @JoinColumn({ name: 'profileId' })
   profile: Profile;

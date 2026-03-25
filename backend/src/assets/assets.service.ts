@@ -2,7 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ApiMessage, ApiMessageData } from '@types';
 import { Repository } from 'typeorm';
-import { Asset } from '@entities';
+import { Asset, Profile } from '@entities';
 import { SuccessResponseMessages } from '@messages';
 import { CreateAssetDto, UpdateAssetDto } from '@dtos';
 
@@ -11,6 +11,8 @@ export class AssetsService {
   constructor(
     @InjectRepository(Asset)
     private readonly assetRepository: Repository<Asset>,
+    @InjectRepository(Profile)
+    private readonly profileRepository: Repository<Profile>,
   ) {}
 
   async createAsset(createAssetDto: CreateAssetDto): Promise<ApiMessageData<Asset>> {
@@ -19,12 +21,34 @@ export class AssetsService {
     return { message: SuccessResponseMessages.successGeneral, data: savedAsset };
   }
 
-  async getAssetsByProfileId(profileId: string): Promise<ApiMessageData<Asset[]>> {
-    const assets = await this.assetRepository.find({ where: { profileId } });
+  /**
+   * Get all assets.
+   * If userId is provided (user controller), filters by that user's profile.
+   * If userId is undefined (admin controller), returns all assets.
+   */
+  async getAssets(userId?: string): Promise<ApiMessageData<Asset[]>> {
+    if (userId) {
+      const profile = await this.profileRepository.findOne({ where: { userId } });
+      if (!profile) throw new NotFoundException('Profile not found');
+      const assets = await this.assetRepository.find({ where: { profileId: profile.id } });
+      return { message: SuccessResponseMessages.successGeneral, data: assets };
+    }
+    const assets = await this.assetRepository.find();
     return { message: SuccessResponseMessages.successGeneral, data: assets };
   }
 
-  async getAssetById(id: string): Promise<ApiMessageData<Asset>> {
+  /**
+   * Get a single asset by id.
+   * If userId is provided, validates that the asset belongs to that user's profile.
+   */
+  async getAssetById(id: string, userId?: string): Promise<ApiMessageData<Asset>> {
+    if (userId) {
+      const profile = await this.profileRepository.findOne({ where: { userId } });
+      if (!profile) throw new NotFoundException('Profile not found');
+      const asset = await this.assetRepository.findOne({ where: { id, profileId: profile.id } });
+      if (!asset) throw new NotFoundException('Asset entry not found');
+      return { message: SuccessResponseMessages.successGeneral, data: asset };
+    }
     const asset = await this.assetRepository.findOne({ where: { id } });
     if (!asset) throw new NotFoundException('Asset entry not found');
     return { message: SuccessResponseMessages.successGeneral, data: asset };

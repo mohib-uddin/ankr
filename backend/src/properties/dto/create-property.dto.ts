@@ -1,5 +1,6 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString, IsNumber, IsOptional, IsDateString } from 'class-validator';
+import { ApiProperty, OmitType } from '@nestjs/swagger';
+import { IsNotEmpty, IsString, IsNumber, IsOptional, IsDateString, IsEnum } from 'class-validator';
+import { PropertyTypeEnum } from '@types';
 
 export class CreatePropertyDto {
   @ApiProperty({ example: '123 Oak Ave, Austin, TX' })
@@ -7,10 +8,10 @@ export class CreatePropertyDto {
   @IsNotEmpty()
   address: string;
 
-  @ApiProperty({ example: 'Single Family' })
-  @IsString()
+  @ApiProperty({ enum: PropertyTypeEnum, example: PropertyTypeEnum.SINGLE_FAMILY })
+  @IsEnum(PropertyTypeEnum)
   @IsNotEmpty()
-  propertyType: string;
+  propertyType: PropertyTypeEnum;
 
   @ApiProperty({ example: 450000.00 })
   @IsNumber()
@@ -52,13 +53,13 @@ export class CreatePropertyDto {
   @IsOptional()
   ownershipPercentage?: number;
 
-  @ApiProperty({ example: 'path/to/mortgage.pdf' })
-  @IsString()
-  @IsOptional()
-  mortgageStatementUrl?: string;
-
   @ApiProperty({ example: 'uuid-of-common-profile' })
   @IsString()
   @IsNotEmpty()
   profileId: string;
 }
+
+export class CreatePropertyWithoutProfileDto extends OmitType(
+  CreatePropertyDto,
+  ['profileId'] as const,
+) {}

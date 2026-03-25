@@ -19,7 +19,7 @@ export const dataSourceOptions: TypeOrmModuleOptions & SeederOptions = {
   synchronize: false,
   migrationsRun: false,
   migrationsTableName: 'migrations',
-  seeds: ['src/db/seeds/**/*.{ts,js}'],
+  seeds: ['src/database/seeds/**/*.{ts,js}'],
 };
 
 export default new DataSource(dataSourceOptions as DataSourceOptions);

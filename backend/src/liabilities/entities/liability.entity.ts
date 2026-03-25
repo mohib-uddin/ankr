@@ -1,6 +1,7 @@
 import { Entity, Column, OneToOne, JoinColumn } from 'typeorm';
 import { BaseEntity, Profile } from '@entities';
 import { ApiProperty } from '@nestjs/swagger';
+import { Exclude } from 'class-transformer';
 
 @Entity({ name: 'liability' })
 export class Liability extends BaseEntity {
@@ -16,14 +17,11 @@ export class Liability extends BaseEntity {
   @Column({ type: 'decimal', precision: 12, scale: 2, default: 0 })
   otherDebt: number;
 
-  @ApiProperty({ example: 'None' })
+  @ApiProperty({ example: 'Chase Auto Loan', description: 'Link other debt to specific assets if applicable' })
   @Column({ type: 'varchar', nullable: true, default: 'None' })
   linkedAsset: string;
 
-  @ApiProperty({ example: 'path/to/liabilities.pdf' })
-  @Column({ type: 'varchar', nullable: true })
-  statementUrl: string;
-
+  @Exclude()
   @OneToOne(() => Profile, (profile) => profile.liability)
   @JoinColumn({ name: 'profileId' })
   profile: Profile;
