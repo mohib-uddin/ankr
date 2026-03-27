@@ -19,7 +19,10 @@
     "noFallthroughCasesInSwitch": true,
 
     "paths": {
-      "@/icons/*": ["./src/app/components/icons/*"],
+      "@/icons/*": ["./src/shared/icons/*"],
+      "@/ui/*": ["./src/shared/components/ui/*"],
+      "@/features/*": ["./src/features/*"],
+      "@/app/*": ["./src/app/*"],
       "@/*": ["./src/*"]
     }
   },

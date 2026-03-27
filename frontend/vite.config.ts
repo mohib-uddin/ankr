@@ -13,7 +13,8 @@ export default defineConfig({
   resolve: {
     alias: {
       // Figma icon modules (must be before @ so @/icons does not resolve to src/icons)
-      '@/icons': path.resolve(__dirname, './src/app/components/icons'),
+      '@/icons': path.resolve(__dirname, './src/shared/icons'),
+      '@/ui': path.resolve(__dirname, './src/shared/components/ui'),
       '@': path.resolve(__dirname, './src'),
     },
   },
