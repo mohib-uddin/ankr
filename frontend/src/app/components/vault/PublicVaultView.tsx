@@ -67,14 +67,6 @@ function DownloadIconSmall({ color = '#764D2F' }: { color?: string }) {
   );
 }
 
-function PrintIcon() {
-  return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-      <path d={svgPaths.p3534d100} fill="white" />
-    </svg>
-  );
-}
-
 function FolderIcon({ color = '#764D2F', size = 28.8 }: { color?: string; size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 28.8 28.8" fill="none" style={{ overflow: 'visible' }}>
@@ -265,27 +257,18 @@ export function PublicVaultView() {
 
         {/* Top nav */}
         <div className="relative z-10 px-6 sm:px-12 lg:px-[80px] py-[44px]">
-          <div className="flex items-center justify-between">
-            <p className="font-['Cormorant_Garamond',sans-serif] not-italic text-[28px] sm:text-[32.78px] text-white tracking-[1.31px]">ANKR</p>
-            <div className="flex gap-[10px] sm:gap-[16px] items-center">
-              <button
-                onClick={() => window.print()}
-                className="hidden sm:flex gap-[10px] items-center justify-center px-[28px] py-[10px] h-[50px] rounded-[8px] relative cursor-pointer bg-transparent"
-              >
-                <div aria-hidden className="absolute border-[1.5px] border-white inset-0 rounded-[8px] pointer-events-none" />
-                <PrintIcon />
-                <span className={`${sfSemi} text-[16px] text-white`} style={wdth}>Print</span>
-              </button>
-              <div className="flex gap-[10px] items-center px-[12px] sm:px-[16px] py-[4px] rounded-[100px] bg-[rgba(255,239,223,0.4)]">
-                <EyeIcon color="white" size={24} />
-                <span className={`${sfMed} text-[14px] sm:text-[16px] text-white`} style={wdth}>Read Only</span>
-              </div>
-            </div>
+          <div className="flex items-center">
+            <p
+              className="text-white text-[28px] sm:text-[33.12px] leading-[0.9807] tracking-[0.04em] text-center whitespace-nowrap"
+              style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 700 }}
+            >
+              ANKR
+            </p>
           </div>
         </div>
 
         {/* Hero content */}
-        <div className="relative z-10 px-6 sm:px-12 lg:px-[87px] pb-[48px]">
+        <div className="relative z-10 px-6 sm:px-12 lg:px-[87px] pb-[88px]">
           {/* Package type badge */}
           <div className="inline-flex items-center px-[16px] py-[8px] rounded-[100px] mb-[32px] relative">
             <div aria-hidden className="absolute border border-[#FFBF7E] inset-0 rounded-[100px] pointer-events-none" />
@@ -333,13 +316,13 @@ export function PublicVaultView() {
       </div>
 
       {/* ═══ Main Content ═══ */}
-      <div className="px-6 sm:px-12 lg:px-[80px] py-[40px] flex flex-col gap-[16px]">
+      <div className="relative z-20 px-6 sm:px-12 lg:px-[80px] pb-[40px] flex flex-col gap-[16px]">
         {/* ─── Package Overview Card ─── */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="bg-white rounded-[20px] p-[33px] flex flex-col gap-[24px]"
+          className="bg-white rounded-[20px] p-[33px] flex flex-col gap-[24px] -mt-[34px]"
         >
           {/* Header row */}
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-[16px]">

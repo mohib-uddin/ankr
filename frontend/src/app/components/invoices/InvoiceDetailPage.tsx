@@ -1,5 +1,5 @@
 import { useNavigate, useParams, Link } from 'react-router';
-import { Check, X, MapPin } from 'lucide-react';
+import { Check, X, Lightbulb } from 'lucide-react';
 
 const INVOICE_DATA = {
   id: 'INV-2023-8842',
@@ -79,140 +79,132 @@ export function InvoiceDetailPage() {
       <div className="flex flex-col xl:flex-row gap-[24px]">
         {/* Left: Invoice Document */}
         <div className="flex-1 flex flex-col gap-[24px]">
-          {/* Invoice card */}
+          {/* Invoice Preview card */}
           <div
-            className="bg-white rounded-[20px] border border-[#D0D0D0] p-[40px] sm:p-[56px]"
-            style={{ boxShadow: '0px 10px 40px 0px rgba(243,219,188,0.25)' }}
+            className="bg-[#F7EBE0] rounded-[16px] border border-[rgba(169,180,185,0.1)] p-[20px] sm:p-[33px]"
+            style={{ boxShadow: '0px 1px 2px 0px rgba(0,0,0,0.05)' }}
           >
-            {/* Header */}
-            <div className="flex items-start justify-between mb-[40px]">
-              <div>
-                <h2
-                  className="text-[22px] text-[#3E2D1D] tracking-[1px] uppercase mb-[4px]"
-                  style={{ fontFamily: "'SF Pro', -apple-system, sans-serif", fontWeight: 700 }}
-                >
-                  STIRLING & SONS
-                </h2>
-                <p className="text-[11px] text-[#8C8780] uppercase tracking-[1px]" style={{ ...sf, fontWeight: 510 }}>
-                  {INVOICE_DATA.vendorSubtitle}
-                </p>
+            <div
+              className="bg-white rounded-[12px] px-[18px] sm:px-[48px] pt-[28px] sm:pt-[48px] pb-[28px] sm:pb-[61px]"
+              style={{ boxShadow: '0px 10px 15px -3px rgba(0,0,0,0.1), 0px 4px 6px -4px rgba(0,0,0,0.1)' }}
+            >
+              {/* Header */}
+              <div className="flex items-start justify-between border-b border-[#E1E9EE] pb-[22px] sm:pb-[33px] mb-[22px] sm:mb-[32px]">
+                <div>
+                  <h2
+                    className="text-[20px] text-[#3E2D1D] mb-[4px]"
+                    style={{ fontFamily: "'SF Pro', -apple-system, sans-serif", fontWeight: 700, letterSpacing: '0.2px' }}
+                  >
+                    STIRLING & SONS
+                  </h2>
+                  <p className="text-[12px] text-[#8C8780] uppercase tracking-[1.2px]" style={{ ...sf, fontWeight: 400 }}>
+                    {INVOICE_DATA.vendorSubtitle}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p
+                    className="text-[24px] text-[#764D2F]"
+                    style={{ fontFamily: "'SF Pro', -apple-system, sans-serif", fontWeight: 800, letterSpacing: '-1.2px' }}
+                  >
+                    INVOICE
+                  </p>
+                  <p className="text-[12px] text-[#8C8780]" style={{ ...sf, fontWeight: 400 }}>
+                    Issued: {INVOICE_DATA.issuedDate}
+                  </p>
+                </div>
               </div>
-              <div className="text-right">
-                <p
-                  className="text-[28px] text-[#764D2F] tracking-[1px]"
-                  style={{ fontFamily: "'SF Pro', -apple-system, sans-serif", fontWeight: 700 }}
-                >
-                  INVOICE
-                </p>
-                <p className="text-[12px] text-[#8C8780]" style={{ ...sf, fontWeight: 400 }}>
-                  Issued: {INVOICE_DATA.issuedDate}
-                </p>
-              </div>
-            </div>
 
-            {/* To / From */}
-            <div className="flex flex-col sm:flex-row gap-[40px] mb-[48px]">
-              <div className="flex-1">
-                <p className="text-[11px] text-[#8C8780] uppercase tracking-[0.5px] mb-[8px]" style={{ ...sf, fontWeight: 510 }}>
-                  TO:
-                </p>
-                <p className="text-[14px] text-[#3E2D1D] mb-[2px]" style={{ ...sf, fontWeight: 590 }}>
-                  {INVOICE_DATA.to.name}
-                </p>
-                {INVOICE_DATA.to.address.map((l, i) => (
-                  <p key={i} className="text-[13px] text-[#8C8780]" style={{ ...sf, fontWeight: 400 }}>{l}</p>
-                ))}
+              {/* To / From */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-[28px] sm:gap-[32px] mb-[22px] sm:mb-[32px]">
+                <div>
+                  <p className="text-[12px] text-[#8C8780] uppercase mb-[8px]" style={{ ...sf, fontWeight: 590 }}>TO:</p>
+                  <p className="text-[14px] text-[#764D2F] mb-[2px]" style={{ ...sf, fontWeight: 590 }}>{INVOICE_DATA.to.name}</p>
+                  {INVOICE_DATA.to.address.map((l, i) => (
+                    <p key={i} className="text-[14px] text-[#8C8780]" style={{ ...sf, fontWeight: 400 }}>{l}</p>
+                  ))}
+                </div>
+                <div>
+                  <p className="text-[12px] text-[#8C8780] uppercase mb-[8px]" style={{ ...sf, fontWeight: 590 }}>FROM:</p>
+                  <p className="text-[14px] text-[#764D2F] mb-[2px]" style={{ ...sf, fontWeight: 590 }}>{INVOICE_DATA.from.name}</p>
+                  {INVOICE_DATA.from.address.map((l, i) => (
+                    <p key={i} className="text-[14px] text-[#8C8780]" style={{ ...sf, fontWeight: 400 }}>{l}</p>
+                  ))}
+                </div>
               </div>
-              <div className="flex-1">
-                <p className="text-[11px] text-[#8C8780] uppercase tracking-[0.5px] mb-[8px]" style={{ ...sf, fontWeight: 510 }}>
-                  FROM:
-                </p>
-                <p className="text-[14px] text-[#3E2D1D] mb-[2px]" style={{ ...sf, fontWeight: 590 }}>
-                  {INVOICE_DATA.from.name}
-                </p>
-                {INVOICE_DATA.from.address.map((l, i) => (
-                  <p key={i} className="text-[13px] text-[#8C8780]" style={{ ...sf, fontWeight: 400 }}>{l}</p>
-                ))}
-              </div>
-            </div>
 
-            {/* Line items table */}
-            <div className="mb-[40px]">
-              {/* Table header */}
-              <div className="flex items-center border-b border-[#E8E4DF] pb-[12px] mb-[16px]">
-                <div className="flex-1">
-                  <span className="text-[13px] text-[#764D2F]" style={{ ...sf, fontWeight: 590 }}>Description</span>
-                </div>
-                <div className="w-[80px] text-center">
-                  <span className="text-[13px] text-[#764D2F]" style={{ ...sf, fontWeight: 590 }}>Quantity</span>
-                </div>
-                <div className="w-[80px] text-center">
-                  <span className="text-[13px] text-[#764D2F]" style={{ ...sf, fontWeight: 590 }}>Rate</span>
-                </div>
-                <div className="w-[100px] text-right">
-                  <span className="text-[13px] text-[#764D2F]" style={{ ...sf, fontWeight: 590 }}>Amount</span>
+              {/* Line items table */}
+              <div className="mb-[16px] sm:mb-[28px] overflow-x-auto">
+                <div className="min-w-[560px]">
+                  <div className="flex items-center border-b border-[#E1E9EE] pb-[12px]">
+                    <div className="flex-1">
+                      <span className="text-[12px] text-[#764D2F]" style={{ ...sf, fontWeight: 590 }}>Description</span>
+                    </div>
+                    <div className="w-[90px] text-right">
+                      <span className="text-[12px] text-[#764D2F]" style={{ ...sf, fontWeight: 590 }}>Quantity</span>
+                    </div>
+                    <div className="w-[72px] text-right">
+                      <span className="text-[12px] text-[#764D2F]" style={{ ...sf, fontWeight: 590 }}>Rate</span>
+                    </div>
+                    <div className="w-[88px] text-right">
+                      <span className="text-[12px] text-[#764D2F]" style={{ ...sf, fontWeight: 590 }}>Amount</span>
+                    </div>
+                  </div>
+                  {INVOICE_DATA.lineItems.map((item, i) => (
+                    <div key={i} className="flex items-center border-b border-[rgba(225,233,238,0.3)] py-[16px]">
+                      <div className="flex-1">
+                        <span className="text-[12px] text-[#8C8780]" style={{ ...sf, fontWeight: 400 }}>{item.desc}</span>
+                      </div>
+                      <div className="w-[90px] text-right">
+                        <span className="text-[12px] text-[#8C8780]" style={{ ...sf, fontWeight: 400 }}>{item.qty}</span>
+                      </div>
+                      <div className="w-[72px] text-right">
+                        <span className="text-[12px] text-[#8C8780]" style={{ ...sf, fontWeight: 400 }}>{item.rate}</span>
+                      </div>
+                      <div className="w-[88px] text-right">
+                        <span className="text-[12px] text-[#8C8780]" style={{ ...sf, fontWeight: 510 }}>{item.amount}</span>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
-              {/* Rows */}
-              {INVOICE_DATA.lineItems.map((item, i) => (
-                <div key={i} className="flex items-center border-b border-[#F5F3EF] py-[14px]">
-                  <div className="flex-1">
-                    <span className="text-[13px] text-[#3E2D1D]" style={{ ...sf, fontWeight: 400 }}>{item.desc}</span>
-                  </div>
-                  <div className="w-[80px] text-center">
-                    <span className="text-[13px] text-[#8C8780]" style={{ ...sf, fontWeight: 400 }}>{item.qty}</span>
-                  </div>
-                  <div className="w-[80px] text-center">
-                    <span className="text-[13px] text-[#8C8780]" style={{ ...sf, fontWeight: 400 }}>{item.rate}</span>
-                  </div>
-                  <div className="w-[100px] text-right">
-                    <span className="text-[13px] text-[#3E2D1D]" style={{ ...sf, fontWeight: 510 }}>{item.amount}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
 
-            {/* Totals */}
-            <div className="flex flex-col items-end gap-[8px] mb-[32px]">
-              <div className="flex items-center gap-[24px]">
-                <span className="text-[13px] text-[#8C8780]" style={{ ...sf, fontWeight: 400 }}>Subtotal</span>
-                <span className="text-[14px] text-[#3E2D1D] w-[100px] text-right" style={{ ...sf, fontWeight: 510 }}>
-                  {INVOICE_DATA.subtotal}
-                </span>
+              {/* Totals */}
+              <div className="flex justify-end mb-[18px] sm:mb-[28px]">
+                <div className="w-full sm:w-[264px] border-t border-[#E1E9EE] pt-[18px] sm:pt-[25px]">
+                  <div className="flex items-center justify-between mb-[8px]">
+                    <span className="text-[13px] text-[#8C8780]" style={{ ...sf, fontWeight: 400 }}>Subtotal</span>
+                    <span className="text-[13px] text-[#764D2F]" style={{ ...sf, fontWeight: 510 }}>{INVOICE_DATA.subtotal}</span>
+                  </div>
+                  <div className="flex items-center justify-between mb-[8px]">
+                    <span className="text-[13px] text-[#8C8780]" style={{ ...sf, fontWeight: 400 }}>Tax ({INVOICE_DATA.taxRate})</span>
+                    <span className="text-[13px] text-[#764D2F]" style={{ ...sf, fontWeight: 510 }}>{INVOICE_DATA.tax}</span>
+                  </div>
+                  <div className="flex items-center justify-between pt-[8px]">
+                    <span className="text-[18px] text-[#764D2F]" style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 700 }}>Total Due</span>
+                    <span className="text-[18px] text-[#3E2D1D]" style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 700 }}>{INVOICE_DATA.totalDue}</span>
+                  </div>
+                </div>
               </div>
-              <div className="flex items-center gap-[24px]">
-                <span className="text-[13px] text-[#8C8780]" style={{ ...sf, fontWeight: 400 }}>Tax ({INVOICE_DATA.taxRate})</span>
-                <span className="text-[14px] text-[#3E2D1D] w-[100px] text-right" style={{ ...sf, fontWeight: 510 }}>
-                  {INVOICE_DATA.tax}
-                </span>
-              </div>
-              <div className="flex items-center gap-[24px] pt-[8px] border-t border-[#E8E4DF]">
-                <span className="text-[16px] text-[#764D2F]" style={{ ...sf, fontWeight: 590 }}>Total Due</span>
-                <span className="text-[20px] text-[#3E2D1D] w-[100px] text-right" style={{ ...sf, fontWeight: 700 }}>
-                  {INVOICE_DATA.totalDue}
-                </span>
-              </div>
-            </div>
 
-            {/* Payment terms */}
-            <p className="text-[12px] text-[#8C8780] border-t border-[#F5F3EF] pt-[16px]" style={{ ...sf, fontWeight: 400 }}>
-              Payment terms: Net 15. Please make checks payable to Stirling & Sons Ltd.
-            </p>
+              {/* Payment terms */}
+              <p className="text-[10px] text-[#8C8780] border-t border-[#E1E9EE] pt-[14px] sm:pt-[17px]" style={{ ...sf, fontWeight: 400 }}>
+                Payment terms: Net 15. Please make checks payable to Stirling & Sons Ltd.
+              </p>
+            </div>
           </div>
 
           {/* Budget Check */}
           <div
-            className="bg-[#FCF6F0] rounded-[16px] border border-[#D0D0D0] px-[28px] py-[24px] flex items-start gap-[16px]"
-            style={{ boxShadow: '0px 4px 20px 0px rgba(243,219,188,0.3)' }}
+            className="bg-[#F5DECE] rounded-[16px] border border-[#764D2F] px-[20px] sm:px-[28px] py-[18px] sm:py-[28px] flex items-start gap-[16px]"
           >
-            <div className="w-[40px] h-[40px] rounded-full bg-[#F5EDE4] flex items-center justify-center shrink-0 mt-[2px]">
-              <MapPin className="w-[18px] h-[18px] text-[#764D2F]" />
+            <div className="w-[37px] h-[42px] rounded-[4px] bg-[#F3EFE6] flex items-center justify-center shrink-0">
+              <Lightbulb className="w-[18px] h-[18px] text-[#764D2F]" strokeWidth={1.75} />
             </div>
             <div>
-              <p className="text-[16px] text-[#3E2D1D] mb-[4px]" style={{ ...sf, fontWeight: 590 }}>
+              <p className="text-[16px] text-[#3E2D1D] mb-[6px]" style={{ ...sf, fontWeight: 510 }}>
                 Budget Check
               </p>
-              <p className="text-[14px] text-[#8C8780]" style={{ ...sf, fontWeight: 400 }}>
+              <p className="text-[14px] text-[#764D2F]" style={{ ...sf, fontWeight: 510 }}>
                 This invoice represents 12% of the remaining Exterior Masonry budget for Q4.
               </p>
             </div>

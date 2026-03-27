@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo, useCallback } from 'react';
+import { useState, useRef, useMemo, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Upload, Search, FolderPlus, Link2, FileText, Shield,
@@ -8,9 +8,19 @@ import {
   CheckCircle, Circle, Plus, ExternalLink,
 } from 'lucide-react';
 import { Link } from 'react-router';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../ui/select';
 import { useApp } from '../../context/AppContext';
 import type { VaultCategory, VaultDocument, VaultFolder, VaultShareLink } from '../../context/AppContext';
 import svgPaths from '../../../imports/svg-2jpk391bzg';
+import packageIconAsset from '../../../assets/figma/documents-package/package-icon.svg';
+import listRadioAsset from '../../../assets/figma/documents-package/list-radio.svg';
+import closeIconAsset from '../../../assets/figma/documents-package/close-icon.svg';
 
 /* ─── Font tokens (matching Budget/Draw tabs exactly) ─── */
 const canela  = "font-['Canela_Text_Trial',sans-serif] font-medium not-italic";
@@ -18,6 +28,27 @@ const sfMed   = "font-['SF_Pro',sans-serif] font-[510]";
 
 const figtree = "font-['Figtree',sans-serif] font-normal";
 const wdth: React.CSSProperties = { fontVariationSettings: "'wdth' 100" };
+const invoiceModalInputClass = "w-full h-[46px] bg-white border border-[#D0D0D0] rounded-[8px] px-[12px] text-[14px] text-[#333] placeholder:text-[#767676] outline-none focus:border-[#764D2F] transition-colors";
+const invoiceModalLabelClass = "block text-[14px] text-[#333] mb-[6px]";
+const invoiceModalLabelStyle: React.CSSProperties = { fontFamily: "'SF Pro', -apple-system, sans-serif", fontWeight: 400 };
+const invoiceSelectTriggerBase =
+  "!h-[46px] !rounded-[8px] !border !border-[#D0D0D0] !bg-white !px-[12px] !text-[14px] !shadow-none data-[placeholder]:!text-[#767676] focus-visible:!ring-0 focus-visible:!border-[#764D2F] [&_svg]:!text-[#767676] [&_svg]:!opacity-100";
+const invoiceSelectContentBase =
+  "!bg-white !border !border-[#D0D0D0] !rounded-[8px] !shadow-none !p-[4px]";
+const invoiceSelectItemBase =
+  "!text-[14px] !text-[#3E2D1D] !rounded-[6px] !px-[10px] !py-[8px] data-[highlighted]:!bg-[#FCF6F0] data-[highlighted]:!text-[#3E2D1D] data-[state=checked]:!bg-[#F3EFE6] data-[state=checked]:!text-[#764D2F]";
+const POPULAR_TAGS = ['Urgent', 'Lender', '2026', 'Tax', 'ID', 'Loan'];
+
+function CategorySelectItemLabel({ category }: { category: string }) {
+  return (
+    <span className="inline-flex items-center gap-[8px]">
+      <span className="w-[18px] h-[18px] rounded-[6px] bg-[#F3EFE6] flex items-center justify-center">
+        <FolderIcon size={12} />
+      </span>
+      <span>{category}</span>
+    </span>
+  );
+}
 
 /* ─── Constants ─── */
 const DEFAULT_CATEGORIES: VaultCategory[] = ['Identity', 'Income', 'Banking', 'Real Estate', 'Debt', 'Tax', 'Entity'];
@@ -222,6 +253,96 @@ function CircularProgress({ value, size = 60, strokeWidth = 5, color = '#3E6B3E'
   );
 }
 
+function PackageCardProgress({ value, total }: { value: number; total: number }) {
+  const badgeSize = 70;
+  const ringSize = 49.497;
+  const stroke = 3.86416;
+  const radius = (ringSize - stroke) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const progress = total > 0 ? Math.max(0, Math.min(1, value / total)) : 0;
+  const visibleProgress = progress > 0 ? progress : 0.018; // tiny cap to match Figma idle dot
+  const dash = circumference * visibleProgress;
+
+  return (
+    <div className="relative w-[70px] h-[70px] shrink-0">
+      <svg
+        width={ringSize}
+        height={ringSize}
+        viewBox={`0 0 ${ringSize} ${ringSize}`}
+        className="absolute left-[10.25px] top-[10.25px]"
+      >
+        <circle
+          cx={ringSize / 2}
+          cy={ringSize / 2}
+          r={radius}
+          fill="none"
+          stroke="#E8E8E8"
+          strokeWidth={stroke}
+        />
+        <circle
+          cx={ringSize / 2}
+          cy={ringSize / 2}
+          r={radius}
+          fill="none"
+          stroke="#764D2F"
+          strokeWidth={stroke}
+          strokeLinecap="round"
+          strokeDasharray={`${dash} ${circumference}`}
+          transform={`rotate(-90 ${ringSize / 2} ${ringSize / 2})`}
+        />
+      </svg>
+      <p
+        className="absolute inset-0 flex items-center justify-center text-[#764D2F] leading-none"
+        style={{ fontFamily: "'SF Pro', -apple-system, sans-serif", fontWeight: 590, fontSize: '12.14px' }}
+      >
+        {value}/{total}
+      </p>
+    </div>
+  );
+}
+
+function DetailProgressBadge({ percent }: { percent: number }) {
+  const ringSize = 67.175;
+  const stroke = 5.242;
+  const radius = (ringSize - stroke) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const progress = Math.max(0, Math.min(1, percent / 100));
+  const visibleProgress = progress > 0 ? progress : 0.018;
+  const dash = circumference * visibleProgress;
+  const isFull = progress >= 0.999;
+
+  return (
+    <div className="relative w-[95px] h-[95px] shrink-0">
+      <svg
+        width={ringSize}
+        height={ringSize}
+        viewBox={`0 0 ${ringSize} ${ringSize}`}
+        className="absolute left-[13.91px] top-[13.91px]"
+      >
+        <circle cx={ringSize / 2} cy={ringSize / 2} r={radius} fill="none" stroke="#E8E8E8" strokeWidth={stroke} />
+        {isFull ? (
+          <circle cx={ringSize / 2} cy={ringSize / 2} r={radius} fill="none" stroke="#764D2F" strokeWidth={stroke} />
+        ) : (
+          <circle
+            cx={ringSize / 2}
+            cy={ringSize / 2}
+            r={radius}
+            fill="none"
+            stroke="#764D2F"
+            strokeWidth={stroke}
+            strokeLinecap="round"
+            strokeDasharray={`${dash} ${circumference}`}
+            transform={`rotate(-90 ${ringSize / 2} ${ringSize / 2})`}
+          />
+        )}
+      </svg>
+      <p className="absolute inset-0 flex items-center justify-center text-[#764D2F] leading-none" style={{ fontFamily: "'SF Pro', -apple-system, sans-serif", fontWeight: 590, fontSize: '21.149px' }}>
+        {percent}%
+      </p>
+    </div>
+  );
+}
+
 /* ─── Main Component ─── */
 type Tab = 'documents' | 'packages' | 'shared';
 
@@ -242,6 +363,8 @@ export function DocumentVault() {
   const [expandedDoc, setExpandedDoc] = useState<string | null>(null);
   const [copiedLink, setCopiedLink] = useState<string | null>(null);
   const [uploadPreset, setUploadPreset] = useState<{ category?: VaultCategory; nameHint?: string } | null>(null);
+  const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const [underline, setUnderline] = useState({ left: 0, width: 0 });
 
   // Filter documents
   const filteredDocs = useMemo(() => {
@@ -316,11 +439,24 @@ export function DocumentVault() {
     setShowUploadModal(true);
   };
 
-  const tabs: { id: Tab; label: string; count?: number }[] = [
-    { id: 'documents', label: 'All Documents', count: docs.length },
+  const tabs: { id: Tab; label: string }[] = [
+    { id: 'documents', label: 'All Document' },
     { id: 'packages', label: 'Document Packages' },
-    { id: 'shared', label: 'Shared Links', count: activeShareLinks.length },
+    { id: 'shared', label: 'Shared Links' },
   ];
+
+  useEffect(() => {
+    const updateUnderline = () => {
+      const idx = tabs.findIndex(t => t.id === activeTab);
+      const el = tabRefs.current[idx];
+      if (!el) return;
+      setUnderline({ left: el.offsetLeft, width: el.offsetWidth });
+    };
+
+    updateUnderline();
+    window.addEventListener('resize', updateUnderline);
+    return () => window.removeEventListener('resize', updateUnderline);
+  }, [activeTab]);
 
   return (
     <div className="px-4 sm:px-6 lg:px-[58px] py-[32px] sm:py-[40px]">
@@ -356,26 +492,34 @@ export function DocumentVault() {
 
       {/* ─── Tabs ─── */}
       <motion.div
-        initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.3 }}
-        className="flex gap-[4px] mb-[24px] border-b border-[#E8E4DD] overflow-x-auto"
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1, duration: 0.3 }}
+        className="content-stretch flex flex-col gap-[18px] items-start relative shrink-0 w-full mb-[24px]"
       >
-        {tabs.map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`px-[16px] py-[12px] text-[14px] whitespace-nowrap transition-colors cursor-pointer border-b-2 ${
-              activeTab === tab.id
-                ? 'border-[#3E2D1D] text-[#3E2D1D]'
-                : 'border-transparent text-[#8C8780] hover:text-[#764D2F]'
-            }`}
-            style={{ fontWeight: activeTab === tab.id ? 590 : 510 }}
-          >
-            {tab.label}
-            {tab.count !== undefined && tab.count > 0 && (
-              <span className="ml-[6px] px-[6px] py-[1px] rounded-full bg-[#F3EFE6] text-[#764D2F] text-[11px]" style={{ fontWeight: 590 }}>{tab.count}</span>
-            )}
-          </button>
-        ))}
+        <div className="content-stretch flex gap-[24px] sm:gap-[52px] items-center leading-[normal] px-[8px] sm:px-[20px] relative shrink-0 text-[16px] sm:text-[18px] text-center whitespace-nowrap overflow-x-auto">
+          {tabs.map((tab, idx) => (
+            <button
+              key={tab.id}
+              ref={el => { tabRefs.current[idx] = el; }}
+              onClick={() => setActiveTab(tab.id)}
+              className="cursor-pointer relative shrink-0 transition-colors"
+              style={{
+                fontWeight: activeTab === tab.id ? 700 : 510,
+                color: activeTab === tab.id ? '#3e2d1d' : '#764d2f',
+              }}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+        <div className="bg-[#d9d9d9] h-[3px] relative shrink-0 w-full">
+          <motion.div
+            className="h-full bg-[#3e2d1d] absolute top-0"
+            animate={{ left: underline.left, width: underline.width }}
+            transition={{ duration: 0.25, ease: 'easeInOut' }}
+          />
+        </div>
       </motion.div>
 
       {/* ─── Tab Content ─── */}
@@ -839,8 +983,12 @@ function PackagesView({ docs, onUploadForPackage, onShare, onCreateShareLink }: 
 
   return (
     <div>
-      <p className={`${sfMed} text-[14px] text-[#8C8780] mb-[24px]`} style={wdth}>
-        Pre-built document packages for common lender requests. Select a template to review required documents, upload missing items, and generate a shareable package link.
+      <div className="flex items-start justify-between gap-[10px] mb-[8px]">
+        <p className={`${canela} text-[24px] text-[#3E2D1D]`}>Document Package</p>
+        <img src={closeIconAsset} alt="" className="w-[24px] h-[24px]" />
+      </div>
+      <p className="text-[14px] text-[#764D2F] mb-[16px]" style={{ fontFamily: "'SF Pro', -apple-system, sans-serif", fontWeight: 510 }}>
+        Choose the package your lender requires, or skip and attach individual documents below.
       </p>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-[16px]">
@@ -848,9 +996,8 @@ function PackagesView({ docs, onUploadForPackage, onShare, onCreateShareLink }: 
           const matches = getPackageMatches(docs, pkg);
           const fulfilled = matches.filter(m => m.matched).length;
           const total = matches.length;
-          const completeness = total > 0 ? Math.round((fulfilled / total) * 100) : 0;
-          const complColor = completeness >= 80 ? '#3E6B3E' : completeness >= 40 ? '#8B7A3C' : '#8E3B3B';
-          const complBg = completeness >= 80 ? '#EEF5EE' : completeness >= 40 ? '#FFF8E6' : '#F8EDED';
+          const displayItems = matches.slice(0, 3);
+          const fulfilledPreview = displayItems.filter(item => item.matched).length;
 
           return (
             <motion.div
@@ -859,47 +1006,45 @@ function PackagesView({ docs, onUploadForPackage, onShare, onCreateShareLink }: 
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.05 }}
               onClick={() => setSelectedPkg(pkg.id)}
-              className="bg-white rounded-[20px] border border-[#D0D0D0] p-[24px] flex flex-col cursor-pointer hover:border-[#764D2F] hover:shadow-sm transition-all group"
+              className="bg-white border-[1.5px] border-[#E8E5E0] rounded-[16px] p-[26px] shadow-[0px_10px_40px_0px_rgba(243,219,188,0.45)] cursor-pointer"
             >
-              <div className="flex items-start justify-between mb-[16px]">
-                <div className="w-[44px] h-[44px] rounded-[12px] flex items-center justify-center shrink-0" style={{ backgroundColor: pkg.bg }}>
-                  <Package className="w-[22px] h-[22px]" style={{ color: pkg.color }} />
+              <div className="flex items-center justify-between">
+                <div className="bg-[#FCF6F0] rounded-[6px] p-[8.5px]">
+                  <img src={packageIconAsset} alt="" className="w-[21px] h-[21px]" />
                 </div>
-                <div className="relative w-[52px] h-[52px]">
-                  <CircularProgress value={completeness} size={52} strokeWidth={4} color={complColor} />
-                  <span className="absolute inset-0 flex items-center justify-center text-[12px] text-[#3E2D1D]" style={{ fontWeight: 700 }}>{completeness}%</span>
-                </div>
+                <PackageCardProgress value={fulfilledPreview} total={displayItems.length} />
               </div>
 
-              <p className={`${canela} text-[20px] text-[#3E2D1D] mb-[4px]`}>{pkg.name}</p>
-              <p className={`${sfMed} text-[13px] text-[#8C8780] mb-[16px] line-clamp-2`} style={wdth}>{pkg.description}</p>
+              <div className="mt-[16px] flex flex-col gap-[16px]">
+                <div className="flex flex-col gap-[4px]">
+                  <p className={`${canela} text-[24px] text-[#3E2D1D] leading-none`}>{pkg.name}</p>
+                  <p
+                    className="text-[13px] text-[#8C8780] leading-[19.5px]"
+                    style={{ fontFamily: "'SF Pro', -apple-system, sans-serif", fontWeight: 510 }}
+                  >
+                    {pkg.description}
+                  </p>
+                </div>
 
-              {/* Compact checklist preview */}
-              <div className="flex-1 mb-[16px]">
                 <div className="flex flex-col gap-[6px]">
-                  {matches.slice(0, 3).map(({ req, matched }) => (
-                    <div key={req.id} className="flex items-center gap-[8px]">
-                      {matched ? (
-                        <CheckCircle className="w-[14px] h-[14px] text-[#3E6B3E] shrink-0" />
-                      ) : (
-                        <Circle className="w-[14px] h-[14px] text-[#D0D0D0] shrink-0" />
-                      )}
-                      <span className={`text-[12px] truncate ${matched ? 'text-[#3E2D1D]' : 'text-[#8C8780]'}`} style={{ fontWeight: 510 }}>{req.name}</span>
+                  {displayItems.map(({ req }) => (
+                    <div key={req.id} className="flex items-center gap-[8px] h-[18px]">
+                      <img src={listRadioAsset} alt="" className="w-[14px] h-[14px]" />
+                      <span className="text-[12px] text-[#8C8780] leading-[18px]" style={{ fontFamily: "'SF Pro', -apple-system, sans-serif", fontWeight: 510 }}>
+                        {req.name}
+                      </span>
                     </div>
                   ))}
-                  {matches.length > 3 && (
-                    <span className="text-[11px] text-[#8C8780] ml-[22px]" style={{ fontWeight: 510 }}>+{matches.length - 3} more items</span>
-                  )}
+                  <p className="text-[11px] text-[#8C8780] leading-[16.5px] tracking-[0.0645px] pl-[22px]" style={{ fontFamily: "'SF Pro', -apple-system, sans-serif", fontWeight: 510 }}>
+                    +{Math.max(total - 3, 0)} more items
+                  </p>
                 </div>
-              </div>
 
-              {/* Status bar */}
-              <div className="flex items-center justify-between">
-                <span className="text-[12px] px-[8px] py-[3px] rounded-full" style={{ backgroundColor: complBg, color: complColor, fontWeight: 590 }}>
+                <span
+                  className="inline-flex w-fit h-[24px] items-center rounded-[16777200px] bg-[#FCF6F0] px-[8px] text-[12px] text-[#764D2F] leading-[18px]"
+                  style={{ fontFamily: "'SF Pro', -apple-system, sans-serif", fontWeight: 590 }}
+                >
                   {fulfilled} / {total} documents
-                </span>
-                <span className="flex items-center gap-[4px] text-[12px] text-[#764D2F] opacity-0 group-hover:opacity-100 transition-opacity" style={{ fontWeight: 590 }}>
-                  Review <ChevronRight className="w-[12px] h-[12px]" />
                 </span>
               </div>
             </motion.div>
@@ -925,7 +1070,8 @@ function PackageDetailView({ template, docs, onBack, onUploadForPackage, onGener
   const matchedDocIds = matches.filter(m => m.matched).map(m => m.matched!.id);
   const [recipientEmail, setRecipientEmail] = useState('');
   const [showShareSetup, setShowShareSetup] = useState(false);
-  const complColor = completeness >= 80 ? '#3E6B3E' : completeness >= 40 ? '#8B7A3C' : '#8E3B3B';
+  const displayPercent = total > 0 ? Math.max(10, completeness) : 0;
+  const categories = [...new Set(template.requiredDocs.map(r => r.category))];
 
   return (
     <div>
@@ -944,43 +1090,45 @@ function PackageDetailView({ template, docs, onBack, onUploadForPackage, onGener
       <div className="flex flex-col xl:flex-row gap-[24px]">
         {/* Left: Package Info Card */}
         <div className="w-full xl:w-[340px] shrink-0">
-          <div className="bg-white rounded-[20px] border border-[#D0D0D0] p-[24px] sticky top-[24px]">
-            <div className="flex items-center gap-[14px] mb-[20px]">
-              <div className="w-[48px] h-[48px] rounded-[14px] flex items-center justify-center shrink-0" style={{ backgroundColor: template.bg }}>
-                <Package className="w-[24px] h-[24px]" style={{ color: template.color }} />
+          <div className="bg-white rounded-[20px] border border-[#D0D0D0] p-[24px] shadow-[0px_10px_40px_0px_rgba(243,219,188,0.45)] xl:sticky xl:top-[24px]">
+            <div className="flex items-center gap-[14px] mb-[14px]">
+              <div className="w-[48px] h-[48px] rounded-[14px] bg-[#F3EFE6] flex items-center justify-center shrink-0">
+                <img src={packageIconAsset} alt="" className="w-[24px] h-[24px]" />
               </div>
-              <div>
-                <p className={`${canela} text-[20px] text-[#3E2D1D]`}>{template.name}</p>
-              </div>
+              <p className={`${canela} text-[24px] text-[#3E2D1D]`}>{template.name}</p>
             </div>
-            <p className={`${sfMed} text-[13px] text-[#8C8780] mb-[24px]`} style={wdth}>{template.description}</p>
+            <p className="text-[14px] text-[#8C8780] leading-[normal] mb-[24px] max-w-[275px]" style={{ fontFamily: "'SF Pro', -apple-system, sans-serif", fontWeight: 510 }}>
+              {template.description}
+            </p>
 
             {/* Progress ring */}
-            <div className="flex items-center gap-[20px] mb-[24px] p-[16px] rounded-[14px] bg-[#FAFAF9]">
-              <div className="relative shrink-0">
-                <CircularProgress value={completeness} size={72} strokeWidth={6} color={complColor} />
-                <span className="absolute inset-0 flex items-center justify-center text-[16px] text-[#3E2D1D]" style={{ fontWeight: 700 }}>{completeness}%</span>
-              </div>
+            <div className="bg-[#FAFAF9] rounded-[14px] h-[104px] mb-[24px] flex items-center gap-[10px]">
+              <DetailProgressBadge percent={displayPercent} />
               <div>
-                <p className="text-[14px] text-[#3E2D1D]" style={{ fontWeight: 590 }}>
+                <p className="text-[14px] text-[#3E2D1D] leading-[21px]" style={{ fontFamily: "'SF Pro', -apple-system, sans-serif", fontWeight: 590 }}>
                   {fulfilled} of {total} documents
                 </p>
-                <p className="text-[12px] text-[#8C8780] mt-[2px]" style={{ fontWeight: 510 }}>
-                  {completeness >= 100 ? 'Package complete!' : completeness >= 80 ? 'Almost ready' : `${total - fulfilled} documents needed`}
+                <p className="text-[12px] text-[#8C8780] leading-[18px] mt-[2px]" style={{ fontFamily: "'SF Pro', -apple-system, sans-serif", fontWeight: 510 }}>
+                  {Math.max(total - fulfilled, 0)} documents needed
                 </p>
               </div>
             </div>
 
             {/* Category breakdown */}
             <div className="mb-[24px]">
-              <p className="text-[11px] text-[#8C8780] mb-[10px]" style={{ fontWeight: 590, letterSpacing: '0.5px' }}>CATEGORIES INVOLVED</p>
+              <p className="text-[11px] text-[#8C8780] mb-[10px] tracking-[0.5645px]" style={{ fontFamily: "'SF Pro', -apple-system, sans-serif", fontWeight: 590 }}>
+                CATEGORIES INVOLVED
+              </p>
               <div className="flex flex-wrap gap-[6px]">
-                {[...new Set(template.requiredDocs.map(r => r.category))].map(cat => {
-                  const meta = CATEGORY_META[cat];
-                  return (
-                    <span key={cat} className="text-[11px] px-[10px] py-[4px] rounded-full" style={{ backgroundColor: meta.bg, color: meta.color, fontWeight: 510 }}>{cat}</span>
-                  );
-                })}
+                {categories.map(cat => (
+                  <span
+                    key={cat}
+                    className="h-[24.5px] px-[10px] rounded-[16777200px] inline-flex items-center text-[11px] text-[#764D2F] tracking-[0.0645px]"
+                    style={{ fontFamily: "'SF Pro', -apple-system, sans-serif", fontWeight: 510, backgroundColor: '#FCF6F0' }}
+                  >
+                    {cat}
+                  </span>
+                ))}
               </div>
             </div>
 
@@ -991,12 +1139,12 @@ function PackageDetailView({ template, docs, onBack, onUploadForPackage, onGener
                   if (matchedDocIds.length > 0) setShowShareSetup(true);
                 }}
                 disabled={matchedDocIds.length === 0}
-                className={`w-full h-[44px] rounded-[10px] text-[14px] flex items-center justify-center gap-[8px] transition-colors cursor-pointer ${
+                className={`w-full h-[44px] rounded-[10px] text-[14px] flex items-center justify-center gap-[8px] transition-colors ${
                   matchedDocIds.length > 0
-                    ? 'bg-[#3E2D1D] text-white hover:bg-[#764D2F]'
+                    ? 'bg-[#3E2D1D] text-white hover:bg-[#764D2F] cursor-pointer'
                     : 'bg-[#F5F3EF] text-[#C5C0B9] cursor-not-allowed'
                 }`}
-                style={{ fontWeight: 590 }}
+                style={{ fontFamily: "'SF Pro', -apple-system, sans-serif", fontWeight: 590 }}
               >
                 <Link2 className="w-[16px] h-[16px]" />
                 {matchedDocIds.length > 0 ? 'Generate Package Link' : 'Upload documents to generate'}
@@ -1055,61 +1203,55 @@ function PackageDetailView({ template, docs, onBack, onUploadForPackage, onGener
                 key={req.id}
                 initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
-                className={`rounded-[16px] border p-[20px] transition-colors ${
-                  matched ? 'bg-white border-[#D0D0D0]' : 'bg-[#FFFCF8] border-[#E8DECE] border-dashed'
-                }`}
+                className="bg-white border border-[#EAEAEA] rounded-[16px] p-[28px] shadow-[0px_10px_40px_0px_rgba(243,219,188,0.45)]"
               >
-                <div className="flex items-start gap-[14px]">
-                  {/* Status indicator */}
-                  <div className={`w-[32px] h-[32px] rounded-[10px] flex items-center justify-center shrink-0 mt-[2px] ${
-                    matched ? 'bg-[#EEF5EE]' : 'bg-[#FFF8E6]'
-                  }`}>
-                    {matched ? (
-                      <CheckCircle className="w-[16px] h-[16px] text-[#3E6B3E]" />
-                    ) : (
-                      <AlertCircle className="w-[16px] h-[16px] text-[#8B7A3C]" />
-                    )}
-                  </div>
-
-                  {/* Content */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-[12px]">
-                      <div>
-                        <p className="text-[14px] text-[#3E2D1D]" style={{ fontWeight: 510 }}>{req.name}</p>
-                        <p className="text-[12px] text-[#8C8780] mt-[2px]" style={{ fontWeight: 510 }}>{req.description}</p>
-                      </div>
-                      <span className="text-[11px] px-[8px] py-[3px] rounded-full shrink-0" style={{
-                        backgroundColor: CATEGORY_META[req.category].bg,
-                        color: CATEGORY_META[req.category].color,
-                        fontWeight: 510,
-                      }}>{req.category}</span>
+                <div className="flex items-start justify-between gap-[16px]">
+                  <div className="flex items-start gap-[16px] min-w-0">
+                    <div className="w-[35.722px] h-[40.222px] rounded-[8px] bg-[#F3EFE6] flex items-center justify-center shrink-0">
+                      <FileText className="w-[18px] h-[18px] text-[#764D2F]" />
                     </div>
-
-                    {/* Matched document details */}
-                    {matched ? (
-                      <div className="mt-[12px] flex items-center gap-[10px] p-[10px] rounded-[10px] bg-[#FAFAF9]">
-                        <div className="w-[28px] h-[28px] rounded-[6px] flex items-center justify-center shrink-0" style={{ backgroundColor: getFileTypeStyle(matched.fileType).bg }}>
-                          <span className="text-[9px]" style={{ fontWeight: 700, color: getFileTypeStyle(matched.fileType).color }}>{matched.fileType}</span>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-[13px] text-[#3E2D1D] truncate" style={{ fontWeight: 510 }}>{matched.name}</p>
-                          <p className="text-[11px] text-[#8C8780]" style={{ fontWeight: 510 }}>{matched.fileSize} | Uploaded {matched.uploadedAt}</p>
-                        </div>
-                        <CheckCircle className="w-[14px] h-[14px] text-[#3E6B3E] shrink-0" />
-                      </div>
-                    ) : (
-                      <div className="mt-[12px]">
-                        <button
-                          onClick={() => onUploadForPackage(req.category, req.name)}
-                          className="flex items-center gap-[8px] h-[36px] px-[16px] rounded-[8px] border-[1.5px] border-dashed border-[#764D2F] text-[13px] text-[#764D2F] cursor-pointer hover:bg-[#F3EFE6] transition-colors"
-                          style={{ fontWeight: 590 }}
-                        >
-                          <Plus className="w-[14px] h-[14px]" />
-                          Upload {req.name}
-                        </button>
-                      </div>
-                    )}
+                    <div className="min-w-0">
+                      <p className="text-[16px] text-[#764D2F] leading-[normal]" style={{ fontFamily: "'SF Pro', -apple-system, sans-serif", fontWeight: 510 }}>
+                        {req.name}
+                      </p>
+                      <p className="text-[14px] text-[#8C8780] leading-[normal] mt-[6px]" style={{ fontFamily: "'SF Pro', -apple-system, sans-serif", fontWeight: 510 }}>
+                        {req.description}
+                      </p>
+                    </div>
                   </div>
+                  <span className="h-[32px] px-[16px] rounded-[100px] bg-[#FCF6F0] text-[#3E2D1D] text-[14px] inline-flex items-center shrink-0" style={{ fontFamily: "'SF Pro', -apple-system, sans-serif", fontWeight: 510 }}>
+                    {req.category}
+                  </span>
+                </div>
+
+                <div className="pl-[54px] mt-[16px]">
+                  {matched ? (
+                    <div className="w-full h-[56px] bg-[#FAFAF9] rounded-[10px] px-[10px] flex items-center gap-[10px]">
+                      <div className="w-[28px] h-[28px] rounded-[4px] bg-[#E5EDF5] flex items-center justify-center shrink-0">
+                        <span className="text-[9px] text-[#2D5A8E]" style={{ fontWeight: 700 }}>
+                          {matched.fileType.slice(0, 3).toUpperCase()}
+                        </span>
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[13px] text-[#3E2D1D] leading-[19.5px] truncate" style={{ fontFamily: "'Inter', sans-serif", fontWeight: 500 }}>
+                          {matched.name}
+                        </p>
+                        <p className="text-[11px] text-[#8C8780] leading-[16.5px] tracking-[0.0645px]" style={{ fontFamily: "'Inter', sans-serif", fontWeight: 500 }}>
+                          {matched.fileSize} | Uploaded {matched.uploadedAt}
+                        </p>
+                      </div>
+                      <CheckCircle className="w-[14px] h-[14px] text-[#3E6B3E] shrink-0" />
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => onUploadForPackage(req.category, req.name)}
+                      className="h-[42px] px-[16px] rounded-[8px] border-[1.5px] border-dashed border-[#3E2D1D] bg-[#FFFDF8] text-[#3E2D1D] hover:bg-[#FCF6F0] transition-colors cursor-pointer inline-flex items-center gap-[10px]"
+                      style={{ fontFamily: "'SF Pro', -apple-system, sans-serif", fontWeight: 510, fontSize: '14px' }}
+                    >
+                      <Upload className="w-[24px] h-[24px]" />
+                      Upload {req.name}
+                    </button>
+                  )}
                 </div>
               </motion.div>
             ))}
@@ -1231,73 +1373,84 @@ function SharedLinksView({
         const statusColor = isRevoked ? '#8E3B3B' : isExpired ? '#8B7A3C' : '#3E6B3E';
         const statusBg = isRevoked ? '#F8EDED' : isExpired ? '#FFF8E6' : '#EEF5EE';
         const statusText = isRevoked ? 'Revoked' : isExpired ? 'Expired' : 'Active';
+        const title = link.packageName || `${linkDocs.length} Document${linkDocs.length !== 1 ? 's' : ''}`;
 
         return (
           <motion.div
             key={link.id}
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-white rounded-[20px] border border-[#D0D0D0] p-[20px]"
+            className="bg-white relative rounded-[16px] border border-[#EAEAEA] shadow-[0px_10px_40px_0px_rgba(243,219,188,0.45)]"
           >
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-[12px] mb-[12px]">
-              <div className="flex items-center gap-[10px]">
-                <div className="w-[36px] h-[36px] rounded-[10px] bg-[#F3EFE6] flex items-center justify-center shrink-0">
-                  {link.packageName ? <Package className="w-[16px] h-[16px] text-[#764D2F]" /> : <Link2 className="w-[16px] h-[16px] text-[#764D2F]" />}
+            <div className="flex flex-col gap-[16px] p-[28px]">
+              <div className="flex items-start justify-between gap-[12px]">
+                <div className="flex items-center gap-[16px] min-w-0">
+                  <div className="w-[35.722px] h-[40.222px] rounded-[8px] bg-[#F3EFE6] flex items-center justify-center shrink-0">
+                    {link.packageName ? (
+                      <Package className="w-[18px] h-[18px] text-[#764D2F]" />
+                    ) : (
+                      <Link2 className="w-[18px] h-[18px] text-[#764D2F]" />
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[16px] text-[#764D2F] truncate" style={{ fontWeight: 510 }}>{title}</p>
+                    <p className="text-[12px] text-[#8C8780]" style={{ fontWeight: 510 }}>
+                      {link.recipientEmail && <span>{link.recipientEmail} | </span>}
+                      Created {link.createdAt}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-[14px] text-[#3E2D1D]" style={{ fontWeight: 510 }}>{link.packageName || `${linkDocs.length} Document${linkDocs.length !== 1 ? 's' : ''}`}</p>
-                  <p className="text-[12px] text-[#8C8780]" style={{ fontWeight: 510 }}>
-                    {link.recipientEmail && <span>{link.recipientEmail} | </span>}
-                    Created {link.createdAt}
-                  </p>
+                <div className="h-[24px] px-[8px] rounded-[16777200px] inline-flex items-center text-[11px] shrink-0" style={{ backgroundColor: statusBg, color: statusColor, fontWeight: 590 }}>
+                  {statusText}
                 </div>
               </div>
-              <div className="flex items-center gap-[8px]">
-                <span className="text-[11px] px-[8px] py-[2px] rounded-full" style={{ backgroundColor: statusBg, color: statusColor, fontWeight: 590 }}>{statusText}</span>
-                {link.isActive && !isExpired && (
-                  <>
-                    <Link
-                      to={`/share/vault/${link.token}`}
-                      className="flex items-center gap-[6px] h-[32px] px-[10px] rounded-[8px] border border-[#D0D0D0] text-[12px] text-[#3E2D1D] cursor-pointer hover:bg-[#F3EFE6] transition-colors no-underline"
-                      style={{ fontWeight: 590 }}
-                    >
-                      <ExternalLink className="w-[12px] h-[12px]" />
-                    </Link>
-                    <button
-                      onClick={() => onCopyLink(link.token)}
-                      className="flex items-center gap-[6px] h-[32px] px-[12px] rounded-[8px] border border-[#D0D0D0] text-[12px] text-[#3E2D1D] cursor-pointer hover:bg-[#F3EFE6] transition-colors"
-                      style={{ fontWeight: 590 }}
-                    >
-                      {copiedLink === link.token ? <Check className="w-[12px] h-[12px] text-green-600" /> : <Copy className="w-[12px] h-[12px]" />}
-                      {copiedLink === link.token ? 'Copied' : 'Copy Link'}
-                    </button>
-                    <button
-                      onClick={() => onRevoke(link.id)}
-                      className="h-[32px] px-[12px] rounded-[8px] border border-red-200 text-[12px] text-red-500 cursor-pointer hover:bg-red-50 transition-colors"
-                      style={{ fontWeight: 590 }}
-                    >
-                      Revoke
-                    </button>
-                  </>
-                )}
-              </div>
-            </div>
 
-            {/* Link details */}
-            <div className="flex flex-wrap gap-[16px] text-[12px] text-[#8C8780]" style={{ fontWeight: 510 }}>
-              <span className="flex items-center gap-[4px]"><Clock className="w-[12px] h-[12px]" /> Expires {link.expiresAt}</span>
-              <span className="flex items-center gap-[4px]"><Eye className="w-[12px] h-[12px]" /> {link.accessCount} / {link.maxAccess} views</span>
-              <span className="flex items-center gap-[4px]"><FileText className="w-[12px] h-[12px]" /> {linkDocs.length} documents</span>
-            </div>
-
-            {/* Document list */}
-            {linkDocs.length > 0 && (
-              <div className="mt-[12px] flex flex-wrap gap-[6px]">
-                {linkDocs.map(d => (
-                  <span key={d.id} className="text-[11px] px-[8px] py-[3px] rounded-[6px] bg-[#FAFAF9] text-[#3E2D1D] border border-[#E8E4DD]" style={{ fontWeight: 510 }}>{d.name}</span>
-                ))}
+              <div className="flex flex-wrap items-center gap-[10px] text-[12px] text-[#8C8780]" style={{ fontWeight: 510 }}>
+                <span className="inline-flex items-center gap-[4px]"><Clock className="w-[12px] h-[12px]" /> Expires {link.expiresAt}</span>
+                <span className="inline-flex items-center gap-[4px]"><Eye className="w-[12px] h-[12px]" /> {link.accessCount} / {link.maxAccess} views</span>
+                <span className="inline-flex items-center gap-[4px]"><FileText className="w-[12px] h-[12px]" /> {linkDocs.length} documents</span>
               </div>
-            )}
+
+              {link.isActive && !isExpired && (
+                <div className="flex items-center gap-[8px]">
+                  <Link
+                    to={`/share/vault/${link.token}`}
+                    className="bg-white content-stretch flex items-center justify-center px-[8px] py-[6px] relative rounded-[6px] shrink-0 cursor-pointer hover:bg-[#F8F6F1] transition-colors border border-[#D0D0D0] no-underline"
+                    title="Open link"
+                  >
+                    <ExternalLink className="w-[18px] h-[18px] text-[#764D2F]" />
+                  </Link>
+                  <button
+                    onClick={() => onCopyLink(link.token)}
+                    className="bg-white content-stretch flex items-center justify-center px-[8px] py-[6px] relative rounded-[6px] shrink-0 cursor-pointer hover:bg-[#F8F6F1] transition-colors border border-[#D0D0D0]"
+                    title="Copy link"
+                  >
+                    {copiedLink === link.token ? (
+                      <Check className="w-[18px] h-[18px] text-[#3E6B3E]" />
+                    ) : (
+                      <Copy className="w-[18px] h-[18px] text-[#764D2F]" />
+                    )}
+                  </button>
+                  <button
+                    onClick={() => onRevoke(link.id)}
+                    className="h-[30px] px-[12px] rounded-[6px] border border-[#D0D0D0] text-[12px] text-[#764D2F] cursor-pointer hover:bg-[#F8F6F1] transition-colors"
+                    style={{ fontWeight: 590 }}
+                  >
+                    Revoke
+                  </button>
+                </div>
+              )}
+
+              {linkDocs.length > 0 && (
+                <div className="flex flex-wrap gap-[6px]">
+                  {linkDocs.map(d => (
+                    <span key={d.id} className="text-[11px] px-[8px] py-[3px] rounded-[6px] bg-[#FAFAF9] text-[#3E2D1D] border border-[#E8E4DD]" style={{ fontWeight: 510 }}>
+                      {d.name}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
           </motion.div>
         );
       })}
@@ -1316,7 +1469,8 @@ function UploadModal({ onClose, onUpload, folders, properties, preset }: {
   const [name, setName] = useState(preset?.nameHint || '');
   const [category, setCategory] = useState<VaultCategory>(preset?.category || 'Identity');
   const [fileType, setFileType] = useState('PDF');
-  const [tags, setTags] = useState('');
+  const [tags, setTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState('');
   const [notes, setNotes] = useState('');
   const [propertyId, setPropertyId] = useState('');
   const [dragOver, setDragOver] = useState(false);
@@ -1351,7 +1505,7 @@ function UploadModal({ onClose, onUpload, folders, properties, preset }: {
     onUpload({
       name: name.trim() + (fileType ? `.${fileType.toLowerCase()}` : ''),
       category,
-      tags: tags ? tags.split(',').map(t => t.trim()).filter(Boolean) : [],
+      tags,
       fileType,
       fileSize: sizes[Math.floor(Math.random() * sizes.length)],
       uploadedAt: new Date().toISOString().split('T')[0],
@@ -1360,8 +1514,13 @@ function UploadModal({ onClose, onUpload, folders, properties, preset }: {
     });
     onClose();
   };
-
-  const selectStyle = { backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%238C8780' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`, backgroundPosition: 'right 8px center', backgroundRepeat: 'no-repeat', backgroundSize: '20px', paddingRight: '32px' };
+  const addTag = (raw: string) => {
+    const next = raw.trim();
+    if (!next) return;
+    setTags(prev => (prev.includes(next) ? prev : [...prev, next]));
+    setTagInput('');
+  };
+  const removeTag = (tag: string) => setTags(prev => prev.filter(t => t !== tag));
 
   return (
     <motion.div
@@ -1413,68 +1572,104 @@ function UploadModal({ onClose, onUpload, folders, properties, preset }: {
           </div>
 
           {/* Form */}
-          <div className="flex flex-col gap-[14px]">
-            <ModalField label="Document Name">
+          <div className="flex flex-col gap-[20px]">
+            <ModalField label="Document Name" labelClassName={invoiceModalLabelClass} labelStyle={invoiceModalLabelStyle}>
               <input
                 value={name}
                 onChange={e => setName(e.target.value)}
                 placeholder="e.g. 2025_Tax_Return"
-                className={`${figtree} w-full h-[40px] px-[12px] rounded-[8px] border border-[#D0D0D0] text-[14px] text-[#3E2D1D] placeholder:text-[#B5B0A8] outline-none focus:border-[#764D2F] transition-colors`}
+                className={invoiceModalInputClass}
+                style={{ fontFamily: "'Figtree', sans-serif" }}
               />
             </ModalField>
 
-            <div className="grid grid-cols-2 gap-[12px]">
-              <ModalField label="Category">
-                <select
-                  value={category}
-                  onChange={e => setCategory(e.target.value as VaultCategory)}
-                  className={`${figtree} w-full h-[40px] px-[12px] rounded-[8px] border border-[#D0D0D0] text-[14px] text-[#3E2D1D] outline-none focus:border-[#764D2F] bg-white cursor-pointer appearance-none`}
-                  style={selectStyle}
-                >
-                  {DEFAULT_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
-              </ModalField>
-
-              <ModalField label="File Type">
-                <select
-                  value={fileType}
-                  onChange={e => setFileType(e.target.value)}
-                  className={`${figtree} w-full h-[40px] px-[12px] rounded-[8px] border border-[#D0D0D0] text-[14px] text-[#3E2D1D] outline-none focus:border-[#764D2F] bg-white cursor-pointer appearance-none`}
-                  style={selectStyle}
-                >
-                  {['PDF', 'XLSX', 'DOCX', 'PNG', 'JPG', 'CSV'].map(t => <option key={t} value={t}>{t}</option>)}
-                </select>
-              </ModalField>
-            </div>
-
-            <ModalField label="Link to Property (optional)">
-              <select
-                value={propertyId}
-                onChange={e => setPropertyId(e.target.value)}
-                className={`${figtree} w-full h-[40px] px-[12px] rounded-[8px] border border-[#D0D0D0] text-[14px] text-[#3E2D1D] outline-none focus:border-[#764D2F] bg-white cursor-pointer appearance-none`}
-                style={selectStyle}
-              >
-                <option value="">None</option>
-                {properties.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-              </select>
+            <ModalField label="Category" labelClassName={invoiceModalLabelClass} labelStyle={invoiceModalLabelStyle}>
+              <Select value={category} onValueChange={(val) => setCategory(val as VaultCategory)}>
+                <SelectTrigger className={`w-full !text-[#333] ${invoiceSelectTriggerBase}`} style={{ fontFamily: "'Figtree', sans-serif" }}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className={invoiceSelectContentBase}>
+                  {DEFAULT_CATEGORIES.map(c => (
+                    <SelectItem key={c} value={c} className={invoiceSelectItemBase} style={{ fontFamily: "'SF Pro', -apple-system, sans-serif", fontWeight: 510 }}>
+                      <CategorySelectItemLabel category={c} />
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </ModalField>
 
-            <ModalField label="Tags (comma-separated)">
-              <input
-                value={tags}
-                onChange={e => setTags(e.target.value)}
-                placeholder="e.g. 2025, federal, personal"
-                className={`${figtree} w-full h-[40px] px-[12px] rounded-[8px] border border-[#D0D0D0] text-[14px] text-[#3E2D1D] placeholder:text-[#B5B0A8] outline-none focus:border-[#764D2F] transition-colors`}
-              />
+            <ModalField label="Link to Property (optional)" labelClassName={invoiceModalLabelClass} labelStyle={invoiceModalLabelStyle}>
+              <Select value={propertyId || '__none'} onValueChange={(val) => setPropertyId(val === '__none' ? '' : val)}>
+                <SelectTrigger className={`w-full !text-[#333] ${invoiceSelectTriggerBase}`} style={{ fontFamily: "'Figtree', sans-serif" }}>
+                  <SelectValue placeholder="None" />
+                </SelectTrigger>
+                <SelectContent className={invoiceSelectContentBase}>
+                  <SelectItem value="__none" className={invoiceSelectItemBase} style={{ fontFamily: "'SF Pro', -apple-system, sans-serif", fontWeight: 510 }}>
+                    None
+                  </SelectItem>
+                  {properties.map(p => (
+                    <SelectItem key={p.id} value={p.id} className={invoiceSelectItemBase} style={{ fontFamily: "'SF Pro', -apple-system, sans-serif", fontWeight: 510 }}>
+                      {p.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </ModalField>
 
-            <ModalField label="Notes (optional)">
+            <ModalField label="Tags" labelClassName={invoiceModalLabelClass} labelStyle={invoiceModalLabelStyle}>
+              <div className="w-full min-h-[46px] bg-white border border-[#D0D0D0] rounded-[8px] px-[10px] py-[8px] focus-within:border-[#764D2F] transition-colors">
+                {tags.length > 0 && (
+                  <div className="flex flex-wrap gap-[6px] mb-[6px]">
+                    {tags.map(tag => (
+                      <span key={tag} className="inline-flex items-center gap-[6px] h-[26px] px-[10px] rounded-[100px] bg-[#F3EFE6] text-[#764D2F] text-[12px]" style={{ fontFamily: "'SF Pro', -apple-system, sans-serif", fontWeight: 510 }}>
+                        {tag}
+                        <button type="button" onClick={() => removeTag(tag)} className="text-[#8C8780] hover:text-[#3E2D1D] cursor-pointer">
+                          <X className="w-[12px] h-[12px]" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <input
+                  value={tagInput}
+                  onChange={e => setTagInput(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' || e.key === ',') {
+                      e.preventDefault();
+                      addTag(tagInput);
+                    }
+                    if (e.key === 'Backspace' && !tagInput && tags.length > 0) {
+                      removeTag(tags[tags.length - 1]);
+                    }
+                  }}
+                  placeholder={tags.length === 0 ? "Add a tag and press Enter" : "Add another tag"}
+                  className="w-full bg-transparent text-[14px] text-[#333] placeholder:text-[#767676] outline-none"
+                  style={{ fontFamily: "'Figtree', sans-serif" }}
+                />
+              </div>
+              <div className="flex flex-wrap gap-[6px] mt-[8px]">
+                {POPULAR_TAGS.filter(t => !tags.includes(t)).map(t => (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => addTag(t)}
+                    className="h-[24px] px-[10px] rounded-[100px] bg-[#FCF6F0] text-[#764D2F] text-[11px] cursor-pointer hover:bg-[#F3EFE6] transition-colors"
+                    style={{ fontFamily: "'SF Pro', -apple-system, sans-serif", fontWeight: 510 }}
+                  >
+                    {t}
+                  </button>
+                ))}
+              </div>
+            </ModalField>
+
+            <ModalField label="Notes (optional)" labelClassName={invoiceModalLabelClass} labelStyle={invoiceModalLabelStyle}>
               <textarea
                 value={notes}
                 onChange={e => setNotes(e.target.value)}
                 placeholder="Additional notes about this document..."
                 rows={2}
-                className={`${figtree} w-full px-[12px] py-[10px] rounded-[8px] border border-[#D0D0D0] text-[14px] text-[#3E2D1D] placeholder:text-[#B5B0A8] outline-none focus:border-[#764D2F] resize-none transition-colors`}
+                className="w-full bg-white border border-[#D0D0D0] rounded-[8px] px-[12px] py-[10px] text-[14px] text-[#333] placeholder:text-[#767676] outline-none focus:border-[#764D2F] resize-none transition-colors"
+                style={{ fontFamily: "'Figtree', sans-serif" }}
               />
             </ModalField>
           </div>
@@ -1536,7 +1731,7 @@ function ShareModal({ onClose, docIds, docs, onCreateLink }: {
     }
   };
 
-  const selectStyle = { backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%238C8780' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`, backgroundPosition: 'right 8px center', backgroundRepeat: 'no-repeat', backgroundSize: '20px', paddingRight: '32px' };
+  const selectStyle = { backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23767676' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`, backgroundPosition: 'right 8px center', backgroundRepeat: 'no-repeat', backgroundSize: '20px', paddingRight: '32px' };
 
   return (
     <motion.div
@@ -1698,8 +1893,6 @@ function FolderModal({ onClose, onCreateFolder }: {
     onClose();
   };
 
-  const selectStyle = { backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%238C8780' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`, backgroundPosition: 'right 8px center', backgroundRepeat: 'no-repeat', backgroundSize: '20px', paddingRight: '32px' };
-
   return (
     <motion.div
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
@@ -1719,34 +1912,40 @@ function FolderModal({ onClose, onCreateFolder }: {
             </button>
           </div>
 
-          <div className="flex flex-col gap-[14px]">
-            <ModalField label="Folder Name">
+          <div className="flex flex-col gap-[20px]">
+            <ModalField label="Folder Name" labelClassName={invoiceModalLabelClass} labelStyle={invoiceModalLabelStyle}>
               <input
                 value={name}
                 onChange={e => setName(e.target.value)}
                 placeholder="e.g. Texas Properties"
-                className={`${figtree} w-full h-[40px] px-[12px] rounded-[8px] border border-[#D0D0D0] text-[14px] text-[#3E2D1D] placeholder:text-[#B5B0A8] outline-none focus:border-[#764D2F] transition-colors`}
+                className={invoiceModalInputClass}
+                style={{ fontFamily: "'Figtree', sans-serif" }}
                 autoFocus
               />
             </ModalField>
 
-            <ModalField label="Category">
-              <select
-                value={category}
-                onChange={e => setCategory(e.target.value as VaultCategory)}
-                className={`${figtree} w-full h-[40px] px-[12px] rounded-[8px] border border-[#D0D0D0] text-[14px] text-[#3E2D1D] outline-none focus:border-[#764D2F] bg-white cursor-pointer appearance-none`}
-                style={selectStyle}
-              >
-                {[...DEFAULT_CATEGORIES, 'Custom' as VaultCategory].map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
+            <ModalField label="Category" labelClassName={invoiceModalLabelClass} labelStyle={invoiceModalLabelStyle}>
+              <Select value={category} onValueChange={(val) => setCategory(val as VaultCategory)}>
+                <SelectTrigger className={`w-full !text-[#333] ${invoiceSelectTriggerBase}`} style={{ fontFamily: "'Figtree', sans-serif" }}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className={invoiceSelectContentBase}>
+                  {[...DEFAULT_CATEGORIES, 'Custom' as VaultCategory].map(c => (
+                    <SelectItem key={c} value={c} className={invoiceSelectItemBase} style={{ fontFamily: "'SF Pro', -apple-system, sans-serif", fontWeight: 510 }}>
+                      <CategorySelectItemLabel category={c} />
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </ModalField>
 
-            <ModalField label="Description (optional)">
+            <ModalField label="Description (optional)" labelClassName={invoiceModalLabelClass} labelStyle={invoiceModalLabelStyle}>
               <input
                 value={description}
                 onChange={e => setDescription(e.target.value)}
                 placeholder="What goes in this folder?"
-                className={`${figtree} w-full h-[40px] px-[12px] rounded-[8px] border border-[#D0D0D0] text-[14px] text-[#3E2D1D] placeholder:text-[#B5B0A8] outline-none focus:border-[#764D2F] transition-colors`}
+                className={invoiceModalInputClass}
+                style={{ fontFamily: "'Figtree', sans-serif" }}
               />
             </ModalField>
           </div>
@@ -1769,10 +1968,22 @@ function FolderModal({ onClose, onCreateFolder }: {
 }
 
 /* ─── Helper: Modal Field Wrapper ─── */
-function ModalField({ label, children }: { label: string; children: React.ReactNode }) {
+function ModalField({
+  label,
+  children,
+  labelClassName,
+  labelStyle,
+}: {
+  label: string;
+  children: React.ReactNode;
+  labelClassName?: string;
+  labelStyle?: React.CSSProperties;
+}) {
   return (
     <div>
-      <label className="block text-[12px] text-[#8C8780] mb-[6px]" style={{ fontWeight: 590, letterSpacing: '0.3px' }}>{label}</label>
+      <label className={labelClassName || "block text-[12px] text-[#8C8780] mb-[6px]"} style={labelStyle || { fontWeight: 590, letterSpacing: '0.3px' }}>
+        {label}
+      </label>
       {children}
     </div>
   );
