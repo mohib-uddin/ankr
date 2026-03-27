@@ -1,850 +1,410 @@
-import { useState, useEffect } from "react";
-import { useParams } from "react-router";
+import React, { useEffect, useMemo, useState } from 'react';
+import { useParams } from 'react-router';
+import { Pie, PieChart, ResponsiveContainer, Cell } from 'recharts';
 import {
-  PieChart,
-  Pie,
-  Cell,
-  ResponsiveContainer,
-} from "recharts";
-import svgPaths from "../../../imports/svg-f8fnncugof";
-import imgProperty from "@/assets/e9d78759a04046f1991fda88e44b64c28f7e866d.png";
-import type { AppState } from "../../context/AppContext";
+  DOCUMENT_PACKAGES,
+  formatCurrency,
+  getBudgetTotals,
+  getDrawnForCategory,
+  type AppState,
+  type DashboardProperty,
+  type DrawRequest,
+} from '../../context/AppContext';
 
-const STORAGE_KEY = "ankr_v2_state";
+const STORAGE_KEY = 'ankr_v2_state';
+const BUDGET_PIE_COLORS = ['#3E2D1D', '#764D2F', '#A67B5B', '#C7AF97', '#E8DFD4'];
+const canelaClass = "font-['Canela_Text_Trial',sans-serif] font-medium not-italic";
+const metricIconRequest = '/src/assets/figma/public-draw-share/metric-icon-request.svg';
+const metricIconLender = '/src/assets/figma/public-draw-share/metric-icon-lender.svg';
+const metricIconLineItems = '/src/assets/figma/public-draw-share/metric-icon-line-items.svg';
+const metricIconBudget = '/src/assets/figma/public-draw-share/metric-icon-budget.svg';
+const drawPackageIcon = '/src/assets/figma/public-draw-share/draw-package-icon.svg';
+const docFileIcon = '/src/assets/figma/public-draw-share/doc-file-icon.svg';
+const docViewIcon = '/src/assets/figma/public-draw-share/doc-view-icon.svg';
+const docDownloadIcon = '/src/assets/figma/public-draw-share/doc-download-icon.svg';
+const headerPrintIcon = '/src/assets/figma/public-draw-share/header-print-icon.svg';
+const headerLocationIcon = '/src/assets/figma/public-draw-share/header-location-icon.svg';
 
-function toSafeNumber(value: unknown): number {
-  if (typeof value === "number" && Number.isFinite(value)) return value;
-  if (typeof value === "string") {
-    const parsed = Number(value.replace(/,/g, ""));
-    return Number.isFinite(parsed) ? parsed : 0;
-  }
-  return 0;
-}
+type DrawStep = { label: string; date: string; complete: boolean };
 
-/* ═══════════════════════════════════════════════════════════════════ */
-/*  Helper Functions                                                 */
-/* ═══════════════════════════════════════════════════════════════════ */
-
-export function getShareUrl(
-  propertyId: string,
-  drawId: string,
-): string {
-  // Generate a shareable URL for the draw
-  // In production, this would be a secure token
-  const token = btoa(`${propertyId}:${drawId}`); // Simple base64 encoding for demo
+export function getShareUrl(propertyId: string, drawId: string): string {
+  const token = btoa(`${propertyId}:${drawId}`);
   return `${window.location.origin}/share/draw/${token}`;
 }
 
-/* ═══════════════════════════════════════════════════════════════════ */
-/*  Main Component                                                   */
-/* ═══════════════════════════════════════════════════════════════════ */
+function resolveSharedDraw(parsedState: AppState, token?: string): { property: DashboardProperty | null; draw: DrawRequest | null } {
+  if (!parsedState.properties.length) return { property: null, draw: null };
+  if (!token) {
+    const property = parsedState.properties[0] ?? null;
+    return { property, draw: property?.draws?.[0] ?? null };
+  }
+
+  try {
+    const [propertyId, drawId] = atob(token).split(':');
+    const property = parsedState.properties.find((p) => p.id === propertyId) ?? null;
+    const draw = property?.draws.find((d) => d.id === drawId) ?? null;
+    if (property && draw) return { property, draw };
+  } catch {
+    // Keep fallback behavior for invalid or old tokens.
+  }
+
+  const fallbackProperty = parsedState.properties[0] ?? null;
+  return { property: fallbackProperty, draw: fallbackProperty?.draws?.[0] ?? null };
+}
 
 export function PublicDrawView() {
   const { token } = useParams<{ token: string }>();
-  const [state, setState] = useState<AppState | null>(null);
-  const [property, setProperty] = useState<any>(null);
-  const [draw, setDraw] = useState<any>(null);
+  const [property, setProperty] = useState<DashboardProperty | null>(null);
+  const [draw, setDraw] = useState<DrawRequest | null>(null);
 
   useEffect(() => {
-    // Load state from localStorage
     const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      const parsedState = JSON.parse(stored) as AppState;
-      setState(parsedState);
+    if (!stored) return;
 
-      // Find property and draw
-      // In a real app, you'd decode the token to get property/draw IDs
-      // For now, use the first property and first draw as a demo
-      const prop = parsedState.properties[0];
-      const drw = prop?.draws?.[0];
-
-      if (prop && drw) {
-        setProperty(prop);
-        setDraw(drw);
-      }
-    }
+    const parsedState = JSON.parse(stored) as AppState;
+    const shared = resolveSharedDraw(parsedState, token);
+    setProperty(shared.property);
+    setDraw(shared.draw);
   }, [token]);
+
+  const budgetRows = useMemo(() => {
+    if (!property) return [];
+    return property.budget.categories
+      .map((cat) => {
+        const budget = cat.items.reduce((s, i) => s + i.budget, 0);
+        const drawn = getDrawnForCategory(cat.id, property.draws);
+        if (!budget) return null;
+        const pct = Math.round((drawn / budget) * 100);
+        return { id: cat.id, name: cat.name, budget, drawn, pct };
+      })
+      .filter(Boolean) as { id: string; name: string; budget: number; drawn: number; pct: number }[];
+  }, [property]);
 
   if (!property || !draw) {
     return (
-      <div className="min-h-screen bg-[#F8F6F1] flex items-center justify-center">
-        <p className="text-[#8C8780] text-[16px]">
-          Loading draw information...
-        </p>
+      <div className="min-h-screen bg-[#FCF6F0] flex items-center justify-center">
+        <p className="text-[#8C8780] text-[16px]">Loading draw information...</p>
       </div>
     );
   }
 
-  // Calculate totals
-  const lineItems = draw.lineItems || [];
-  const totalAmount = lineItems.reduce(
-    (sum: number, item: any) => sum + toSafeNumber(item?.amount),
-    0,
-  );
-
-  // Budget tracker data
-  const budgetData = [
-    { name: "Site Work", value: 430000, color: "#764D2F" },
-    { name: "Financing", value: 800000, color: "#A67B5B" },
-    { name: "Land", value: 865000, color: "#C7AF97" },
-    { name: "Site Work", value: 261000, color: "#D9C4B0" },
-    { name: "Soft Costs", value: 340000, color: "#E5D7C8" },
+  const totals = getBudgetTotals(property.budget, property.draws);
+  const drawPercent = totals.totalBudget > 0 ? Math.round((totals.totalDrawn / totals.totalBudget) * 100) : 0;
+  const drawSteps: DrawStep[] = [
+    { label: 'Created', date: draw.requestDate, complete: true },
+    { label: 'Submitted', date: draw.submittedDate || draw.requestDate, complete: draw.status !== 'Draft' },
     {
-      name: "Building Hard Costs",
-      value: 8470000,
-      color: "#EFE6DB",
+      label: draw.status === 'Rejected' ? 'Rejected' : 'Approved',
+      date: draw.status === 'Rejected' ? draw.submittedDate || '' : draw.approvedDate || '',
+      complete: draw.status === 'Approved' || draw.status === 'Funded' || draw.status === 'Rejected',
     },
-    { name: "Soft Costs", value: 2026000, color: "#F5EEE7" },
-    { name: "Contingency", value: 75000, color: "#F9F5F0" },
+    { label: 'Funded', date: draw.fundedDate || '', complete: draw.status === 'Funded' },
   ];
-  const totalBudget = budgetData.reduce(
-    (sum, item) => sum + item.value,
-    0,
-  );
+
+  const docPackage = draw.documentPackageId ? DOCUMENT_PACKAGES.find((d) => d.id === draw.documentPackageId) : null;
+
+  const pieData = budgetRows.map((row) => ({ name: row.name, value: row.budget }));
 
   return (
-    <div className="min-h-screen bg-[#F8F6F1]">
-      {/* Dark Brown Header */}
-      <div className="bg-[#3e2d1d] content-stretch flex flex-col items-start pb-[80px] pt-[40px] px-4 sm:px-8 md:px-12 lg:px-[80px] w-full">
-        <div className="content-stretch flex flex-col gap-[60px] items-center relative shrink-0 w-full max-w-[1352px] mx-auto">
-          {/* Top Bar: Logo + Buttons */}
-          <div className="content-stretch flex flex-col sm:flex-row items-start sm:items-center justify-between relative shrink-0 w-full gap-4">
-            <p className="font-['Cormorant_Garamond',sans-serif] leading-[32.146px] not-italic relative shrink-0 text-[32.78px] text-center text-white tracking-[1.3112px] whitespace-nowrap">
+    <div className="min-h-screen bg-[#FCF6F0]">
+      <section className="bg-[#3E2D1D] px-4 sm:px-6 md:px-8 xl:px-[80px] pt-[24px] sm:pt-[30px] xl:pt-[40px] pb-[44px] sm:pb-[56px] xl:pb-[80px]">
+        <div className="mx-auto max-w-[1352px]">
+          <div className="flex flex-wrap items-start sm:items-center justify-between mb-[28px] sm:mb-[36px] xl:mb-[60px] gap-[10px] sm:gap-[14px]">
+            <p
+              className="text-white text-[24px] leading-[24px] sm:text-[28px] sm:leading-[28px] xl:text-[32.78px] xl:leading-[32.146px] tracking-[1.3112px] whitespace-nowrap"
+              style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 700 }}
+            >
               ANKR
             </p>
-            <div className="content-stretch flex gap-[16px] items-center relative shrink-0">
-              {/* Print Button */}
+            <div className="flex flex-wrap items-center justify-end gap-[8px] sm:gap-[12px] xl:gap-[16px]">
               <button
-                className="content-stretch flex gap-[10px] h-[50px] items-center justify-center px-[28px] py-[10px] relative rounded-[8px] shrink-0 cursor-pointer hover:bg-[rgba(255,255,255,0.1)] transition-colors"
                 onClick={() => window.print()}
+                className="inline-flex h-[38px] sm:h-[44px] xl:h-[50px] items-center gap-[6px] sm:gap-[8px] xl:gap-[10px] rounded-[8px] border-[1.5px] border-white px-[12px] sm:px-[18px] xl:px-[28px] py-[6px] sm:py-[8px] xl:py-[10px] text-white hover:bg-white/10"
               >
-                <div
-                  aria-hidden="true"
-                  className="absolute border-[1.5px] border-solid border-white inset-0 pointer-events-none rounded-[8px]"
-                />
-                <div className="relative shrink-0 size-[24px]">
-                  <svg
-                    className="absolute block size-full"
-                    fill="none"
-                    preserveAspectRatio="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <path d={svgPaths.p3534d100} fill="white" />
-                  </svg>
-                </div>
-                <p
-                  className="font-['SF_Pro',sans-serif] font-[590] leading-[normal] relative shrink-0 text-[16px] text-white whitespace-nowrap hidden sm:block"
-                  style={{
-                    fontVariationSettings: "'wdth' 100",
-                  }}
-                >
+                <img src={headerPrintIcon} alt="" className="size-[14px] sm:size-[18px] xl:size-[24px]" />
+                <span className="text-[12px] sm:text-[14px] xl:text-[16px] leading-none" style={{ fontWeight: 590 }}>
                   Print
-                </p>
+                </span>
               </button>
-              {/* Read Only Badge */}
-              <div className="bg-[rgba(255,239,223,0.4)] content-stretch flex gap-[10px] items-center justify-center px-[16px] py-[4px] relative rounded-[100px] shrink-0">
-                <div className="overflow-clip relative shrink-0 size-[24px]">
-                  <div className="absolute inset-[20.83%_8.33%]">
-                    <div className="absolute inset-[-5.36%_-3.75%]">
-                      <svg
-                        className="block size-full"
-                        fill="none"
-                        preserveAspectRatio="none"
-                        viewBox="0 0 21.5 15.5"
-                      >
-                        <path
-                          d={svgPaths.p1de46000}
-                          stroke="white"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="1.5"
-                        />
-                        <path
-                          d={svgPaths.p32ffcf80}
-                          stroke="white"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="1.5"
-                        />
-                      </svg>
-                    </div>
-                  </div>
-                </div>
-                <p
-                  className="font-['SF_Pro',sans-serif] font-[510] leading-[normal] relative shrink-0 text-[16px] text-white whitespace-nowrap hidden sm:block"
-                  style={{
-                    fontVariationSettings: "'wdth' 100",
-                  }}
-                >
+              <div className="inline-flex items-center gap-[6px] sm:gap-[8px] xl:gap-[10px] rounded-[100px] bg-[rgba(255,239,223,0.4)] px-[10px] sm:px-[12px] xl:px-[16px] py-[4px] text-white">
+                <HeaderEyeIcon className="size-[14px] sm:size-[18px] xl:size-[24px]" />
+                <span className="text-[12px] sm:text-[14px] xl:text-[16px] leading-none whitespace-nowrap" style={{ fontWeight: 510 }}>
                   Read Only
-                </p>
+                </span>
               </div>
             </div>
           </div>
 
-          {/* Property Info Section */}
-          <div className="content-stretch flex flex-col lg:flex-row gap-[32px] items-start relative shrink-0 w-full">
-            {/* Property Image */}
-            <div className="h-[261.416px] relative shrink-0 w-full lg:w-[364.015px]">
-              <div className="absolute h-[261.416px] left-0 rounded-[14.055px] top-0 w-full lg:w-[364.015px]">
-                <div
-                  aria-hidden="true"
-                  className="absolute inset-0 pointer-events-none rounded-[14.055px]"
-                >
-                  <img
-                    alt=""
-                    className="absolute max-w-none object-cover rounded-[14.055px] size-full"
-                    src={property.coverImage || imgProperty}
-                  />
-                  <div className="absolute bg-gradient-to-b from-1/2 from-[rgba(0,0,0,0)] inset-0 rounded-[14.055px] to-[83.871%] to-black" />
-                </div>
-              </div>
-              <p className="absolute font-['Canela_Text_Trial',sans-serif] font-medium leading-[normal] left-[16.86px] not-italic text-[25.298px] text-white top-[188.33px] whitespace-nowrap">
-                {property.name}
-              </p>
+          <div className="grid grid-cols-1 md:grid-cols-[320px_1fr] xl:flex gap-[20px] sm:gap-[24px] xl:gap-[32px] xl:items-start">
+            <div className="w-full h-[190px] sm:h-[220px] md:h-[230px] xl:h-[261.416px] max-w-full md:max-w-[320px] xl:max-w-[364.015px] rounded-[10px] xl:rounded-[14.055px] overflow-hidden relative shrink-0">
+              {property.coverImage ? (
+                <>
+                  <img src={property.coverImage} alt={property.name} className="absolute inset-0 w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/90" />
+                </>
+              ) : (
+                <div className="absolute inset-0 bg-[#5A3A21]" />
+              )}
+              <p className={`${canelaClass} absolute left-[12px] sm:left-[14px] xl:left-[16.86px] bottom-[10px] sm:bottom-[12px] xl:bottom-[16px] text-[20px] sm:text-[24px] xl:text-[30px] text-white leading-none max-w-[90%] truncate`}>{property.name}</p>
             </div>
 
-            {/* Middle: Draw Info */}
-            <div className="flex-1 w-full min-w-0">
-              <div className="content-stretch flex gap-[32px] items-start pl-0 lg:pl-[16px] pr-0 lg:pr-[32px] relative w-full">
-                <div className="content-stretch flex flex-col gap-[32px] items-start relative shrink-0 w-full lg:w-[477px]">
-                  {/* Draw # Badge */}
-                  <div className="bg-[rgba(255,239,223,0.1)] content-stretch flex items-center justify-center px-[16px] py-[8px] relative rounded-[100px] shrink-0">
-                    <div
-                      aria-hidden="true"
-                      className="absolute border border-[#ffbf7e] border-solid inset-0 pointer-events-none rounded-[100px]"
-                    />
-                    <p
-                      className="font-['SF_Pro',sans-serif] font-[510] leading-[normal] relative shrink-0 text-[#ffbf7e] text-[14px] whitespace-nowrap"
-                      style={{
-                        fontVariationSettings: "'wdth' 100",
-                      }}
-                    >
-                      {draw.title}
-                    </p>
-                  </div>
-
-                  {/* Title + Address */}
-                  <div className="content-stretch flex flex-col gap-[9px] items-start relative shrink-0 w-full">
-                    <div className="content-stretch flex flex-col gap-[8px] items-start relative shrink-0 w-full">
-                      <p className="font-['Canela_Text_Trial',sans-serif] font-medium leading-[50px] not-italic relative shrink-0 text-[36px] sm:text-[48px] text-white w-full">
-                        {draw.category || "Draw Request"}
-                      </p>
-                      <div className="content-stretch flex gap-[6px] items-center relative shrink-0">
-                        <div className="overflow-clip relative shrink-0 size-[20px]">
-                          <div className="absolute inset-[8.33%_12.5%_9.64%_12.5%]">
-                            <svg
-                              className="absolute block size-full"
-                              fill="none"
-                              preserveAspectRatio="none"
-                              viewBox="0 0 15 16.4049"
-                            >
-                              <path
-                                clipRule="evenodd"
-                                d={svgPaths.p36ed300}
-                                fill="#FFB680"
-                                fillRule="evenodd"
-                              />
-                              <path
-                                clipRule="evenodd"
-                                d={svgPaths.p12b38500}
-                                fill="#FFB680"
-                                fillRule="evenodd"
-                              />
-                            </svg>
-                          </div>
-                        </div>
-                        <p
-                          className="font-['SF_Pro',sans-serif] font-[510] leading-[normal] relative shrink-0 text-[#ffb680] text-[16px]"
-                          style={{
-                            fontVariationSettings: "'wdth' 100",
-                          }}
-                        >
-                          {property.address}, {property.city},{" "}
-                          {property.state}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Stepper */}
-                  <div className="content-stretch flex items-start justify-center relative shrink-0 w-full overflow-x-auto">
-                    <DrawStepper
-                      status={draw.status}
-                      requestDate={draw.requestDate}
-                    />
-                  </div>
+            <div className="min-w-0 xl:flex-1 xl:pr-[32px]">
+              <div className="md:flex md:items-start md:justify-between md:gap-[18px]">
+                <div className="min-w-0">
+                  <span className="inline-flex items-center rounded-[100px] border border-[#FFBF7E] bg-[rgba(255,239,223,0.1)] px-[12px] sm:px-[14px] xl:px-[16px] py-[6px] sm:py-[7px] xl:py-[8px] text-[#FFBF7E] text-[12px] sm:text-[13px] xl:text-[14px] leading-none">
+                Draw #{draw.number}
+                  </span>
+                  <h1 className={`${canelaClass} text-[30px] leading-[1.08] sm:text-[36px] sm:leading-[1.06] md:text-[38px] md:leading-[1.05] xl:text-[48px] xl:leading-[50px] text-white mt-[8px] break-words`}>{draw.title}</h1>
+                  <p className="mt-[6px] text-[#FFB680] text-[13px] sm:text-[15px] xl:text-[16px] flex items-center gap-[5px] break-words">
+                    <img src={headerLocationIcon} alt="" className="size-[16px] sm:size-[18px] xl:size-[20px]" />
+                {property.address}, {property.city}, {property.state}
+                  </p>
                 </div>
 
-                {/* Right: Total Amount */}
-                <div className="content-stretch hidden xl:flex flex-col items-end justify-center min-h-[186px] relative text-center whitespace-nowrap ml-auto">
-                  <p
-                    className="font-['SF_Pro',sans-serif] font-[510] leading-[normal] relative shrink-0 text-[#ffb680] text-[16px]"
-                    style={{
-                      fontVariationSettings: "'wdth' 100",
-                    }}
-                  >
+                <div className="hidden md:block xl:hidden shrink-0 text-right pt-[6px]">
+                  <p className="text-[#FFB680] text-[14px]" style={{ fontWeight: 510 }}>
                     Total Draw Amount
                   </p>
-                  <p
-                    className="font-['SF_Pro',sans-serif] font-bold leading-[61px] relative shrink-0 text-[48px] text-white"
-                    style={{
-                      fontVariationSettings: "'wdth' 100",
-                    }}
-                  >
-                    $
-                    {Math.round(
-                      toSafeNumber(totalAmount) / 1000,
-                    ).toLocaleString()}
-                    K
+                  <p className="text-white text-[34px] leading-[1.05]" style={{ fontWeight: 700 }}>
+                    {formatCurrency(draw.totalAmount)}
                   </p>
                 </div>
               </div>
-            </div>
-          </div>
 
-          {/* Total Amount - Mobile */}
-          <div className="xl:hidden content-stretch flex flex-col items-center justify-center relative text-center whitespace-nowrap w-full">
-            <p
-              className="font-['SF_Pro',sans-serif] font-[510] leading-[normal] relative shrink-0 text-[#ffb680] text-[16px]"
-              style={{ fontVariationSettings: "'wdth' 100" }}
-            >
-              Total Draw Amount
-            </p>
-            <p
-              className="font-['SF_Pro',sans-serif] font-bold leading-[61px] relative shrink-0 text-[48px] text-white"
-              style={{ fontVariationSettings: "'wdth' 100" }}
-            >
-              ${Math.round(toSafeNumber(totalAmount) / 1000).toLocaleString()}
-              K
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Content Area */}
-      <div className="content-stretch flex flex-col items-center px-4 sm:px-8 md:px-12 lg:px-[80px] py-[40px] relative w-full">
-        <div className="content-stretch flex flex-col gap-[24px] items-start relative shrink-0 w-full max-w-[1352px]">
-          {/* Info Cards Row */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-[16px] w-full">
-            <InfoCard
-              icon="wallet"
-              label="Request Date"
-              value={new Date(
-                draw.requestDate,
-              ).toLocaleDateString()}
-            />
-            <InfoCard
-              icon="bank"
-              label="Lender"
-              value={property.proforma?.lenderName || "N/A"}
-            />
-            <InfoCard
-              icon="layers"
-              label="Categories"
-              value={`${lineItems.length} categories`}
-            />
-            <InfoCard
-              icon="percent"
-              label="Status"
-              value={draw.status}
-            />
-          </div>
-
-          {/* Draw Line Items */}
-          <DrawLineItemsCard lineItems={lineItems} />
-
-          {/* Standard Draw Package */}
-          <StandardDrawPackageCard
-            packageType={draw.documentPackage}
-          />
-
-          {/* Budget Tracker */}
-          <BudgetTrackerCard
-            data={budgetData}
-            totalBudget={totalBudget}
-          />
-
-          {/* Notes */}
-          {draw.notes && <NotesCard notes={draw.notes} />}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ═══════════════════════════════════════════════════════════════════ */
-/*  Draw Stepper Component                                           */
-/* ═══════════════════════════════════════════════════════════════════ */
-
-function DrawStepper({
-  status,
-  requestDate,
-}: {
-  status: string;
-  requestDate: string;
-}) {
-  const steps = [
-    { label: "Created", completed: true, date: requestDate },
-    {
-      label: "Submitted",
-      completed: ["Submitted", "Approved", "Funded"].includes(
-        status,
-      ),
-      date: requestDate,
-    },
-    {
-      label: "Approved",
-      completed: ["Approved", "Funded"].includes(status),
-      date: requestDate,
-    },
-    {
-      label: "Funded",
-      completed: status === "Funded",
-      date: requestDate,
-    },
-  ];
-
-  return (
-    <div className="content-stretch flex items-start justify-center relative shrink-0">
-      {steps.map((step, idx) => (
-        <div
-          key={idx}
-          className="content-stretch flex items-start relative shrink-0"
-        >
-          {/* Step */}
-          <div className="content-stretch flex flex-col gap-[7.31px] items-center relative shrink-0">
-            <div className="relative shrink-0 size-[40.204px]">
-              <svg
-                className="absolute block size-full"
-                fill="none"
-                preserveAspectRatio="none"
-                viewBox="0 0 40.2048 40.2045"
-              >
-                <circle
-                  cx="20.1027"
-                  cy="20.1022"
-                  r="19.1884"
-                  stroke="white"
-                  strokeWidth="1.82747"
-                />
-                {step.completed && (
-                  <path
-                    d="M13.3505 20.5444L17.548 24.7419L25.9429 15.7473"
-                    stroke="white"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="1.97024"
-                  />
-                )}
-              </svg>
-            </div>
-            <div className="content-stretch flex flex-col font-['Montserrat',sans-serif] font-medium gap-[5.318px] items-center leading-[normal] relative shrink-0 text-center">
-              <p className="relative shrink-0 text-[14px] sm:text-[16px] text-white whitespace-nowrap">
-                {step.label}
-              </p>
-              <p className="relative shrink-0 text-[#ffb680] text-[12px] sm:text-[14px] whitespace-nowrap">
-                {step.date}
-              </p>
-            </div>
-          </div>
-          {/* Trail */}
-          {idx < steps.length - 1 && (
-            <div className="content-stretch flex flex-col items-start pb-[13.706px] pt-[18.275px] relative shrink-0 w-[40px] sm:w-[61.525px]">
-              <div className="bg-[#d3b597] h-[1.827px] shrink-0 w-full" />
-            </div>
-          )}
-        </div>
-      ))}
-    </div>
-  );
-}
-
-/* ═══════════════════════════════════════════════════════════════════ */
-/*  Info Card Component                                              */
-/* ═══════════════════════════════════════════════════════════════════ */
-
-function InfoCard({
-  icon,
-  label,
-  value,
-}: {
-  icon: string;
-  label: string;
-  value: string;
-}) {
-  const getIcon = () => {
-    switch (icon) {
-      case "wallet":
-        return (
-          <svg
-            className="absolute block size-full"
-            fill="none"
-            preserveAspectRatio="none"
-            viewBox="0 0 17.5 15.75"
-          >
-            <path d={svgPaths.pc6b3970} fill="#764D2F" />
-            <path d={svgPaths.p4011680} fill="#764D2F" />
-            <path
-              clipRule="evenodd"
-              d={svgPaths.p112cca80}
-              fill="#764D2F"
-              fillRule="evenodd"
-            />
-            <path d={svgPaths.p2a67df0} fill="#764D2F" />
-          </svg>
-        );
-      case "bank":
-      case "layers":
-        return (
-          <svg
-            className="absolute block size-full"
-            fill="none"
-            preserveAspectRatio="none"
-            viewBox="0 0 14.8994 14.8984"
-          >
-            <path
-              clipRule="evenodd"
-              d={svgPaths.p74d3600}
-              fill="#764D2F"
-              fillRule="evenodd"
-            />
-            <path d={svgPaths.p292c4700} fill="#764D2F" />
-            <path d={svgPaths.p72e8a00} fill="#764D2F" />
-          </svg>
-        );
-      case "percent":
-        return (
-          <svg
-            className="absolute block size-full"
-            fill="none"
-            preserveAspectRatio="none"
-            viewBox="0 0 6.5625 14.9501"
-          >
-            <path d={svgPaths.p385cc600} fill="#764D2F" />
-          </svg>
-        );
-      default:
-        return null;
-    }
-  };
-
-  return (
-    <div className="bg-white relative rounded-[16px] self-stretch">
-      <div className="flex flex-row items-center overflow-clip rounded-[inherit] size-full">
-        <div className="content-stretch flex items-center px-[28px] py-[20px] relative size-full">
-          <div className="content-stretch flex flex-col gap-[16px] items-start justify-center relative w-full">
-            <div className="bg-[#fcf6f0] content-stretch flex items-center p-[8.5px] relative rounded-[6px] shrink-0">
-              <div className="overflow-clip relative shrink-0 size-[21px]">
-                <div className="absolute inset-[8.33%_8.33%_16.67%_8.33%]">
-                  {getIcon()}
+              <div className="mt-[14px] sm:mt-[16px] lg:mt-[20px] flex items-start gap-[0px] overflow-x-auto pb-[6px]">
+                <div className="flex items-start min-w-max">
+                {drawSteps.map((step, idx) => (
+                  <div key={step.label} className="flex items-start shrink-0">
+                    <div className="flex flex-col items-center w-[68px] sm:w-[74px] xl:w-[82.236px]">
+                      <div
+                        className={`size-[32px] sm:size-[36px] xl:size-[40.204px] rounded-full border ${step.complete ? 'bg-transparent border-[#FCF6F0]' : 'bg-transparent border-[#D3B597]'} flex items-center justify-center`}
+                      >
+                        {step.complete && <span className="text-[16px] sm:text-[18px] xl:text-[20px] text-[#FCF6F0] leading-none">✓</span>}
+                      </div>
+                      <p className="text-[12px] sm:text-[14px] xl:text-[16px] mt-[5px] sm:mt-[6px] xl:mt-[7.31px] text-white leading-none">{step.label}</p>
+                      <p className="text-[10px] sm:text-[12px] xl:text-[14px] mt-[3px] sm:mt-[4px] xl:mt-[5.318px] text-[#FFB680] leading-none">{step.date}</p>
+                    </div>
+                    {idx < drawSteps.length - 1 && <div className="mt-[15px] sm:mt-[16px] xl:mt-[18.275px] w-[34px] sm:w-[46px] xl:w-[61.525px] h-[1px] xl:h-[1.827px] bg-[#D3B597]" />}
+                  </div>
+                ))}
                 </div>
               </div>
             </div>
-            <div className="content-stretch flex flex-col gap-[8px] items-start relative shrink-0 w-full">
-              <p
-                className="font-['SF_Pro',sans-serif] font-[510] leading-[normal] relative shrink-0 text-[#764d2f] text-[14px] w-full"
-                style={{ fontVariationSettings: "'wdth' 100" }}
-              >
-                {label}
+
+            <div className="text-left sm:text-right hidden xl:flex xl:text-right xl:shrink-0 xl:h-[186px] xl:flex-col xl:justify-center">
+              <p className="text-[#FFB680] text-[16px]" style={{ fontWeight: 510 }}>
+                Total Draw Amount
               </p>
-              <div className="content-stretch flex items-center relative shrink-0 w-full">
-                <p
-                  className="font-['SF_Pro','Noto_Sans:Bold',sans-serif] font-bold leading-[normal] relative shrink-0 text-[#3e2d1d] text-[20px] truncate"
-                  style={{
-                    fontVariationSettings: "'wdth' 100",
-                  }}
-                >
-                  {value}
-                </p>
+              <p className="text-white text-[48px] leading-[61px]" style={{ fontWeight: 700 }}>
+                {formatCurrency(draw.totalAmount)}
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div className="px-4 sm:px-6 lg:px-[58px] pb-[56px] mt-[16px] lg:-mt-[36px]">
+        <div className="mx-auto max-w-[1162px]">
+          <section className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-[16px]">
+            <MetricCard iconSrc={metricIconRequest} label="Request Date" value={draw.requestDate} />
+            <MetricCard iconSrc={metricIconLender} label="Lender" value={draw.lenderName || 'N/A'} />
+            <MetricCard iconSrc={metricIconLineItems} label="Line Items" value={`${draw.lineItems.length} categories`} />
+            <MetricCard iconSrc={metricIconBudget} label="Budget Drawn" value={`${drawPercent}% of total`} />
+          </section>
+
+          <section className="mt-[16px] rounded-[20px] border border-[#D0D0D0] bg-white p-[10px] sm:p-[24px] shadow-[0px_10px_40px_0px_rgba(243,219,188,0.45)]">
+            <h2 className={`${canelaClass} text-[#3E2D1D] text-[24px] mb-[16px]`}>Draw Line Items</h2>
+            <div className="overflow-x-auto rounded-[16px] border border-[#D0D0D0] bg-[#FFFBF6]">
+              <div className="min-w-[860px]">
+                <div className="grid grid-cols-[2fr_1fr_1fr_1fr_1fr] bg-[#FAFAF9] border-b border-[#D0D0D0] px-[20px] py-[10px] text-[#8C8780] text-[11px] uppercase tracking-[0.61px]">
+                  <span>Category</span>
+                  <span>Budget</span>
+                  <span>Prev. Drawn</span>
+                  <span>This Draw</span>
+                  <span className="text-right">% Complete</span>
+                </div>
+                {draw.lineItems.map((li) => {
+                  const pct = li.budgetAmount > 0 ? Math.round((li.requestedAmount / li.budgetAmount) * 100) : 0;
+                  return (
+                    <div key={li.id} className="grid grid-cols-[2fr_1fr_1fr_1fr_1fr] px-[20px] py-[14px] border-b border-[#F5F3EF] text-[14px]">
+                      <div>
+                        <p className="text-[#3E2D1D]" style={{ fontWeight: 510 }}>{li.categoryName}</p>
+                        <p className="text-[#8C8780] text-[12px]">({pct}% of budget)</p>
+                      </div>
+                      <p className="text-[#8C8780]">{formatCurrency(li.budgetAmount)}</p>
+                      <p className="text-[#8C8780]">{formatCurrency(li.previouslyDrawn)}</p>
+                      <p className="text-[#3E2D1D]" style={{ fontWeight: 700 }}>{formatCurrency(li.requestedAmount)}</p>
+                      <p className="text-right text-[#8C8780]">{li.percentComplete}%</p>
+                    </div>
+                  );
+                })}
               </div>
             </div>
-          </div>
-        </div>
-      </div>
-      <div
-        aria-hidden="true"
-        className="absolute border border-[#d0d0d0] border-solid inset-0 pointer-events-none rounded-[16px] shadow-[0px_10px_40px_0px_rgba(243,219,188,0.45)]"
-      />
-    </div>
-  );
-}
+          </section>
 
-/* ══════════════════════════════════════════════════════════════════ */
-/*  Draw Line Items Card                                             */
-/* ═══════════════════════════════════════════════════════════════════ */
+          {docPackage && (
+            <section className="mt-[16px] rounded-[16px] border border-[#D0D0D0] bg-white p-[24px] shadow-[0px_10px_40px_0px_rgba(243,219,188,0.45)]">
+              <div className="mb-[16px] inline-flex items-center justify-center rounded-[6px] bg-[#FCF6F0] p-[8.5px]">
+                <img src={drawPackageIcon} alt="" className="size-[21px]" />
+              </div>
+              <h3 className="text-[#3E2D1D] text-[20px]" style={{ fontWeight: 590 }}>
+                {docPackage.name}
+              </h3>
+              <p className="text-[#8C8780] text-[13px] mt-[4px]">{docPackage.description}</p>
+              <div className="mt-[12px] flex flex-wrap gap-[8px]">
+                {docPackage.documents.slice(0, 3).map((doc) => (
+                  <span key={doc} className="rounded-[100px] bg-[#FCF6F0] px-[16px] py-[4px] text-[#764D2F] text-[14px]" style={{ fontWeight: 510 }}>
+                    {doc}
+                  </span>
+                ))}
+              </div>
+            </section>
+          )}
 
-function DrawLineItemsCard({
-  lineItems,
-}: {
-  lineItems: any[];
-}) {
-  return (
-    <div className="bg-white relative rounded-[20px] w-full">
-      <div
-        aria-hidden="true"
-        className="absolute border border-[#d0d0d0] border-solid inset-0 pointer-events-none rounded-[20px] shadow-[0px_10px_40px_0px_rgba(243,219,188,0.45)]"
-      />
-      <div className="content-stretch flex flex-col gap-[24px] items-start p-[24px] sm:p-[32px] relative w-full">
-        <p className="font-['Canela_Text_Trial',sans-serif] font-medium leading-[normal] not-italic relative shrink-0 text-[#3e2d1d] text-[24px] sm:text-[28px] whitespace-nowrap">
-          Draw Line Items
-        </p>
-
-        {/* Table */}
-        <div className="w-full overflow-x-auto">
-          <table className="w-full min-w-[600px]">
-            <thead>
-              <tr className="border-b border-[#E8E4DD]">
-                <th
-                  className="font-['SF_Pro',sans-serif] font-[510] text-[#8C8780] text-[12px] text-left pb-[16px] pr-[16px]"
-                  style={{
-                    fontVariationSettings: "'wdth' 100",
-                  }}
-                >
-                  CATEGORY
-                </th>
-                <th
-                  className="font-['SF_Pro',sans-serif] font-[510] text-[#8C8780] text-[12px] text-right pb-[16px]"
-                  style={{
-                    fontVariationSettings: "'wdth' 100",
-                  }}
-                >
-                  AMOUNT
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {lineItems.map((item, idx) => (
-                <tr
-                  key={idx}
-                  className="border-b border-[#F8F6F1] last:border-0"
-                >
-                  <td className="py-[20px] pr-[16px]">
-                    <p
-                      className="font-['SF_Pro',sans-serif] font-bold text-[#3E2D1D] text-[16px]"
-                      style={{
-                        fontVariationSettings: "'wdth' 100",
-                      }}
-                    >
-                      {item.category}
+          <section className="mt-[16px] rounded-[20px] border border-[#D0D0D0] bg-white p-[24px] shadow-[0px_10px_40px_0px_rgba(243,219,188,0.45)]">
+            <h2 className={`${canelaClass} text-[#3E2D1D] text-[24px] mb-[16px]`}>Budget Tracker</h2>
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr_1fr] gap-[30px] items-center">
+              <div className="flex flex-col items-center">
+                <div className="relative h-[280px] w-[280px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={pieData.length ? pieData : [{ name: 'none', value: 1 }]}
+                        dataKey="value"
+                        innerRadius={78}
+                        outerRadius={122}
+                        stroke="#FCF6F0"
+                        strokeWidth={6}
+                      >
+                        {(pieData.length ? pieData : [{ name: 'none', value: 1 }]).map((_, idx) => (
+                          <Cell key={idx} fill={pieData.length ? BUDGET_PIE_COLORS[idx % BUDGET_PIE_COLORS.length] : '#E8DFD4'} />
+                        ))}
+                      </Pie>
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
+                    <p className="text-[#764D2F] text-[17px]">Total Budget</p>
+                    <p className="text-[#3E2D1D] text-[48px] leading-[1]" style={{ fontWeight: 700 }}>
+                      {formatCompactCurrency(totals.totalBudget)}
                     </p>
-                  </td>
-                  <td className="py-[20px] text-right">
-                    <p
-                      className="font-['SF_Pro',sans-serif] font-bold text-[#3E2D1D] text-[16px]"
-                      style={{
-                        fontVariationSettings: "'wdth' 100",
-                      }}
-                    >
-                      ${toSafeNumber(item?.amount).toLocaleString()}
-                    </p>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ═══════════════════════════════════════════════════════════════════ */
-/*  Standard Draw Package Card                                       */
-/* ═══════════════════════════════════════════════════════════════════ */
-
-function StandardDrawPackageCard({
-  packageType,
-}: {
-  packageType?: string;
-}) {
-  return (
-    <div className="bg-white relative rounded-[20px] w-full">
-      <div
-        aria-hidden="true"
-        className="absolute border border-[#d0d0d0] border-solid inset-0 pointer-events-none rounded-[20px] shadow-[0px_10px_40px_0px_rgba(243,219,188,0.45)]"
-      />
-      <div className="content-stretch flex flex-col gap-[16px] items-start p-[24px] sm:p-[32px] relative w-full">
-        <div className="content-stretch flex items-center gap-[12px] relative shrink-0">
-          <div className="bg-[#fcf6f0] content-stretch flex items-center p-[8.5px] relative rounded-[6px] shrink-0">
-            <div className="relative shrink-0 size-[21px]">
-              <svg
-                className="absolute block size-full"
-                fill="none"
-                preserveAspectRatio="none"
-                viewBox="0 0 17.5 16.9297"
-              >
-                <path d={svgPaths.p270d0200} fill="#764D2F" />
-              </svg>
-            </div>
-          </div>
-          <p className="font-['Canela_Text_Trial',sans-serif] font-medium leading-[normal] not-italic relative shrink-0 text-[#3e2d1d] text-[18px] sm:text-[20px] whitespace-nowrap">
-            {packageType || "Standard Draw Package"}
-          </p>
-        </div>
-        <p
-          className="font-['SF_Pro',sans-serif] leading-[21px] relative shrink-0 text-[#8C8780] text-[14px]"
-          style={{ fontVariationSettings: "'wdth' 100" }}
-        >
-          Most common package for residential or multi-family
-          projects
-        </p>
-        <div className="flex flex-wrap gap-[12px]">
-          <div className="bg-[#fcf6f0] content-stretch flex items-center justify-center px-[16px] py-[8px] relative rounded-[100px] shrink-0">
-            <p
-              className="font-['SF_Pro',sans-serif] font-[510] leading-[normal] relative shrink-0 text-[#764d2f] text-[14px] whitespace-nowrap"
-              style={{ fontVariationSettings: "'wdth' 100" }}
-            >
-              AIA G702 Cover Sheet
-            </p>
-          </div>
-          <div className="bg-[#fcf6f0] content-stretch flex items-center justify-center px-[16px] py-[8px] relative rounded-[100px] shrink-0">
-            <p
-              className="font-['SF_Pro',sans-serif] font-[510] leading-[normal] relative shrink-0 text-[#764d2f] text-[14px] whitespace-nowrap"
-              style={{ fontVariationSettings: "'wdth' 100" }}
-            >
-              Schedule of Values
-            </p>
-          </div>
-          <div className="bg-[#FFB680] content-stretch flex items-center justify-center px-[16px] py-[8px] relative rounded-[100px] shrink-0">
-            <p
-              className="font-['SF_Pro',sans-serif] font-[510] leading-[normal] relative shrink-0 text-white text-[14px] whitespace-nowrap"
-              style={{ fontVariationSettings: "'wdth' 100" }}
-            >
-              Contractor invoices
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ═══════════════════════════════════════════════════════════════════ */
-/*  Budget Tracker Card                                              */
-/* ═══════════════════════════════════════════════════════════════════ */
-
-function BudgetTrackerCard({
-  data,
-  totalBudget,
-}: {
-  data: any[];
-  totalBudget: number;
-}) {
-  return (
-    <div className="bg-white relative rounded-[20px] w-full">
-      <div
-        aria-hidden="true"
-        className="absolute border border-[#d0d0d0] border-solid inset-0 pointer-events-none rounded-[20px] shadow-[0px_10px_40px_0px_rgba(243,219,188,0.45)]"
-      />
-      <div className="content-stretch flex flex-col gap-[32px] items-start p-[24px] sm:p-[32px] relative w-full">
-        <p className="font-['Canela_Text_Trial',sans-serif] font-medium leading-[normal] not-italic relative shrink-0 text-[#3e2d1d] text-[24px] sm:text-[28px] whitespace-nowrap">
-          Budget Tracker
-        </p>
-
-        <div className="flex flex-col lg:flex-row gap-[32px] w-full items-center lg:items-start">
-          {/* Donut Chart */}
-          <div className="relative shrink-0 w-full max-w-[280px] lg:w-[280px] h-[280px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={data}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={90}
-                  outerRadius={130}
-                  paddingAngle={0}
-                  dataKey="value"
-                  stroke="none"
-                >
-                  {data.map((entry, index) => (
-                    <Cell
-                      key={`cell-${index}`}
-                      fill={entry.color}
-                    />
+                  </div>
+                </div>
+                <div className="mt-[14px] flex flex-wrap items-center justify-center gap-x-[17px] gap-y-[7px] text-[12px] text-[#3E2D1D]">
+                  {budgetRows.map((row, idx) => (
+                    <span key={row.id} className="inline-flex items-center gap-[5px]">
+                      <span className="size-[10px] rounded-[2px]" style={{ backgroundColor: BUDGET_PIE_COLORS[idx % BUDGET_PIE_COLORS.length] }} />
+                      {row.name}
+                    </span>
                   ))}
-                </Pie>
-              </PieChart>
-            </ResponsiveContainer>
-            {/* Center text */}
-            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-              <p
-                className="font-['SF_Pro',sans-serif] font-[510] text-[#8C8780] text-[14px]"
-                style={{ fontVariationSettings: "'wdth' 100" }}
-              >
-                Total Budget
-              </p>
-              <p
-                className="font-['SF_Pro',sans-serif] font-bold text-[#3E2D1D] text-[32px]"
-                style={{ fontVariationSettings: "'wdth' 100" }}
-              >
-                ${(totalBudget / 1000000).toFixed(1)}M
-              </p>
+                </div>
+              </div>
+              <div className="space-y-[16px]">
+                {budgetRows.map((row) => (
+                  <BudgetProgressRow key={row.id} name={row.name} budget={row.budget} drawn={row.drawn} />
+                ))}
+              </div>
             </div>
-          </div>
+          </section>
 
-          {/* Legend */}
-          <div className="flex-1 w-full min-w-0">
-            <div className="flex flex-col gap-[16px] w-full">
-              {data.map((item, idx) => (
-                <div
-                  key={idx}
-                  className="flex items-center gap-[12px] w-full"
-                >
-                  <div
-                    className="w-[12px] h-[12px] rounded-full shrink-0"
-                    style={{ backgroundColor: item.color }}
-                  />
-                  <div className="flex items-center justify-between flex-1 min-w-0">
-                    <p
-                      className="font-['SF_Pro',sans-serif] font-bold text-[#3E2D1D] text-[14px] truncate"
-                      style={{
-                        fontVariationSettings: "'wdth' 100",
-                      }}
-                    >
-                      {item.name}
-                    </p>
-                    <p
-                      className="font-['SF_Pro',sans-serif] font-bold text-[#3E2D1D] text-[14px] ml-2 shrink-0"
-                      style={{
-                        fontVariationSettings: "'wdth' 100",
-                      }}
-                    >
-                      ${toSafeNumber(item?.value).toLocaleString()}
-                    </p>
+          <section className="mt-[16px] rounded-[20px] border border-[#D0D0D0] bg-white p-[24px] shadow-[0px_10px_40px_0px_rgba(243,219,188,0.45)]">
+            <h2 className={`${canelaClass} text-[#3E2D1D] text-[24px] mb-[16px]`}>Supporting Documents</h2>
+            <div className="space-y-[10px]">
+              {draw.attachments.map((att) => (
+                <div key={att.id} className="flex flex-col sm:flex-row sm:items-center gap-[16px] rounded-[16px] border border-[#EAEAEA] bg-[#FFFCF9] px-[16px] py-[18px] sm:px-[28px] sm:py-[20px]">
+                  <div className="inline-flex items-center justify-center h-[40.222px] w-[35.722px] rounded-[6px] bg-[#FCF6F0] text-[#764D2F]">
+                    <img src={docFileIcon} alt="" className="h-[24px] w-[22px]" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[#764D2F] text-[16px] truncate" style={{ fontWeight: 510 }}>{att.name}</p>
+                    <p className="text-[#8C8780] text-[14px]" style={{ fontWeight: 510 }}>{att.type} · {att.size} · Uploaded {att.uploadedAt}</p>
+                  </div>
+                  <div className="flex items-center gap-[8px]">
+                    <button className="inline-flex items-center gap-[6px] rounded-[6px] border border-[#D0D0D0] bg-white px-[20px] py-[6px] text-[#764D2F] text-[14px] hover:bg-[#FCF6F0]">
+                      <img src={docViewIcon} alt="" className="size-[18px]" />
+                      View
+                    </button>
+                    <button className="inline-flex items-center gap-[6px] rounded-[6px] border border-[#D0D0D0] bg-white px-[20px] py-[6px] text-[#764D2F] text-[14px] hover:bg-[#FCF6F0]">
+                      <img src={docDownloadIcon} alt="" className="size-[18px]" />
+                      Download
+                    </button>
                   </div>
                 </div>
               ))}
             </div>
-          </div>
+          </section>
+
+          {draw.notes && (
+            <section className="mt-[16px] rounded-[20px] border border-[#D0D0D0] bg-white p-[24px] shadow-[0px_10px_40px_0px_rgba(243,219,188,0.45)]">
+              <h2 className={`${canelaClass} text-[#3E2D1D] text-[24px] mb-[16px]`}>Notes</h2>
+              <div className="rounded-[16px] border border-[#EAEAEA] bg-[#FDFDFD] px-[28px] py-[20px] text-[16px] text-[#764D2F]" style={{ fontWeight: 510 }}>
+                {draw.notes}
+              </div>
+            </section>
+          )}
         </div>
       </div>
     </div>
   );
 }
 
-/* ═══════════════════════════════════════════════════════════════════ */
-/*  Notes Card                                                       */
-/* ═══════════════════════════════════════════════════════════════════ */
-
-function NotesCard({ notes }: { notes: string }) {
+function MetricCard({ iconSrc, label, value }: { iconSrc: string; label: string; value: string }) {
   return (
-    <div className="bg-white relative rounded-[20px] w-full">
-      <div
-        aria-hidden="true"
-        className="absolute border border-[#d0d0d0] border-solid inset-0 pointer-events-none rounded-[20px] shadow-[0px_10px_40px_0px_rgba(243,219,188,0.45)]"
-      />
-      <div className="content-stretch flex flex-col gap-[16px] items-start p-[24px] sm:p-[32px] relative w-full">
-        <p className="font-['Canela_Text_Trial',sans-serif] font-medium leading-[normal] not-italic relative shrink-0 text-[#3e2d1d] text-[24px] sm:text-[28px] whitespace-nowrap">
-          Notes
-        </p>
-        <p
-          className="font-['SF_Pro',sans-serif] leading-[21px] relative text-[#3E2D1D] text-[14px]"
-          style={{ fontVariationSettings: "'wdth' 100" }}
-        >
-          {notes}
-        </p>
+    <div className="rounded-[16px] border border-[#D0D0D0] bg-white px-[28px] py-[20px] shadow-[0px_10px_40px_0px_rgba(243,219,188,0.45)] min-h-[143px] flex flex-col justify-center">
+      <div className="mb-[16px] inline-flex w-fit items-center justify-center rounded-[6px] bg-[#FCF6F0] p-[8.5px]">
+        <img src={iconSrc} alt="" className="size-[21px]" />
+      </div>
+      <p className="text-[#764D2F] text-[14px]" style={{ fontWeight: 510 }}>
+        {label}
+      </p>
+      <p className="text-[#3E2D1D] text-[20px]" style={{ fontWeight: 700 }}>
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function BudgetProgressRow({ name, budget, drawn }: { name: string; budget: number; drawn: number }) {
+  const pct = budget > 0 ? Math.min(100, Math.round((drawn / budget) * 100)) : 0;
+  return (
+    <div>
+      <div className="flex items-center justify-between text-[#3E2D1D] text-[14px]" style={{ fontWeight: 510 }}>
+        <span>{name}</span>
+        <span>{formatCurrency(budget)}</span>
+      </div>
+      <div className="mt-[7px] h-[7px] rounded-[100px] bg-[#D9D9D9]">
+        <div className="h-full rounded-[100px] bg-[#3E2D1D]" style={{ width: `${pct}%` }} />
+      </div>
+      <div className="mt-[8px] flex items-center justify-between text-[#764D2F] text-[14px]" style={{ fontWeight: 510 }}>
+        <span>{pct >= 100 ? 'Fully drawn' : `${pct}% drawn`}</span>
+        <span>{formatCurrency(drawn)}</span>
       </div>
     </div>
+  );
+}
+
+function formatCompactCurrency(value: number) {
+  if (value >= 1000000) return `$${(value / 1000000).toFixed(1)}M`;
+  if (value >= 1000) return `$${(value / 1000).toFixed(0)}K`;
+  return formatCurrency(value);
+}
+
+function HeaderEyeIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M22 12C22 12 18 5 12 5C6 5 2 12 2 12C2 12 6 19 12 19C18 19 22 12 22 12Z"
+        stroke="white"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M12 15C13.6569 15 15 13.6569 15 12C15 10.3431 13.6569 9 12 9C10.3431 9 9 10.3431 9 12C9 13.6569 10.3431 15 12 15Z"
+        stroke="white"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
   );
 }
