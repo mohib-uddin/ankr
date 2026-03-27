@@ -336,33 +336,22 @@ export function DocumentVault() {
           <div className="flex items-center gap-[10px] shrink-0">
             <button
               onClick={() => setShowFolderModal(true)}
-              className="flex items-center gap-[8px] h-[40px] px-[16px] rounded-[8px] border-[1.5px] border-[#3E2D1D] text-[14px] text-[#3E2D1D] hover:bg-[#FCF6F0] transition-colors cursor-pointer"
+              className="flex items-center gap-[8px] h-[50px] px-[28px] rounded-[8px] border-[1.5px] border-[#3E2D1D] text-[16px] text-[#3E2D1D] hover:bg-[#FCF6F0] transition-colors cursor-pointer"
               style={{ fontWeight: 590 }}
             >
-              <FolderPlus className="w-[16px] h-[16px]" />
+              <FolderPlus className="w-[20px] h-[20px]" />
               <span className="hidden sm:inline">New Folder</span>
             </button>
             <button
               onClick={() => { setUploadPreset(null); setShowUploadModal(true); }}
-              className="flex items-center gap-[8px] h-[40px] px-[20px] rounded-[8px] bg-[#3E2D1D] text-white text-[14px] hover:bg-[#764D2F] transition-colors cursor-pointer"
+              className="flex items-center gap-[10px] h-[50px] px-[28px] rounded-[8px] bg-[#3E2D1D] text-white text-[16px] hover:bg-[#764D2F] transition-colors cursor-pointer"
               style={{ fontWeight: 590 }}
             >
-              <Upload className="w-[16px] h-[16px]" />
+              <Upload className="w-[20px] h-[20px]" />
               Upload
             </button>
           </div>
         </div>
-      </motion.div>
-
-      {/* ─── Stats Row ─── */}
-      <motion.div
-        initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05, duration: 0.3 }}
-        className="grid grid-cols-2 xl:grid-cols-4 gap-[12px] sm:gap-[16px] mt-[24px] mb-[28px]"
-      >
-        <StatCard label="Total Documents" value={String(docs.length)} icon={<FileText className="w-[18px] h-[18px]" />} />
-        <StatCard label="Storage Used" value={totalStorage} icon={<FolderIcon size={18} />} />
-        <StatCard label="Active Share Links" value={String(activeShareLinks.length)} icon={<Link2 className="w-[18px] h-[18px]" />} />
-        <StatCard label="Categories" value={String(DEFAULT_CATEGORIES.filter(c => categoryCounts[c] > 0).length) + ' / 7'} icon={<Tag className="w-[18px] h-[18px]" />} />
       </motion.div>
 
       {/* ─── Tabs ─── */}
@@ -493,21 +482,23 @@ function DocumentsView({
     <div className="flex flex-col xl:flex-row gap-[24px]">
       {/* ─ Category Sidebar ─ */}
       <div className="w-full xl:w-[280px] shrink-0">
-        <div className="bg-white rounded-[20px] border border-[#D0D0D0] p-[20px]">
+        <div className="bg-white rounded-[20px] border border-[#D0D0D0] p-[21px] shadow-[0px_10px_40px_0px_rgba(243,219,188,0.45)]">
           <p className={`${canela} text-[20px] text-[#3E2D1D] mb-[16px]`}>Categories</p>
 
           {/* All Documents button */}
           <button
             onClick={() => setActiveCategory('all')}
-            className={`w-full flex items-center justify-between px-[14px] py-[10px] rounded-[10px] mb-[4px] transition-colors cursor-pointer ${
+            className={`w-full h-[41px] flex items-center justify-between px-[14px] rounded-[10px] mb-[4px] transition-colors cursor-pointer ${
               activeCategory === 'all' ? 'bg-[#3E2D1D] text-white' : 'text-[#3E2D1D] hover:bg-[#F3EFE6]'
             }`}
           >
             <span className="flex items-center gap-[10px]">
-              <FolderIcon size={18} />
+              <span className={`w-[30px] h-[30px] rounded-[15px] flex items-center justify-center text-white ${activeCategory === 'all' ? 'bg-[#3E2D1D]' : 'bg-[#764D2F]'}`}>
+                <FolderIcon size={18} />
+              </span>
               <span className="text-[14px]" style={{ fontWeight: 510 }}>All Documents</span>
             </span>
-            <span className="text-[12px] px-[6px] py-[1px] rounded-full" style={{
+            <span className="text-[11px] px-[6px] py-[1px] rounded-full" style={{
               fontWeight: 590,
               backgroundColor: activeCategory === 'all' ? 'rgba(255,255,255,0.2)' : '#F3EFE6',
               color: activeCategory === 'all' ? 'white' : '#764D2F',
@@ -518,25 +509,26 @@ function DocumentsView({
 
           {/* Default categories */}
           {DEFAULT_CATEGORIES.map(cat => {
-            const meta = CATEGORY_META[cat];
             const count = categoryCounts[cat] || 0;
             const isActive = activeCategory === cat;
             return (
               <button
                 key={cat}
                 onClick={() => setActiveCategory(cat)}
-                className={`w-full flex items-center justify-between px-[14px] py-[10px] rounded-[10px] mb-[2px] transition-colors cursor-pointer ${
+                className={`w-full h-[41px] flex items-center justify-between px-[14px] rounded-[10px] mb-[2px] transition-colors cursor-pointer ${
                   isActive ? 'bg-[#3E2D1D] text-white' : 'text-[#3E2D1D] hover:bg-[#F3EFE6]'
                 }`}
               >
                 <span className="flex items-center gap-[10px]">
-                  <div className={`w-[8px] h-[8px] rounded-full shrink-0`} style={{ backgroundColor: isActive ? 'white' : meta.color }} />
+                  <span className={`w-[30px] h-[30px] rounded-[15px] flex items-center justify-center text-white ${isActive ? 'bg-[#3E2D1D]' : 'bg-[#764D2F]'}`}>
+                    <FolderIcon size={18} />
+                  </span>
                   <span className="text-[14px] text-left" style={{ fontWeight: 510 }}>{cat}</span>
                 </span>
                 <span className="text-[11px] px-[6px] py-[1px] rounded-full" style={{
                   fontWeight: 590,
-                  backgroundColor: isActive ? 'rgba(255,255,255,0.2)' : meta.bg,
-                  color: isActive ? 'white' : meta.color,
+                  backgroundColor: isActive ? 'rgba(255,255,255,0.2)' : '#F3EFE6',
+                  color: isActive ? 'white' : '#3E2D1D',
                 }}>{count}</span>
               </button>
             );
@@ -570,7 +562,7 @@ function DocumentsView({
       <div className="flex-1 min-w-0">
         {/* Search + Actions bar */}
         <div className="flex flex-col sm:flex-row gap-[12px] mb-[20px]">
-          <div className="flex-1 flex items-center gap-[10px] h-[40px] bg-white rounded-[8px] border border-[#D0D0D0] px-[12px]">
+          <div className="flex-1 flex items-center gap-[10px] h-[46px] bg-white rounded-[8px] border border-[#D0D0D0] px-[12px] shadow-[0px_10px_40px_0px_rgba(243,219,188,0.45)]">
             <Search className="w-[16px] h-[16px] text-[#8C8780] shrink-0" />
             <input
               value={searchQuery}
@@ -658,9 +650,9 @@ function DocumentRow({
   return (
     <motion.div
       layout
-      className={`bg-white rounded-[14px] border transition-colors ${isSelected ? 'border-[#764D2F] bg-[#FDFBF8]' : 'border-[#D0D0D0]'}`}
+      className={`bg-white rounded-[16px] border transition-colors shadow-[0px_10px_40px_0px_rgba(243,219,188,0.45)] ${isSelected ? 'border-[#764D2F] bg-[#FDFBF8]' : 'border-[#EAEAEA]'}`}
     >
-      <div className="flex items-center gap-[12px] px-[16px] py-[14px]">
+      <div className="flex items-center gap-[16px] px-[28px] py-[20px]">
         {/* Checkbox */}
         <button
           onClick={onSelect}
@@ -672,17 +664,17 @@ function DocumentRow({
         </button>
 
         {/* File type icon */}
-        <div className="w-[36px] h-[36px] rounded-[8px] flex items-center justify-center shrink-0" style={{ backgroundColor: typeStyle.bg }}>
-          <span className="text-[10px]" style={{ fontWeight: 700, color: typeStyle.color }}>{doc.fileType}</span>
+        <div className="w-[36px] h-[40px] rounded-[8px] flex items-center justify-center shrink-0 bg-[#F3EFE6]">
+          <FileText className="w-[18px] h-[18px] text-[#764D2F]" />
         </div>
 
         {/* Info */}
         <button onClick={onExpand} className="flex-1 min-w-0 text-left cursor-pointer">
-          <p className="text-[14px] text-[#3E2D1D] truncate" style={{ fontWeight: 510 }}>{doc.name}</p>
+          <p className="text-[16px] text-[#764D2F] truncate" style={{ fontWeight: 510 }}>{doc.name}</p>
           <div className="flex items-center gap-[8px] mt-[2px]">
             <span className="text-[12px] text-[#8C8780]" style={{ fontWeight: 510 }}>{doc.fileSize}</span>
             <span className="text-[12px] text-[#D0D0D0]">|</span>
-            <span className="text-[12px] px-[6px] py-[1px] rounded-full" style={{ backgroundColor: meta.bg, color: meta.color, fontWeight: 510 }}>{doc.category}</span>
+            <span className="text-[12px] px-[6px] py-[1px] rounded-full" style={{ backgroundColor: '#F3EFE6', color: '#3E2D1D', fontWeight: 510 }}>{doc.category}</span>
             <span className="text-[12px] text-[#D0D0D0] hidden sm:inline">|</span>
             <span className="text-[12px] text-[#8C8780] hidden sm:inline" style={{ fontWeight: 510 }}>{doc.uploadedAt}</span>
           </div>
@@ -700,11 +692,11 @@ function DocumentRow({
 
         {/* Actions */}
         <div className="flex items-center gap-[4px] shrink-0">
-          <button onClick={onShare} className="p-[8px] rounded-[8px] text-[#8C8780] hover:bg-[#F3EFE6] hover:text-[#764D2F] transition-colors cursor-pointer" title="Share">
+          <button onClick={onShare} className="p-[6px] rounded-[6px] border border-[#D0D0D0] text-[#8C8780] hover:bg-[#F3EFE6] hover:text-[#764D2F] transition-colors cursor-pointer" title="Share">
             <Link2 className="w-[14px] h-[14px]" />
           </button>
           <div className="relative">
-            <button onClick={() => setShowMenu(!showMenu)} className="p-[8px] rounded-[8px] text-[#8C8780] hover:bg-[#F3EFE6] hover:text-[#764D2F] transition-colors cursor-pointer">
+            <button onClick={() => setShowMenu(!showMenu)} className="p-[6px] rounded-[6px] border border-[#D0D0D0] text-[#8C8780] hover:bg-[#F3EFE6] hover:text-[#764D2F] transition-colors cursor-pointer">
               <MoreHorizontal className="w-[14px] h-[14px]" />
             </button>
             {showMenu && (
@@ -779,15 +771,15 @@ function DocumentRow({
 /* ─── Empty State ─── */
 function EmptyState({ title, description, onAction, actionLabel }: { title: string; description: string; onAction: () => void; actionLabel: string }) {
   return (
-    <div className="bg-white rounded-[20px] border border-[#D0D0D0] p-[48px] sm:p-[60px] text-center">
-      <div className="w-[56px] h-[56px] rounded-[14px] bg-[#F3EFE6] flex items-center justify-center mx-auto mb-[20px]">
+    <div className="bg-white rounded-[20px] border border-[#D0D0D0] px-[61px] py-[51px] text-center shadow-[0px_10px_40px_0px_rgba(243,219,188,0.45)]">
+      <div className="w-[56px] h-[56px] rounded-[14px] bg-[#F3EFE6] flex items-center justify-center mx-auto mb-[17px]">
         <Shield className="w-[24px] h-[24px] text-[#764D2F]" />
       </div>
-      <p className={`${canela} text-[20px] text-[#3E2D1D] mb-[8px]`}>{title}</p>
-      <p className={`${sfMed} text-[14px] text-[#8C8780] max-w-[360px] mx-auto mb-[24px]`} style={wdth}>{description}</p>
+      <p className={`${canela} text-[24px] text-[#3E2D1D] mb-[8px]`}>{title}</p>
+      <p className={`${sfMed} text-[14px] text-[#8C8780] max-w-[330px] mx-auto mb-[17px]`} style={wdth}>{description}</p>
       <button
         onClick={onAction}
-        className="inline-flex items-center gap-[8px] h-[40px] px-[24px] rounded-[8px] bg-[#3E2D1D] text-white text-[14px] cursor-pointer hover:bg-[#764D2F] transition-colors"
+        className="inline-flex items-center gap-[10px] h-[50px] px-[28px] rounded-[8px] bg-[#3E2D1D] text-white text-[16px] cursor-pointer hover:bg-[#764D2F] transition-colors"
         style={{ fontWeight: 590 }}
       >
         <Upload className="w-[16px] h-[16px]" /> {actionLabel}
