@@ -1,5 +1,5 @@
-import { Entity, Column } from 'typeorm';
-import { BaseEntity } from '@entities';
+import { Entity, Column, ManyToOne, OneToOne, JoinColumn } from 'typeorm';
+import { BaseEntity, Role, Profile } from '@entities';
 import { Exclude } from 'class-transformer';
 import { ApiHideProperty, ApiProperty } from '@nestjs/swagger';
 
@@ -19,7 +19,7 @@ export class User extends BaseEntity {
 
   @Exclude()
   @ApiHideProperty()
-  @Column({ type: 'varchar', nullable: true })
+  @Column({ type: 'varchar', nullable: true, select: false })
   password: string;
 
   @ApiProperty({ example: true, description: 'True if email is verified' })
@@ -28,12 +28,12 @@ export class User extends BaseEntity {
 
   @Exclude()
   @ApiHideProperty()
-  @Column({ type: 'varchar', default: '' })
+  @Column({ type: 'varchar', default: '', select: false })
   verificationCode: string;
 
   @Exclude()
   @ApiHideProperty()
-  @Column({ type: 'boolean', default: false })
+  @Column({ type: 'boolean', default: false, select: false })
   isPassCodeValid: boolean;
 
   @ApiProperty({ example: true, description: 'True if account is active' })
@@ -44,4 +44,16 @@ export class User extends BaseEntity {
   @Column({ type: 'varchar', nullable: true })
   picture: string;
 
+  @ApiProperty({ type: () => Role })
+  @ManyToOne(() => Role)
+  @JoinColumn({ name: 'roleId' })
+  role: Role;
+
+  @ApiProperty({ example: 'uuid-of-role' })
+  @Column({ nullable: true })
+  roleId: string;
+
+  @ApiProperty({ type: () => Profile })
+  @OneToOne(() => Profile, (profile) => profile.user)
+  profile: Profile;
 }

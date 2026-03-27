@@ -12,10 +12,25 @@ export class UserService {
     private readonly userRepository: Repository<User>,
   ) {}
 
-  private readonly userFields = ['user.id', 'user.firstName', 'user.lastName', 'user.email'];
   async getUser(userId: string): Promise<ApiMessageData> {
-    const fetchedUser = await this.userRepository.createQueryBuilder('user').select(this.userFields).where('user.id = :userId', { userId }).getOne();
+    const fetchedUser = await this.userRepository.findOne({
+      where: { id: userId },
+      // Select safe fields, strictly avoiding password, verificationCode, and isPassCodeValid
+      select: ['id', 'firstName', 'lastName', 'email', 'isVerified', 'isActive'],
+      relations: [
+        'profile',
+        'profile.investorProfile',
+        'profile.accounts',
+        'profile.properties',
+        'profile.businessEntities',
+        'profile.asset',
+        'profile.liability',
+        'profile.income',
+      ],
+    });
+
     if (!fetchedUser) throw new NotFoundException(UserErrorMessages.userNotExists);
+
     return { message: SuccessResponseMessages.successGeneral, data: fetchedUser };
   }
 }
