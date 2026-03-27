@@ -269,7 +269,7 @@ export function NewDrawRequestPage() {
         <motion.div
           initial={{ scale: 0.95, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          className="bg-white rounded-[20px] border border-[#D0D0D0] p-[48px] max-w-[520px] w-full text-center"
+          className="bg-white rounded-[20px] border border-[#D0D0D0] p-[48px] max-w-[520px] w-full text-center shadow-[0px_10px_40px_0px_rgba(243,219,188,0.45)]"
         >
           <motion.div
             initial={{ scale: 0.5 }}
@@ -522,7 +522,7 @@ function StepSetup({ title, setTitle, lenderName, setLenderName, lenderEmail, se
 }) {
   return (
     <div className="bg-white rounded-[20px] relative">
-      <div aria-hidden="true" className="absolute border border-[#d0d0d0] border-solid inset-0 pointer-events-none rounded-[20px]" />
+      <div aria-hidden="true" className="absolute border border-[#d0d0d0] border-solid inset-0 pointer-events-none rounded-[20px] shadow-[0px_10px_40px_0px_rgba(243,219,188,0.45)]" />
       <div className="flex flex-col gap-[60px] p-[24px]">
         {/* Draw Details section */}
         <div className="flex flex-col gap-[24px] w-full">
@@ -636,7 +636,7 @@ function StepLineItems({ categories, draws, lineAmounts, setLineAmounts, linePer
   return (
     <div className="flex flex-col gap-[12px]">
       {categories.length === 0 ? (
-        <div className="bg-white rounded-[16px] border-[1.5px] border-dashed border-[#D0D0D0] p-[48px] text-center">
+        <div className="bg-white rounded-[16px] border-[1.5px] border-dashed border-[#D0D0D0] p-[48px] text-center shadow-[0px_10px_40px_0px_rgba(243,219,188,0.45)]">
           <div className="w-[56px] h-[56px] rounded-[16px] bg-[#FCF6F0] flex items-center justify-center mx-auto mb-[16px]">
             <DollarSign className="w-[24px] h-[24px] text-[#764D2F]" />
           </div>
@@ -659,7 +659,7 @@ function StepLineItems({ categories, draws, lineAmounts, setLineAmounts, linePer
               key={cat.id}
               className={`bg-white rounded-[16px] relative ${isFullyDrawn ? 'opacity-75' : ''}`}
             >
-              <div aria-hidden="true" className="absolute border-[#e8e5e0] border-[1.5px] border-solid inset-0 pointer-events-none rounded-[16px]" />
+              <div aria-hidden="true" className="absolute border-[#e8e5e0] border-[1.5px] border-solid inset-0 pointer-events-none rounded-[16px] shadow-[0px_10px_40px_0px_rgba(243,219,188,0.45)]" />
               <div className="flex flex-col gap-[16px] p-[26px]">
                 {/* Header row */}
                 <div className="flex gap-[16px] items-start justify-end w-full">
@@ -763,7 +763,7 @@ function StepDocuments({ selectedPackageId, setSelectedPackageId, attachments, o
 }) {
   return (
     <div className="bg-white rounded-[20px] relative">
-      <div aria-hidden="true" className="absolute border border-[#d0d0d0] border-solid inset-0 pointer-events-none rounded-[20px]" />
+      <div aria-hidden="true" className="absolute border border-[#d0d0d0] border-solid inset-0 pointer-events-none rounded-[20px] shadow-[0px_10px_40px_0px_rgba(243,219,188,0.45)]" />
       <div className="flex flex-col gap-[60px] p-[24px]">
         {/* Document Package section */}
         <div className="flex flex-col gap-[24px] w-full">
@@ -954,7 +954,7 @@ function StepReview({ lineItems, totalRequested, title, lenderName, lenderEmail,
             </div>
           </div>
         </div>
-        <div aria-hidden="true" className="absolute border border-[#eaeaea] border-solid inset-0 pointer-events-none rounded-[16px]" />
+        <div aria-hidden="true" className="absolute border border-[#eaeaea] border-solid inset-0 pointer-events-none rounded-[16px] shadow-[0px_10px_40px_0px_rgba(243,219,188,0.45)]" />
       </div>
 
       {/* ── Line items table ── */}
@@ -1047,13 +1047,13 @@ function StepReview({ lineItems, totalRequested, title, lenderName, lenderEmail,
             </div>
           </div>
         </div>
-        <div aria-hidden="true" className="absolute border border-[#d0d0d0] border-solid inset-0 pointer-events-none rounded-[20px]" />
+        <div aria-hidden="true" className="absolute border border-[#d0d0d0] border-solid inset-0 pointer-events-none rounded-[20px] shadow-[0px_10px_40px_0px_rgba(243,219,188,0.45)]" />
       </div>
 
       {/* ── Document package card ── */}
       {selectedPackage && (
         <div className="bg-white relative rounded-[16px] shrink-0 w-full">
-          <div aria-hidden="true" className="absolute border-[#764d2f] border-[1.5px] border-solid inset-0 pointer-events-none rounded-[16px]" />
+          <div aria-hidden="true" className="absolute border-[#764d2f] border-[1.5px] border-solid inset-0 pointer-events-none rounded-[16px] shadow-[0px_10px_40px_0px_rgba(243,219,188,0.45)]" />
           <div className="flex flex-col gap-[16px] items-start p-[26px] w-full">
             {/* Top row: icon + edit */}
             <div className="flex items-center justify-between shrink-0 w-full">

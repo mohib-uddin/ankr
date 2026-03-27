@@ -449,7 +449,7 @@ function OverviewTab({ propertyId, onTabChange }: { propertyId: string; onTabCha
         {/* Budget Summary Card */}
         <div className="content-stretch flex flex-col items-start relative shrink-0 w-full">
           <div className="bg-white relative rounded-[20px] shrink-0 w-full">
-            <div aria-hidden="true" className="absolute border border-[#d0d0d0] border-solid inset-0 pointer-events-none rounded-[20px]" />
+            <div aria-hidden="true" className="absolute border border-[#d0d0d0] border-solid inset-0 pointer-events-none rounded-[20px] shadow-[0px_10px_40px_0px_rgba(243,219,188,0.45)]" />
             <div className="flex flex-col items-end size-full">
               <div className="content-stretch flex flex-col items-end p-4 sm:p-[24px] relative w-full">
                 <div className="content-stretch flex flex-col gap-[24px] sm:gap-[36px] items-start relative shrink-0 w-full">
@@ -526,7 +526,7 @@ function OverviewTab({ propertyId, onTabChange }: { propertyId: string; onTabCha
 
         {/* Draw Timeline Card */}
         <div className="bg-white relative rounded-[20px] shrink-0 w-full">
-          <div aria-hidden="true" className="absolute border border-[#d0d0d0] border-solid inset-0 pointer-events-none rounded-[20px]" />
+          <div aria-hidden="true" className="absolute border border-[#d0d0d0] border-solid inset-0 pointer-events-none rounded-[20px] shadow-[0px_10px_40px_0px_rgba(243,219,188,0.45)]" />
           <div className="content-stretch flex flex-col gap-[21px] items-start p-[24px] relative w-full">
             <p className={`${canela} leading-[normal] relative shrink-0 text-[#3e2d1d] text-[24px] whitespace-nowrap`}>Draw Timeline</p>
             {drawTimelineData.length > 1 ? (
@@ -560,7 +560,7 @@ function OverviewTab({ propertyId, onTabChange }: { propertyId: string; onTabCha
       <div className="content-stretch flex flex-col gap-[16px] items-start min-h-px min-w-0 relative w-full xl:flex-1">
         {/* Pro Forma Card */}
         <div className="bg-white relative rounded-[20px] shrink-0 w-full">
-          <div aria-hidden="true" className="absolute border border-[#d0d0d0] border-solid inset-0 pointer-events-none rounded-[20px]" />
+          <div aria-hidden="true" className="absolute border border-[#d0d0d0] border-solid inset-0 pointer-events-none rounded-[20px] shadow-[0px_10px_40px_0px_rgba(243,219,188,0.45)]" />
           <div className="content-stretch flex flex-col items-end p-[24px] relative w-full">
             <div className="content-stretch flex flex-col gap-[24px] items-start relative shrink-0 w-full">
               {/* Header */}
@@ -603,7 +603,7 @@ function OverviewTab({ propertyId, onTabChange }: { propertyId: string; onTabCha
 
         {/* Draw Requests Card */}
         <div className="bg-white relative rounded-[20px] shrink-0 w-full">
-          <div aria-hidden="true" className="absolute border border-[#d0d0d0] border-solid inset-0 pointer-events-none rounded-[20px]" />
+          <div aria-hidden="true" className="absolute border border-[#d0d0d0] border-solid inset-0 pointer-events-none rounded-[20px] shadow-[0px_10px_40px_0px_rgba(243,219,188,0.45)]" />
           <div className="content-stretch flex flex-col items-end p-[24px] relative w-full">
             <div className="content-stretch flex flex-col gap-[24px] items-start relative shrink-0 w-full">
               {/* Header */}

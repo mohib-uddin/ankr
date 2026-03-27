@@ -258,7 +258,7 @@ function ProFormaView({ pf, calc, onEdit }: { pf: ProForma; calc: Calcs; onEdit:
         <div className="content-stretch flex flex-col xl:flex-row gap-[16px] items-start relative shrink-0 w-full">
           {/* Investment Breakdown Card */}
           <div className="bg-white content-stretch flex flex-col items-end p-[24px] relative rounded-[20px] shrink-0 w-full xl:w-[636px]">
-            <div aria-hidden="true" className="absolute border border-[#d0d0d0] border-solid inset-0 pointer-events-none rounded-[20px]" />
+            <div aria-hidden="true" className="absolute border border-[#d0d0d0] border-solid inset-0 pointer-events-none rounded-[20px] shadow-[0px_10px_40px_0px_rgba(243,219,188,0.45)]" />
             <div className="content-stretch flex flex-col gap-[38px] items-center justify-center relative shrink-0 w-full">
               {/* Title */}
               <div className="content-stretch flex items-center relative shrink-0 w-full">
@@ -308,7 +308,7 @@ function ProFormaView({ pf, calc, onEdit }: { pf: ProForma; calc: Calcs; onEdit:
 
           {/* Financing Card */}
           <div className="bg-white w-full xl:flex-1 min-h-px min-w-px relative rounded-[20px]">
-            <div aria-hidden="true" className="absolute border border-[#d0d0d0] border-solid inset-0 pointer-events-none rounded-[20px]" />
+            <div aria-hidden="true" className="absolute border border-[#d0d0d0] border-solid inset-0 pointer-events-none rounded-[20px] shadow-[0px_10px_40px_0px_rgba(243,219,188,0.45)]" />
             <div className="content-stretch flex flex-col items-end p-[24px] relative w-full">
               <div className="content-stretch flex flex-col gap-[24px] items-start relative shrink-0 w-full">
                 {/* Title */}
@@ -338,7 +338,7 @@ function ProFormaView({ pf, calc, onEdit }: { pf: ProForma; calc: Calcs; onEdit:
         <div className="content-stretch flex flex-col xl:flex-row gap-[16px] min-h-0 xl:h-[509px] items-start relative shrink-0 w-full">
           {/* Deal Waterfall Card */}
           <div className="bg-white h-full relative rounded-[20px] shrink-0 w-full xl:w-[403px]">
-            <div aria-hidden="true" className="absolute border border-[#d0d0d0] border-solid inset-0 pointer-events-none rounded-[20px]" />
+            <div aria-hidden="true" className="absolute border border-[#d0d0d0] border-solid inset-0 pointer-events-none rounded-[20px] shadow-[0px_10px_40px_0px_rgba(243,219,188,0.45)]" />
             <div className="content-stretch flex flex-col items-end p-[24px] relative w-full">
               <div className="content-stretch flex flex-col gap-[24px] items-start relative shrink-0 w-full">
                 {/* Title */}
@@ -382,7 +382,7 @@ function ProFormaView({ pf, calc, onEdit }: { pf: ProForma; calc: Calcs; onEdit:
 
           {/* Cost Comparison Card (Bar Chart) */}
           <div className="bg-white w-full xl:flex-1 h-[400px] xl:h-full min-h-px min-w-px relative rounded-[20px]">
-            <div aria-hidden="true" className="absolute border border-[#d0d0d0] border-solid inset-0 pointer-events-none rounded-[20px]" />
+            <div aria-hidden="true" className="absolute border border-[#d0d0d0] border-solid inset-0 pointer-events-none rounded-[20px] shadow-[0px_10px_40px_0px_rgba(243,219,188,0.45)]" />
             <div className="content-stretch flex flex-col items-start justify-between p-[24px] relative size-full">
               <p className={`${canela} leading-[normal] relative shrink-0 text-[#3e2d1d] text-[24px] whitespace-nowrap`}>Cost Comparison</p>
               <div className="w-full flex-1 min-h-0 pt-[16px]">
@@ -431,7 +431,7 @@ function KPICard({ icon, label, value }: { icon: React.ReactNode; label: string;
           </div>
         </div>
       </div>
-      <div aria-hidden="true" className="absolute border border-[#d0d0d0] border-solid inset-0 pointer-events-none rounded-[16px]" />
+      <div aria-hidden="true" className="absolute border border-[#d0d0d0] border-solid inset-0 pointer-events-none rounded-[16px] shadow-[0px_10px_40px_0px_rgba(243,219,188,0.45)]" />
     </div>
   );
 }
@@ -627,7 +627,7 @@ function ProFormaForm({ pf, calc, set, saved, dirty, onSave, onCancel, canCancel
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white rounded-[20px] border border-[#D0D0D0] p-[24px]"
+          className="bg-white rounded-[20px] border border-[#D0D0D0] p-[24px] shadow-[0px_10px_40px_0px_rgba(243,219,188,0.45)]"
         >
           <p className={`${canela} text-[24px] text-[#3E2D1D] mb-[20px]`}>
             Live Analysis
@@ -652,7 +652,7 @@ function ProFormaForm({ pf, calc, set, saved, dirty, onSave, onCancel, canCancel
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.05 }}
-            className="bg-white rounded-[20px] border border-[#D0D0D0] p-[24px]"
+            className="bg-white rounded-[20px] border border-[#D0D0D0] p-[24px] shadow-[0px_10px_40px_0px_rgba(243,219,188,0.45)]"
           >
             <p className={`${canela} text-[24px] text-[#3E2D1D] mb-[16px]`}>
               Cost Mix
@@ -720,7 +720,7 @@ function MetricCell({ label, value, positive, warn }: { label: string; value: st
 
 function FormSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="bg-white rounded-[20px] border border-[#D0D0D0] p-[24px]">
+    <div className="bg-white rounded-[20px] border border-[#D0D0D0] p-[24px] shadow-[0px_10px_40px_0px_rgba(243,219,188,0.45)]">
       <p className={`${canela} text-[16px] text-[#3E2D1D] mb-[16px]`}>
         {title}
       </p>

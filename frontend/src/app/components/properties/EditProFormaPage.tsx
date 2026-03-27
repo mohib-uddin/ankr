@@ -227,7 +227,7 @@ export function EditProFormaPage() {
             {/* ──── LEFT: Form card ──── */}
             <div className="content-stretch flex flex-col items-start min-h-px min-w-px relative self-stretch w-full xl:flex-1">
               <div className="bg-white flex-[1_0_0] min-h-px min-w-px relative rounded-[20px] w-full">
-                <div aria-hidden="true" className="absolute border border-[#d0d0d0] border-solid inset-0 pointer-events-none rounded-[20px]" />
+                <div aria-hidden="true" className="absolute border border-[#d0d0d0] border-solid inset-0 pointer-events-none rounded-[20px] shadow-[0px_10px_40px_0px_rgba(243,219,188,0.45)]" />
                 <div className="flex flex-col items-end size-full">
                   <div className="content-stretch flex flex-col gap-[42px] items-end p-[24px] relative size-full">
 
@@ -345,7 +345,7 @@ export function EditProFormaPage() {
 
                 {/* Live Analysis */}
                 <div className="bg-white content-stretch flex flex-col gap-[16px] items-start p-[24px] relative rounded-[12px] shrink-0 w-full">
-                  <div aria-hidden="true" className="absolute border border-[#d0d0d0] border-solid inset-0 pointer-events-none rounded-[12px]" />
+                  <div aria-hidden="true" className="absolute border border-[#d0d0d0] border-solid inset-0 pointer-events-none rounded-[12px] shadow-[0px_10px_40px_0px_rgba(243,219,188,0.45)]" />
                   <p className={`${canela} leading-[normal] relative shrink-0 text-[#3e2d1d] text-[20px] whitespace-nowrap`}>Live Analysis</p>
                   <div className="content-stretch flex flex-col gap-[16px] items-start relative shrink-0 w-full">
                     <div className="content-stretch flex gap-[16px] h-[70px] items-center relative shrink-0 w-full">
@@ -365,7 +365,7 @@ export function EditProFormaPage() {
 
                 {/* Cost Mix */}
                 <div className="bg-white relative rounded-[20px] shrink-0 w-full">
-                  <div aria-hidden="true" className="absolute border border-[#d0d0d0] border-solid inset-0 pointer-events-none rounded-[20px]" />
+                  <div aria-hidden="true" className="absolute border border-[#d0d0d0] border-solid inset-0 pointer-events-none rounded-[20px] shadow-[0px_10px_40px_0px_rgba(243,219,188,0.45)]" />
                   <div className="flex flex-col items-end size-full">
                     <div className="content-stretch flex flex-col items-end p-[24px] relative w-full">
                       <div className="content-stretch flex flex-col gap-[16px] items-start relative shrink-0 w-full">
@@ -391,7 +391,7 @@ export function EditProFormaPage() {
 
                 {/* Financing sidebar */}
                 <div className="bg-white relative rounded-[20px] shrink-0 w-full">
-                  <div aria-hidden="true" className="absolute border border-[#d0d0d0] border-solid inset-0 pointer-events-none rounded-[20px]" />
+                  <div aria-hidden="true" className="absolute border border-[#d0d0d0] border-solid inset-0 pointer-events-none rounded-[20px] shadow-[0px_10px_40px_0px_rgba(243,219,188,0.45)]" />
                   <div className="flex flex-col items-end size-full">
                     <div className="content-stretch flex flex-col items-end p-[24px] relative w-full">
                       <div className="content-stretch flex flex-col gap-[16px] items-start relative shrink-0 w-full">

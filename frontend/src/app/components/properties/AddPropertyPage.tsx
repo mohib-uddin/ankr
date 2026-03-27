@@ -176,7 +176,7 @@ export function AddPropertyPage() {
         </div>
 
         {/* Form Card */}
-        <div className="bg-white rounded-[20px] border border-[#D0D0D0] p-4 sm:p-[32px] flex flex-col gap-[42px]">
+        <div className="bg-white rounded-[20px] border border-[#D0D0D0] p-4 sm:p-[32px] flex flex-col gap-[42px] shadow-[0px_10px_40px_0px_rgba(243,219,188,0.45)]">
 
           {/* ── Property Identity Section ── */}
           <div className="flex flex-col gap-[24px]">

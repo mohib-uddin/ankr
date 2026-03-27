@@ -243,7 +243,7 @@ export function DrawsTab({ propertyId }: { propertyId: string }) {
                 </div>
               </div>
             </div>
-            <div aria-hidden="true" className="absolute border border-[#d0d0d0] border-solid inset-0 pointer-events-none rounded-[16px]" />
+            <div aria-hidden="true" className="absolute border border-[#d0d0d0] border-solid inset-0 pointer-events-none rounded-[16px] shadow-[0px_10px_40px_0px_rgba(243,219,188,0.45)]" />
           </div>
 
           {/* Number of Draws */}
@@ -259,7 +259,7 @@ export function DrawsTab({ propertyId }: { propertyId: string }) {
                 </div>
               </div>
             </div>
-            <div aria-hidden="true" className="absolute border border-[#d0d0d0] border-solid inset-0 pointer-events-none rounded-[16px]" />
+            <div aria-hidden="true" className="absolute border border-[#d0d0d0] border-solid inset-0 pointer-events-none rounded-[16px] shadow-[0px_10px_40px_0px_rgba(243,219,188,0.45)]" />
           </div>
 
           {/* Funded */}
@@ -275,7 +275,7 @@ export function DrawsTab({ propertyId }: { propertyId: string }) {
                 </div>
               </div>
             </div>
-            <div aria-hidden="true" className="absolute border border-[#d0d0d0] border-solid inset-0 pointer-events-none rounded-[16px]" />
+            <div aria-hidden="true" className="absolute border border-[#d0d0d0] border-solid inset-0 pointer-events-none rounded-[16px] shadow-[0px_10px_40px_0px_rgba(243,219,188,0.45)]" />
           </div>
 
           {/* Pending */}
@@ -291,7 +291,7 @@ export function DrawsTab({ propertyId }: { propertyId: string }) {
                 </div>
               </div>
             </div>
-            <div aria-hidden="true" className="absolute border border-[#d0d0d0] border-solid inset-0 pointer-events-none rounded-[16px]" />
+            <div aria-hidden="true" className="absolute border border-[#d0d0d0] border-solid inset-0 pointer-events-none rounded-[16px] shadow-[0px_10px_40px_0px_rgba(243,219,188,0.45)]" />
           </div>
         </div>
 
@@ -315,7 +315,7 @@ export function DrawsTab({ propertyId }: { propertyId: string }) {
               </button>
             </div>
           ) : (
-            <div className="w-full bg-white rounded-[20px] border border-[#d0d0d0] overflow-hidden">
+            <div className="w-full bg-white rounded-[20px] border border-[#d0d0d0] overflow-hidden shadow-[0px_10px_40px_0px_rgba(243,219,188,0.45)]">
               <Table className="min-w-[980px]">
                 <TableHeader className="bg-[#fafaf9] border-b border-[#d0d0d0]">
                   <TableRow className="hover:bg-transparent border-0">
@@ -400,7 +400,7 @@ export function DrawsTab({ propertyId }: { propertyId: string }) {
           {hasBudgetData && (
             <div className="content-stretch flex flex-col items-start relative shrink-0 w-full">
               <div className="bg-white relative rounded-[20px] shrink-0 w-full">
-                <div aria-hidden="true" className="absolute border border-[#d0d0d0] border-solid inset-0 pointer-events-none rounded-[20px]" />
+                <div aria-hidden="true" className="absolute border border-[#d0d0d0] border-solid inset-0 pointer-events-none rounded-[20px] shadow-[0px_10px_40px_0px_rgba(243,219,188,0.45)]" />
                 <div className="flex flex-col items-end size-full">
                   <div className="content-stretch flex flex-col items-end p-[24px] relative w-full">
                     <div className="content-stretch flex flex-col gap-[24px] items-start relative shrink-0 w-full">

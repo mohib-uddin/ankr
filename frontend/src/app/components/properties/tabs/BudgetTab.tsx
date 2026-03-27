@@ -263,7 +263,7 @@ export function BudgetTab({ propertyId }: { propertyId: string }) {
       <AnimatePresence>
         {showTemplates && (
           <motion.div initial={{ opacity: 0, y: -8, height: 0 }} animate={{ opacity: 1, y: 0, height: 'auto' }} exit={{ opacity: 0, y: -8, height: 0 }} className="overflow-hidden shrink-0 w-full -mt-[20px]">
-            <div className="bg-white rounded-[20px] border border-[#D0D0D0] p-[24px]">
+            <div className="bg-white rounded-[20px] border border-[#D0D0D0] p-[24px] shadow-[0px_10px_40px_0px_rgba(243,219,188,0.45)]">
               <p className={`${canela} text-[#3e2d1d] text-[20px] mb-[4px]`}>Start with a template</p>
               <p className={`${sfMed} text-[#8c8780] text-[13px] mb-[20px]`} style={wdth}>Pre-built budget structures to get you started quickly.</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-[12px]">
@@ -289,7 +289,7 @@ export function BudgetTab({ propertyId }: { propertyId: string }) {
         {/* ─── Summary Card ─── */}
         <div className="w-full">
           <div className="bg-white relative rounded-[20px] shrink-0 w-full">
-            <div aria-hidden="true" className="absolute border border-[#d0d0d0] border-solid inset-0 pointer-events-none rounded-[20px]" />
+            <div aria-hidden="true" className="absolute border border-[#d0d0d0] border-solid inset-0 pointer-events-none rounded-[20px] shadow-[0px_10px_40px_0px_rgba(243,219,188,0.45)]" />
             <div className="content-stretch flex flex-col items-start p-[20px] sm:p-[25px] relative w-full">
               <div className="content-stretch flex flex-col lg:flex-row gap-[24px] lg:gap-[32px] items-start relative shrink-0 w-full">
 
@@ -381,7 +381,7 @@ export function BudgetTab({ propertyId }: { propertyId: string }) {
         {/* ─── Budget Table ─── */}
         {!isEmpty && (
           <div className="overflow-x-auto w-full">
-            <div className="bg-white relative rounded-[20px] shrink-0 min-w-[1120px]">
+            <div className="bg-white relative rounded-[20px] shrink-0 min-w-[1120px] shadow-[0px_10px_40px_0px_rgba(243,219,188,0.45)]">
               <div className="content-stretch flex flex-col items-start overflow-clip p-px relative rounded-[inherit] w-full">
 
                 {/* Table Header */}
@@ -566,7 +566,7 @@ export function BudgetTab({ propertyId }: { propertyId: string }) {
                 </div>
 
               </div>
-              <div aria-hidden="true" className="absolute border border-[#d0d0d0] border-solid inset-0 pointer-events-none rounded-[20px]" />
+              <div aria-hidden="true" className="absolute border border-[#d0d0d0] border-solid inset-0 pointer-events-none rounded-[20px] shadow-[0px_10px_40px_0px_rgba(243,219,188,0.45)]" />
             </div>
           </div>
         )}
