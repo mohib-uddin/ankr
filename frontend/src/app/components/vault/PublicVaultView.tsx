@@ -3,7 +3,7 @@ import { useParams } from 'react-router';
 import { motion } from 'motion/react';
 import { Lock } from 'lucide-react';
 import type { VaultDocument, VaultShareLink, AppState } from '../../context/AppContext';
-import svgPaths from '../../../imports/svg-i57uzo9rjy';
+import svgPaths from '@/icons/public-vault';
 
 const STORAGE_KEY = 'ankr_v2_state';
 

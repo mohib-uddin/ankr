@@ -10,7 +10,7 @@ import {
 } from 'recharts';
 import { useApp, formatCurrency } from '../../../context/AppContext';
 import type { ProForma } from '../../../context/AppContext';
-import svgPaths from '../../../../imports/svg-gkmuyz19as';
+import svgPaths from '@/icons/property-proforma-tab';
 
 const canela = "font-['Canela_Text_Trial',sans-serif] font-medium not-italic";
 

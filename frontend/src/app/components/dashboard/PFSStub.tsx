@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router';
-import svgPaths from '../../../imports/svg-2jpk391bzg';
+import svgPaths from '@/icons/dashboard-shared';
 
 function DocumentIcon() {
   return (

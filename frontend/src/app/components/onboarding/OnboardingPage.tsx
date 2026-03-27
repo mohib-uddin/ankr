@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 import { AnimatePresence, motion } from 'motion/react';
-import svgPaths from '../../../imports/svg-wqvlfgpcsv';
-import checkSvgPaths from '../../../imports/svg-5t5g3jnxim';
-import summarySvgPaths from '../../../imports/svg-mogh48nt6y';
-import advancedSvgPaths from '../../../imports/svg-1x26zo5bwp';
+import svgPaths from '@/icons/onboarding';
+import checkSvgPaths from '@/icons/onboarding-check';
+import summarySvgPaths from '@/icons/onboarding-summary';
+import advancedSvgPaths from '@/icons/onboarding-advanced';
 
 type Step = {
   id: number;

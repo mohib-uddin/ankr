@@ -1,5 +1,5 @@
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
-import svgPaths from '../../../imports/svg-f8fnncugof';
+import svgPaths from '@/icons/draw-public-link';
 import imgProperty from '@/assets/e9d78759a04046f1991fda88e44b64c28f7e866d.png';
 
 /* ═══════════════════════════════════════════════════════════════════ */
@@ -385,7 +385,7 @@ function StandardDrawPackageCard() {
         <div className="content-stretch flex items-center gap-[12px] relative shrink-0">
           <div className="bg-[#fcf6f0] content-stretch flex items-center p-[8.5px] relative rounded-[6px] shrink-0">
             <div className="relative shrink-0 size-[21px]">
-              <svg className="absolute block size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 17.5 16.9297">">
+              <svg className="absolute block size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 17.5 16.9297">
                 <path d={svgPaths.p270d0200} fill="#764D2F" />
               </svg>
             </div>

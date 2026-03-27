@@ -17,7 +17,7 @@ import {
 } from '../ui/select';
 import { useApp } from '../../context/AppContext';
 import type { VaultCategory, VaultDocument, VaultFolder, VaultShareLink } from '../../context/AppContext';
-import svgPaths from '../../../imports/svg-2jpk391bzg';
+import svgPaths from '@/icons/dashboard-shared';
 import packageIconAsset from '../../../assets/figma/documents-package/package-icon.svg';
 import listRadioAsset from '../../../assets/figma/documents-package/list-radio.svg';
 import closeIconAsset from '../../../assets/figma/documents-package/close-icon.svg';

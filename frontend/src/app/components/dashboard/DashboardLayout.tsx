@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useState, type ReactElement } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router';
 import { AnimatePresence, motion } from 'motion/react';
 import { LogOut, Menu, X } from 'lucide-react';
 import { AICopilot } from '../ai/AICopilot';
-import svgPaths from '../../../imports/svg-2jpk391bzg';
-import svgInvoicePaths from '../../../imports/svg-6hvh3ehqn2';
+import svgPaths from '@/icons/dashboard-shared';
+import svgInvoicePaths from '@/icons/dashboard-invoice-nav';
 import imgEllipse3 from '@/assets/4f3d3d31e8f035df10a1a48ab89d7f060cac4fe0.png';
 
 const NAV_ITEMS: { to: string; label: string; exact?: boolean; icon: string }[] = [
@@ -107,7 +107,7 @@ function SearchIcon() {
   );
 }
 
-const iconMap: Record<string, () => JSX.Element> = {
+const iconMap: Record<string, () => ReactElement> = {
   grid: GridIcon,
   building: BuildingIcon,
   invoice: InvoiceIcon,

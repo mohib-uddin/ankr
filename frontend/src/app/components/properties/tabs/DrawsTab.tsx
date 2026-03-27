@@ -8,7 +8,7 @@ import { DrawCompletionModal } from '../../draws/DrawCompletionModal';
 import { getShareUrl } from '../../draws/PublicDrawView';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../ui/table';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '../../ui/dropdown-menu';
-import svgPaths from '../../../../imports/svg-u6gkx16ihn';
+import svgPaths from '@/icons/property-draws-tab';
 
 /* ─── Figma-exact style tokens ───────────────────────────────── */
 const sfMed  = "font-['SF_Pro',sans-serif] font-[510]";

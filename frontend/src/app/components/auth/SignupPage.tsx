@@ -1,6 +1,6 @@
 import { useState, FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router';
-import svgPaths from '../../../imports/svg-ntwfab88z8';
+import { SignupSubmitChevronIcon } from '@/icons/signup';
 import imgChatGptImageMar22026014513Am2 from "@/assets/d4e288c194e513c6042ea3d990c5b1165f94f4b0.png";
 import { AuthSideCarousel } from './AuthSideCarousel';
 
@@ -212,15 +212,7 @@ export function SignupPage() {
                     >
                       Sign Up
                     </p>
-                    <div className="flex h-[9.537px] items-center justify-center w-[12.999px]">
-                      <div className="flex-none rotate-90">
-                        <div className="h-[12.999px] w-[9.537px]">
-                          <svg className="absolute block size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 9.53742 12.9993">
-                            <path d={svgPaths.pec28900} fill="white" />
-                          </svg>
-                        </div>
-                      </div>
-                    </div>
+                    <SignupSubmitChevronIcon />
                   </div>
                 </div>
               </button>

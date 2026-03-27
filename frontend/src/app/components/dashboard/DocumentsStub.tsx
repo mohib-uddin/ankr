@@ -1,4 +1,4 @@
-import svgPaths from '../../../imports/svg-2jpk391bzg';
+import svgPaths from '@/icons/dashboard-shared';
 
 function FolderIcon() {
   return (

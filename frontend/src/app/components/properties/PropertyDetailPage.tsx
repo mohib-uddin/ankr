@@ -11,7 +11,7 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid,
 } from 'recharts';
 import imgFrame792844 from '@/assets/e9d78759a04046f1991fda88e44b64c28f7e866d.png';
-import svgPaths from '../../../imports/svg-zb2v1z0a5h';
+import svgPaths from '@/icons/property-detail';
 
 type Tab = 'overview' | 'proforma' | 'budget' | 'draws' | 'documents';
 

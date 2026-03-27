@@ -3,7 +3,7 @@ import { motion } from 'motion/react';
 import { Plus } from 'lucide-react';
 import { useApp, getBudgetTotals, formatCurrency } from '../../context/AppContext';
 import type { DashboardProperty } from '../../context/AppContext';
-import svgPaths from '../../../imports/svg-2jpk391bzg';
+import svgPaths from '@/icons/dashboard-shared';
 
 const STATUS_COLORS: Record<string, string> = {
   Active: 'bg-[#F0FDF4] text-[#16A34A]',

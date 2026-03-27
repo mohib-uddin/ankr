@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router';
 import { Check, ArrowLeft } from 'lucide-react';
-import svgPaths from '../../../imports/svg-nkvq6hvrgp';
+import svgPaths from '@/icons/invoice-paid';
 
 const sf = { fontFamily: "'SF Pro', -apple-system, sans-serif", fontVariationSettings: "'wdth' 100" } as const;
 

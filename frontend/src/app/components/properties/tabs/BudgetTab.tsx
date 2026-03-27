@@ -2,7 +2,7 @@ import React, { useState, type CSSProperties } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useApp, getDrawnForCategory, genId, formatCurrency } from '../../../context/AppContext';
 import type { BudgetCategory, BudgetLineItem, PropertyBudget } from '../../../context/AppContext';
-import svgPaths from '../../../../imports/svg-57cp32n84p';
+import svgPaths from '@/icons/property-budget-tab';
 
 /* ─── Figma-exact style tokens ───────────────────────────────── */
 const sfMed   = "font-['SF_Pro',sans-serif] font-[510]";

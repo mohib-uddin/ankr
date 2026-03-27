@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router';
 import { motion } from 'motion/react';
 import { useApp, getBudgetTotals, formatCurrency } from '../../context/AppContext';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
-import svgPaths from '../../../imports/svg-2jpk391bzg';
+import svgPaths from '@/icons/dashboard-shared';
 
 function getGreeting() {
   const h = new Date().getHours();

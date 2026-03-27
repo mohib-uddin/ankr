@@ -8,7 +8,7 @@ import {
 import { useApp, getDrawnForCategory, formatCurrency, genId, DOCUMENT_PACKAGES } from '../../context/AppContext';
 import type { DrawLineItem, DrawAttachment, DocumentPackageId } from '../../context/AppContext';
 import { getShareUrl } from './PublicDrawView';
-import svgPaths from '../../../imports/svg-msusmqtedk';
+import svgPaths from '@/icons/new-draw-request';
 
 /* ─── Font tokens ─────────────────────────────────────────────────────────── */
 const FONT_HEADING: CSSProperties = {

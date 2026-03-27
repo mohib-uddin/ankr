@@ -1,6 +1,6 @@
 import { useState, FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router';
-import svgPaths from '../../../imports/svg-obyzd3cfoq';
+import { LoginSubmitChevronIcon } from '@/icons/login';
 import imgChatGptImageMar22026014513Am2 from "@/assets/cb102759979e1c974bdf9fdc0ff442d0dff9352a.png";
 import { AuthSideCarousel } from './AuthSideCarousel';
 
@@ -136,15 +136,7 @@ export function LoginPage() {
                     >
                       Sign In
                     </p>
-                    <div className="flex h-[9.537px] items-center justify-center w-[12.999px]">
-                      <div className="flex-none rotate-90">
-                        <div className="h-[12.999px] w-[9.537px]">
-                          <svg className="absolute block size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 9.53742 12.9993">
-                            <path d={svgPaths.pec28900} fill="white" />
-                          </svg>
-                        </div>
-                      </div>
-                    </div>
+                    <LoginSubmitChevronIcon />
                   </div>
                 </div>
               </button>

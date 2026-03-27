@@ -2,7 +2,7 @@ import React, { useState, useEffect, type CSSProperties } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import { useApp, formatCurrency } from '../../context/AppContext';
 import type { ProForma, ExitStrategy } from '../../context/AppContext';
-import svgPaths from '../../../imports/svg-22tyinewy3';
+import svgPaths from '@/icons/edit-proforma';
 
 /* ─── Figma-exact class fragments ────────────────────────────── */
 const sfMed = "font-['SF_Pro',sans-serif] font-[510]";

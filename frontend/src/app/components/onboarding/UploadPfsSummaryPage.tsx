@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
-import checkSvgPaths from '../../../imports/svg-5t5g3jnxim';
+import checkSvgPaths from '@/icons/onboarding-check';
 
 type Step = {
   id: number;

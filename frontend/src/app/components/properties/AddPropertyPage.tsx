@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router';
 import { motion } from 'motion/react';
 import { useApp, genId } from '../../context/AppContext';
 import type { PropertyType, PropertyStatus } from '../../context/AppContext';
-import svgPaths from '../../../imports/svg-2jpk391bzg';
-import figmaSvg from '../../../imports/svg-e1pcjf8vsp';
+import svgPaths from '@/icons/dashboard-shared';
+import figmaSvg from '@/icons/add-property';
 
 const US_STATES = [
   'AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN','IA',

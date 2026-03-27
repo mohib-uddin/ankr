@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { motion } from 'motion/react';
-import svgPathsCategory from '../../../../imports/svg-pkd8gq5h1b';
-import svgPathsDocument from '../../../../imports/svg-ahs0n8wgnc';
-import svgPathsButtons from '../../../../imports/svg-z99rxpbbck';
+import svgPathsCategory from '@/icons/property-documents-tab-category';
+import svgPathsDocument from '@/icons/property-documents-tab-file';
+import svgPathsButtons from '@/icons/property-documents-tab-actions';
 
 /* ═══════════════════════════════════════════════════════════════════ */
 /*  Types & Constants                                                */

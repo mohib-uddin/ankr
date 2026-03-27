@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router';
-import svgPaths from '../../../imports/svg-83mjixczgf';
+import svgPaths from '@/icons/profile-setup';
 
 export function ProfileSetupPage() {
   const navigate = useNavigate();
