@@ -12,6 +12,15 @@ import type { AppState } from "../../context/AppContext";
 
 const STORAGE_KEY = "ankr_v2_state";
 
+function toSafeNumber(value: unknown): number {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string") {
+    const parsed = Number(value.replace(/,/g, ""));
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+  return 0;
+}
+
 /* ═══════════════════════════════════════════════════════════════════ */
 /*  Helper Functions                                                 */
 /* ═══════════════════════════════════════════════════════════════════ */
@@ -69,7 +78,7 @@ export function PublicDrawView() {
   // Calculate totals
   const lineItems = draw.lineItems || [];
   const totalAmount = lineItems.reduce(
-    (sum: number, item: any) => sum + (item.amount || 0),
+    (sum: number, item: any) => sum + toSafeNumber(item?.amount),
     0,
   );
 
@@ -285,7 +294,7 @@ export function PublicDrawView() {
                   >
                     $
                     {Math.round(
-                      totalAmount / 1000,
+                      toSafeNumber(totalAmount) / 1000,
                     ).toLocaleString()}
                     K
                   </p>
@@ -306,7 +315,7 @@ export function PublicDrawView() {
               className="font-['SF_Pro',sans-serif] font-bold leading-[61px] relative shrink-0 text-[48px] text-white"
               style={{ fontVariationSettings: "'wdth' 100" }}
             >
-              ${Math.round(totalAmount / 1000).toLocaleString()}
+              ${Math.round(toSafeNumber(totalAmount) / 1000).toLocaleString()}
               K
             </p>
           </div>
@@ -627,7 +636,7 @@ function DrawLineItemsCard({
                         fontVariationSettings: "'wdth' 100",
                       }}
                     >
-                      ${item.amount.toLocaleString()}
+                      ${toSafeNumber(item?.amount).toLocaleString()}
                     </p>
                   </td>
                 </tr>
@@ -801,7 +810,7 @@ function BudgetTrackerCard({
                         fontVariationSettings: "'wdth' 100",
                       }}
                     >
-                      ${item.value.toLocaleString()}
+                      ${toSafeNumber(item?.value).toLocaleString()}
                     </p>
                   </div>
                 </div>

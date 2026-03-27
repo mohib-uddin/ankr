@@ -326,10 +326,10 @@ export function DocumentVault() {
     <div className="px-4 sm:px-6 lg:px-[58px] py-[32px] sm:py-[40px]">
       {/* ─── Header ─── */}
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-[16px] mb-[8px]">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-[16px] mb-[36px]">
           <div>
-            <p className={`${canela} text-[28px] text-[#3E2D1D]`}>Document Vault</p>
-            <p className={`${sfMed} text-[14px] text-[#8C8780] mt-[4px]`} style={wdth}>
+            <h1 className={`${canela} text-[28px] text-[#3E2D1D] mb-[8px]`}>Document Vault</h1>
+            <p className="text-[16px] text-[#764D2F]" style={{ fontFamily: "'SF Pro', -apple-system, sans-serif", fontWeight: 510, fontVariationSettings: "'wdth' 100" }}>
               Securely upload, organize, and share your financial documents.
             </p>
           </div>

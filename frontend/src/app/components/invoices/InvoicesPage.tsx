@@ -1,7 +1,29 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
-import { Eye, Plus, ChevronDown, Upload, X } from 'lucide-react';
+import { Eye, Plus, Upload, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '../ui/table';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../ui/select';
+
+const invoiceSelectTriggerBase =
+  "!h-[46px] !rounded-[8px] !border !border-[#D0D0D0] !bg-white !px-[12px] !text-[14px] !shadow-none data-[placeholder]:!text-[#767676] focus-visible:!ring-0 focus-visible:!border-[#764D2F] [&_svg]:!text-[#767676] [&_svg]:!opacity-100";
+const invoiceSelectContentBase =
+  "!bg-white !border !border-[#D0D0D0] !rounded-[8px] !shadow-none !p-[4px]";
+const invoiceSelectItemBase =
+  "!text-[14px] !text-[#3E2D1D] !rounded-[6px] !px-[10px] !py-[8px] data-[highlighted]:!bg-[#FCF6F0] data-[highlighted]:!text-[#3E2D1D] data-[state=checked]:!bg-[#F3EFE6] data-[state=checked]:!text-[#764D2F]";
 
 const INVOICES = [
   { id: 1, name: 'Structural Framing -Phase 1', code: 'INV-2024-001', contractor: 'Elite Carpentry Ltd', property: 'The Obsidian Heights', amount: '$24,500', status: 'Paid' },
@@ -32,6 +54,9 @@ function EyeIcon() {
 }
 
 function NewInvoiceModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const [property, setProperty] = useState('obsidian');
+  const [budgetCategory, setBudgetCategory] = useState('steel');
+
   if (!open) return null;
   return (
     <AnimatePresence>
@@ -103,18 +128,19 @@ function NewInvoiceModal({ open, onClose }: { open: boolean; onClose: () => void
                 >
                   Property
                 </label>
-                <div className="relative">
-                  <select
-                    className="w-full h-[46px] bg-white border border-[#D0D0D0] rounded-[8px] px-[12px] text-[14px] text-[#333] outline-none appearance-none cursor-pointer focus:border-[#764D2F]"
+                <Select value={property} onValueChange={setProperty}>
+                  <SelectTrigger
+                    className={`w-full !text-[#333] ${invoiceSelectTriggerBase}`}
                     style={{ fontFamily: "'Figtree', sans-serif" }}
-                    defaultValue="obsidian"
                   >
-                    <option value="obsidian">Obsidian Villa</option>
-                    <option value="heights">The Obsidian Heights</option>
-                    <option value="pavilion">South Shore Pavilion</option>
-                  </select>
-                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#767676] pointer-events-none" />
-                </div>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className={invoiceSelectContentBase}>
+                    <SelectItem value="obsidian" className={invoiceSelectItemBase}>Obsidian Villa</SelectItem>
+                    <SelectItem value="heights" className={invoiceSelectItemBase}>The Obsidian Heights</SelectItem>
+                    <SelectItem value="pavilion" className={invoiceSelectItemBase}>South Shore Pavilion</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <label
@@ -123,18 +149,19 @@ function NewInvoiceModal({ open, onClose }: { open: boolean; onClose: () => void
                 >
                   Budget Category
                 </label>
-                <div className="relative">
-                  <select
-                    className="w-full h-[46px] bg-white border border-[#D0D0D0] rounded-[8px] px-[12px] text-[14px] text-[#333] outline-none appearance-none cursor-pointer focus:border-[#764D2F]"
+                <Select value={budgetCategory} onValueChange={setBudgetCategory}>
+                  <SelectTrigger
+                    className={`w-full !text-[#333] ${invoiceSelectTriggerBase}`}
                     style={{ fontFamily: "'Figtree', sans-serif" }}
-                    defaultValue="steel"
                   >
-                    <option value="steel">Structural Steel</option>
-                    <option value="masonry">Exterior Masonry</option>
-                    <option value="electrical">Electrical</option>
-                  </select>
-                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#767676] pointer-events-none" />
-                </div>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className={invoiceSelectContentBase}>
+                    <SelectItem value="steel" className={invoiceSelectItemBase}>Structural Steel</SelectItem>
+                    <SelectItem value="masonry" className={invoiceSelectItemBase}>Exterior Masonry</SelectItem>
+                    <SelectItem value="electrical" className={invoiceSelectItemBase}>Electrical</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <label
@@ -186,9 +213,10 @@ function NewInvoiceModal({ open, onClose }: { open: boolean; onClose: () => void
 export function InvoicesPage() {
   const navigate = useNavigate();
   const [modalOpen, setModalOpen] = useState(false);
+  const [propertyFilter, setPropertyFilter] = useState('all');
 
   return (
-    <div className="px-4 sm:px-6 lg:px-[58px] pb-[40px]">
+    <div className="px-4 sm:px-6 lg:px-[58px] py-[28px] sm:py-[40px]">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-[36px]">
         <div>
@@ -207,7 +235,7 @@ export function InvoicesPage() {
         </div>
         <button
           onClick={() => setModalOpen(true)}
-          className="flex items-center gap-[10px] h-[50px] px-[48px] rounded-[8px] border-[1.5px] border-[#3E2D1D] text-[#3E2D1D] cursor-pointer hover:bg-[#3E2D1D] hover:text-white transition-colors shrink-0"
+          className="flex items-center justify-center gap-[10px] h-[50px] w-full sm:w-auto px-[18px] sm:px-[48px] rounded-[8px] border-[1.5px] border-[#3E2D1D] text-[#3E2D1D] cursor-pointer hover:bg-[#3E2D1D] hover:text-white transition-colors shrink-0"
           style={{ fontFamily: "'SF Pro', -apple-system, sans-serif", fontWeight: 590, fontVariationSettings: "'wdth' 100" }}
         >
           <Plus className="w-[15.5px] h-[15.5px]" />
@@ -223,18 +251,20 @@ export function InvoicesPage() {
         >
           Filter By Property
         </p>
-        <div className="relative w-full max-w-[355px]">
-          <select
-            className="w-full h-[46px] bg-white border border-[#D0D0D0] rounded-[8px] px-[12px] text-[14px] text-[#767676] outline-none appearance-none cursor-pointer"
+        <Select value={propertyFilter} onValueChange={setPropertyFilter}>
+          <SelectTrigger
+            className={`w-full max-w-[355px] !text-[#767676] ${invoiceSelectTriggerBase}`}
             style={{ fontFamily: "'Figtree', sans-serif" }}
           >
-            <option>Select Property</option>
-            <option>The Obsidian Heights</option>
-            <option>South Shore Pavilion</option>
-            <option>North Wing Extension</option>
-          </select>
-          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#767676] pointer-events-none" />
-        </div>
+            <SelectValue placeholder="Select Property" />
+          </SelectTrigger>
+          <SelectContent className={invoiceSelectContentBase}>
+            <SelectItem value="all" className={invoiceSelectItemBase}>Select Property</SelectItem>
+            <SelectItem value="obsidian-heights" className={invoiceSelectItemBase}>The Obsidian Heights</SelectItem>
+            <SelectItem value="south-shore" className={invoiceSelectItemBase}>South Shore Pavilion</SelectItem>
+            <SelectItem value="north-wing" className={invoiceSelectItemBase}>North Wing Extension</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Table */}
@@ -242,120 +272,53 @@ export function InvoicesPage() {
         className="bg-white rounded-[20px] border border-[#D0D0D0] overflow-hidden mb-[24px]"
         style={{ boxShadow: '0px 10px 40px 0px rgba(243,219,188,0.45)' }}
       >
-        {/* Table header */}
-        <div className="bg-[#FAFAF9] border-b border-[#D0D0D0]">
-          <div className="flex items-center gap-[62px] px-[30px] py-[12px] overflow-x-auto">
-            <div className="shrink-0 w-[48px]">
-              <span
-                className="text-[11px] text-[#8C8780] uppercase tracking-[0.6145px]"
-                style={{ fontFamily: "'SF Pro', -apple-system, sans-serif", fontWeight: 510, fontVariationSettings: "'wdth' 100" }}
-              >
-                #
-              </span>
-            </div>
-            <div className="shrink-0 w-[206px]">
-              <span
-                className="text-[11px] text-[#8C8780] uppercase tracking-[0.6145px]"
-                style={{ fontFamily: "'SF Pro', -apple-system, sans-serif", fontWeight: 510, fontVariationSettings: "'wdth' 100" }}
-              >
-                Invoice Name
-              </span>
-            </div>
-            <div className="shrink-0 w-[140px]">
-              <span
-                className="text-[11px] text-[#8C8780] uppercase tracking-[0.6145px]"
-                style={{ fontFamily: "'SF Pro', -apple-system, sans-serif", fontWeight: 510, fontVariationSettings: "'wdth' 100" }}
-              >
-                Contractor
-              </span>
-            </div>
-            <div className="shrink-0 w-[141px]">
-              <span
-                className="text-[11px] text-[#8C8780] uppercase tracking-[0.6145px]"
-                style={{ fontFamily: "'SF Pro', -apple-system, sans-serif", fontWeight: 510, fontVariationSettings: "'wdth' 100" }}
-              >
-                Property
-              </span>
-            </div>
-            <div className="shrink-0 w-[100px] text-right">
-              <span
-                className="text-[11px] text-[#8C8780] uppercase tracking-[0.6145px]"
-                style={{ fontFamily: "'SF Pro', -apple-system, sans-serif", fontWeight: 510, fontVariationSettings: "'wdth' 100" }}
-              >
-                Amount
-              </span>
-            </div>
-            <div className="shrink-0 w-[96px] text-center">
-              <span
-                className="text-[11px] text-[#8C8780] uppercase tracking-[0.6145px]"
-                style={{ fontFamily: "'SF Pro', -apple-system, sans-serif", fontWeight: 510, fontVariationSettings: "'wdth' 100" }}
-              >
-                Status
-              </span>
-            </div>
-            <div className="shrink-0 w-[30px]" />
-          </div>
-        </div>
-
-        {/* Table rows */}
-        {INVOICES.map((inv) => (
-          <div key={inv.id} className="border-b border-[#F5F3EF] last:border-b-0">
-            <div className="flex items-center gap-[62px] px-[30px] py-[14px] overflow-x-auto">
-              <div className="shrink-0 w-[48px]">
-                <span
-                  className="text-[14px] text-[#8C8780] tracking-[-0.1504px]"
-                  style={{ fontFamily: "'Inter', sans-serif", fontWeight: 500 }}
-                >
-                  #{inv.id}
-                </span>
-              </div>
-              <div className="shrink-0 w-[206px]">
-                <p
-                  className="text-[14px] text-[#3E2D1D] tracking-[-0.1504px]"
-                  style={{ fontFamily: "'SF Pro', -apple-system, sans-serif", fontWeight: 510, fontVariationSettings: "'wdth' 100" }}
-                >
-                  {inv.name}
-                </p>
-                <p
-                  className="text-[12px] text-[#8C8780] mt-[2px]"
-                  style={{ fontFamily: "'Inter', sans-serif", fontWeight: 500 }}
-                >
-                  {inv.code}
-                </p>
-              </div>
-              <div className="shrink-0 w-[140px]">
-                <span
-                  className="text-[14px] text-[#8C8780] tracking-[-0.1504px]"
-                  style={{ fontFamily: "'Inter', sans-serif", fontWeight: 500 }}
-                >
-                  {inv.contractor}
-                </span>
-              </div>
-              <div className="shrink-0 w-[141px]">
-                <span
-                  className="text-[14px] text-[#8C8780] tracking-[-0.1504px]"
-                  style={{ fontFamily: "'Inter', sans-serif", fontWeight: 500 }}
-                >
-                  {inv.property}
-                </span>
-              </div>
-              <div className="shrink-0 w-[100px] text-right">
-                <span
-                  className="text-[14px] text-[#3E2D1D] tracking-[-0.1504px]"
-                  style={{ fontFamily: "'SF Pro', -apple-system, sans-serif", fontWeight: 700, fontVariationSettings: "'wdth' 100" }}
-                >
-                  {inv.amount}
-                </span>
-              </div>
-              <div className="shrink-0 w-[96px] flex justify-center">
-                <StatusBadge status={inv.status} />
-              </div>
-              <div className="shrink-0" onClick={() => navigate(`/dashboard/invoices/${inv.id}`)}>
-                <EyeIcon />
-              </div>
-            </div>
-          </div>
-        ))}
+        <Table className="min-w-[860px]">
+          <TableHeader className="bg-[#FAFAF9] border-b border-[#D0D0D0]">
+            <TableRow className="hover:bg-transparent border-0">
+              <TableHead className="h-auto px-[30px] py-[12px] w-[48px] min-w-[48px] text-[11px] text-[#8C8780] uppercase tracking-[0.6145px]" style={{ fontFamily: "'SF Pro', -apple-system, sans-serif", fontWeight: 510, fontVariationSettings: "'wdth' 100" }}>#</TableHead>
+              <TableHead className="h-auto px-0 py-[12px] w-[206px] min-w-[206px] text-[11px] text-[#8C8780] uppercase tracking-[0.6145px]" style={{ fontFamily: "'SF Pro', -apple-system, sans-serif", fontWeight: 510, fontVariationSettings: "'wdth' 100" }}>Invoice Name</TableHead>
+              <TableHead className="h-auto px-0 py-[12px] w-[140px] min-w-[140px] text-[11px] text-[#8C8780] uppercase tracking-[0.6145px]" style={{ fontFamily: "'SF Pro', -apple-system, sans-serif", fontWeight: 510, fontVariationSettings: "'wdth' 100" }}>Contractor</TableHead>
+              <TableHead className="h-auto px-0 py-[12px] w-[141px] min-w-[141px] text-[11px] text-[#8C8780] uppercase tracking-[0.6145px]" style={{ fontFamily: "'SF Pro', -apple-system, sans-serif", fontWeight: 510, fontVariationSettings: "'wdth' 100" }}>Property</TableHead>
+              <TableHead className="h-auto px-0 py-[12px] w-[100px] min-w-[100px] text-[11px] text-[#8C8780] uppercase tracking-[0.6145px] text-right" style={{ fontFamily: "'SF Pro', -apple-system, sans-serif", fontWeight: 510, fontVariationSettings: "'wdth' 100" }}>Amount</TableHead>
+              <TableHead className="h-auto px-0 py-[12px] w-[96px] min-w-[96px] text-[11px] text-[#8C8780] uppercase tracking-[0.6145px] text-center" style={{ fontFamily: "'SF Pro', -apple-system, sans-serif", fontWeight: 510, fontVariationSettings: "'wdth' 100" }}>Status</TableHead>
+              <TableHead className="h-auto pl-0 pr-[30px] py-[12px] w-[30px] min-w-[30px]" />
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {INVOICES.map((inv) => (
+              <TableRow key={inv.id} className="border-b border-[#F5F3EF] last:border-b-0 hover:bg-transparent">
+                <TableCell className="px-[30px] py-[14px] w-[48px] min-w-[48px]">
+                  <span className="text-[14px] text-[#8C8780] tracking-[-0.1504px]" style={{ fontFamily: "'Inter', sans-serif", fontWeight: 500 }}>
+                    #{inv.id}
+                  </span>
+                </TableCell>
+                <TableCell className="px-0 py-[14px] w-[206px] min-w-[206px]">
+                  <p className="text-[14px] text-[#3E2D1D] tracking-[-0.1504px]" style={{ fontFamily: "'SF Pro', -apple-system, sans-serif", fontWeight: 510, fontVariationSettings: "'wdth' 100" }}>{inv.name}</p>
+                  <p className="text-[12px] text-[#8C8780] mt-[2px]" style={{ fontFamily: "'Inter', sans-serif", fontWeight: 500 }}>{inv.code}</p>
+                </TableCell>
+                <TableCell className="px-0 py-[14px] w-[140px] min-w-[140px]">
+                  <span className="text-[14px] text-[#8C8780] tracking-[-0.1504px]" style={{ fontFamily: "'Inter', sans-serif", fontWeight: 500 }}>{inv.contractor}</span>
+                </TableCell>
+                <TableCell className="px-0 py-[14px] w-[141px] min-w-[141px]">
+                  <span className="text-[14px] text-[#8C8780] tracking-[-0.1504px]" style={{ fontFamily: "'Inter', sans-serif", fontWeight: 500 }}>{inv.property}</span>
+                </TableCell>
+                <TableCell className="px-0 py-[14px] w-[100px] min-w-[100px] text-right">
+                  <span className="text-[14px] text-[#3E2D1D] tracking-[-0.1504px]" style={{ fontFamily: "'SF Pro', -apple-system, sans-serif", fontWeight: 700, fontVariationSettings: "'wdth' 100" }}>{inv.amount}</span>
+                </TableCell>
+                <TableCell className="px-0 py-[14px] w-[96px] min-w-[96px]">
+                  <div className="flex justify-center">
+                    <StatusBadge status={inv.status} />
+                  </div>
+                </TableCell>
+                <TableCell className="pl-0 pr-[30px] py-[14px] w-[30px] min-w-[30px]">
+                  <button className="cursor-pointer" onClick={() => navigate(`/dashboard/invoices/${inv.id}`)}>
+                    <EyeIcon />
+                  </button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       </div>
 
       {/* Footer */}

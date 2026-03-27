@@ -1,3 +1,4 @@
+import React from 'react';
 import { useNavigate } from 'react-router';
 import svgPaths from '../../../imports/svg-83mjixczgf';
 
@@ -15,7 +16,7 @@ export function ProfileSetupPage() {
   };
 
   return (
-    <div className="bg-[#fcf6f0] fixed inset-0 overflow-auto">
+    <div className="bg-[#fcf6f0] fixed inset-0 overflow-auto [&_button]:cursor-pointer [&_button]:transition-all [&_button]:duration-200">
       <div className="relative min-h-screen w-full flex flex-col items-center justify-center px-[24px] py-[60px]">
         {/* Main content container */}
         <div className="w-full max-w-[844px] flex flex-col items-center gap-[64px]">
@@ -52,7 +53,7 @@ export function ProfileSetupPage() {
             {/* Upload PFS Card */}
             <button
               onClick={handleUploadPFS}
-              className="bg-white relative rounded-[16px] flex-1 group hover:shadow-lg transition-all duration-200"
+              className="bg-white relative rounded-[16px] flex-1 group hover:shadow-lg hover:-translate-y-[1px]"
             >
               <div className="flex flex-col gap-[10px] items-start p-[28px] relative rounded-[inherit]">
                 <div className="flex flex-col gap-[16px] items-start justify-end w-full">
@@ -90,7 +91,7 @@ export function ProfileSetupPage() {
             {/* Build Profile Card */}
             <button
               onClick={handleBuildProfile}
-              className="bg-[#764d2f] relative rounded-[16px] flex-1 group hover:bg-[#8c5d3a] transition-all duration-200 hover:shadow-lg"
+              className="bg-[#764d2f] relative rounded-[16px] flex-1 group hover:bg-[#8c5d3a] hover:shadow-lg hover:-translate-y-[1px]"
             >
               <div className="flex flex-col items-start p-[28px] relative rounded-[inherit]">
                 <div className="flex flex-col gap-[16px] items-start justify-end w-full">

@@ -146,7 +146,9 @@ export function BudgetTab({ propertyId }: { propertyId: string }) {
     ...property.budget,
     categories: property.budget.categories.map(c => ({ ...c, items: c.items.map(i => ({ ...i })) })),
   });
-  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>(
+    () => Object.fromEntries(property.budget.categories.map(c => [c.id, true])),
+  );
   const [saved, setSaved] = useState(false);
   const [editCell, setEditCell] = useState<{ catId: string; itemId: string; field: string } | null>(null);
   const [showTemplates, setShowTemplates] = useState(false);
@@ -175,7 +177,9 @@ export function BudgetTab({ propertyId }: { propertyId: string }) {
     setSaved(false);
   };
   const addCategory = () => {
-    setBudget(prev => ({ ...prev, categories: [...prev.categories, { id: genId(), name: 'New Category', items: [] }] }));
+    const newId = genId();
+    setBudget(prev => ({ ...prev, categories: [...prev.categories, { id: newId, name: 'New Category', items: [] }] }));
+    setCollapsed(prev => ({ ...prev, [newId]: true }));
     setSaved(false);
   };
   const removeCategory = (catId: string) => {
@@ -190,6 +194,10 @@ export function BudgetTab({ propertyId }: { propertyId: string }) {
     const t = BUDGET_TEMPLATES[idx];
     const cats: BudgetCategory[] = t.categories.map(tc => ({ id: genId(), name: tc.name, items: tc.items.map(ti => ({ id: genId(), name: ti.name, budget: ti.budget, actual: 0 })) }));
     setBudget(prev => ({ ...prev, categories: [...prev.categories, ...cats] }));
+    setCollapsed(prev => ({
+      ...prev,
+      ...Object.fromEntries(cats.map(c => [c.id, true])),
+    }));
     setSaved(false); setShowTemplates(false);
   };
   const handleSave = () => { updateBudget(propertyId, budget); setSaved(true); setTimeout(() => setSaved(false), 2500); };

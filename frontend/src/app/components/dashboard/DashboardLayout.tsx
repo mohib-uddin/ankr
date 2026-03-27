@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { Outlet, NavLink } from 'react-router';
+import { Outlet, NavLink, useNavigate } from 'react-router';
 import { AnimatePresence, motion } from 'motion/react';
-import { Menu, X } from 'lucide-react';
+import { LogOut, Menu, X } from 'lucide-react';
 import { AICopilot } from '../ai/AICopilot';
 import svgPaths from '../../../imports/svg-2jpk391bzg';
 import svgInvoicePaths from '../../../imports/svg-6hvh3ehqn2';
@@ -12,7 +12,6 @@ const NAV_ITEMS: { to: string; label: string; exact?: boolean; icon: string }[] 
   { to: '/dashboard/properties', label: 'Properties', icon: 'building' },
   { to: '/dashboard/invoices', label: 'Invoices', icon: 'invoice' },
   { to: '/dashboard/documents', label: 'Documents', icon: 'folder' },
-  { to: '/dashboard/pfs', label: 'PFS', icon: 'document' },
 ];
 
 function GridIcon() {
@@ -119,6 +118,8 @@ const iconMap: Record<string, () => JSX.Element> = {
 export function DashboardLayout() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [aiOpen, setAiOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const navigate = useNavigate();
 
   return (
     <div className="flex min-h-screen" style={{ background: '#FCF6F0' }}>
@@ -136,8 +137,18 @@ export function DashboardLayout() {
       </AnimatePresence>
 
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex flex-col w-[260px] shrink-0 z-20 sticky top-0 h-screen" style={{ backgroundColor: '#3E2D1D' }}>
-        <SidebarContent onClose={undefined} />
+      <aside
+        className={`hidden lg:flex flex-col shrink-0 z-20 sticky top-0 h-screen transition-[width] duration-300 ${
+          sidebarCollapsed ? 'w-[88px]' : 'w-[260px]'
+        }`}
+        style={{ backgroundColor: '#3E2D1D' }}
+      >
+        <SidebarContent
+          onClose={undefined}
+          isCollapsed={sidebarCollapsed}
+          onToggleCollapse={() => setSidebarCollapsed(prev => !prev)}
+          onLogout={() => navigate('/login')}
+        />
       </aside>
 
       {/* Mobile sidebar */}
@@ -151,7 +162,7 @@ export function DashboardLayout() {
             className="fixed left-0 top-0 h-full w-[260px] z-40 lg:hidden flex flex-col"
             style={{ backgroundColor: '#3E2D1D' }}
           >
-            <SidebarContent onClose={() => setMobileOpen(false)} />
+            <SidebarContent onClose={() => setMobileOpen(false)} isCollapsed={false} onToggleCollapse={undefined} onLogout={() => navigate('/login')} />
           </motion.aside>
         )}
       </AnimatePresence>
@@ -192,27 +203,57 @@ export function DashboardLayout() {
   );
 }
 
-function SidebarContent({ onClose }: { onClose: (() => void) | undefined }) {
+function SidebarContent({
+  onClose,
+  isCollapsed,
+  onToggleCollapse,
+  onLogout,
+}: {
+  onClose: (() => void) | undefined;
+  isCollapsed: boolean;
+  onToggleCollapse: (() => void) | undefined;
+  onLogout: () => void;
+}) {
   return (
     <div className="flex flex-col h-full">
       {/* Logo area */}
-      <div className="h-[89px] flex items-center justify-between px-[34px] shrink-0" style={{ borderBottom: '1px solid rgba(117, 77, 47, 0.5)' }}>
+      <div
+        className={`h-[89px] flex items-center shrink-0 ${
+          isCollapsed ? 'justify-center px-[12px]' : 'justify-between px-[34px]'
+        }`}
+        style={{ borderBottom: '1px solid rgba(117, 77, 47, 0.5)' }}
+      >
         {onClose && (
           <button onClick={onClose} className="mr-2 text-[#F3DBBC] hover:text-white cursor-pointer">
             <X className="w-4 h-4" />
           </button>
         )}
-        <p
-          className="text-[#F3DBBC] text-[33px] tracking-[1.3px] whitespace-nowrap"
-          style={{ fontFamily: "'Canela Text Trial', sans-serif", fontWeight: 700 }}
-        >
-          ANKR
-        </p>
-        <SidebarCollapseIcon />
+        {!isCollapsed && (
+          <p
+            className="text-[#F3DBBC] text-[28px] sm:text-[33.12px] leading-[0.9807] tracking-[0.04em] text-center whitespace-nowrap"
+            style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 700 }}
+          >
+            ANKR
+          </p>
+        )}
+        {!onClose && onToggleCollapse && (
+          <button
+            onClick={onToggleCollapse}
+            className={`text-[#F3DBBC] hover:text-white transition-colors cursor-pointer ${
+              isCollapsed ? 'absolute top-[26px]' : ''
+            }`}
+            aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          >
+            <div className={isCollapsed ? 'rotate-180 transition-transform duration-300' : 'transition-transform duration-300'}>
+              <SidebarCollapseIcon />
+            </div>
+          </button>
+        )}
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 px-[13px] pt-[25px] space-y-[6px]">
+      <nav className={`flex-1 pt-[25px] space-y-[6px] ${isCollapsed ? 'px-[10px]' : 'px-[13px]'}`}>
         {NAV_ITEMS.map(item => {
           const IconComponent = iconMap[item.icon];
           return (
@@ -221,8 +262,12 @@ function SidebarContent({ onClose }: { onClose: (() => void) | undefined }) {
               to={item.to}
               end={item.exact}
               onClick={onClose}
+              title={isCollapsed ? item.label : undefined}
+              aria-label={item.label}
               className={({ isActive }) =>
-                `flex items-center gap-[10px] px-[18px] py-[14px] rounded-[8px] transition-colors cursor-pointer text-[#FCF6F0] ${
+                `flex items-center rounded-[8px] transition-colors cursor-pointer text-[#FCF6F0] ${
+                  isCollapsed ? 'justify-center px-[12px] py-[14px]' : 'gap-[10px] px-[18px] py-[14px]'
+                } ${
                   isActive
                     ? 'bg-[#764D2F]'
                     : 'hover:bg-[#764D2F]/30'
@@ -230,11 +275,25 @@ function SidebarContent({ onClose }: { onClose: (() => void) | undefined }) {
               }
             >
               <IconComponent />
-              <span className="text-[16px] whitespace-nowrap" style={{ fontWeight: 510 }}>{item.label}</span>
+              {!isCollapsed && <span className="text-[16px] whitespace-nowrap" style={{ fontWeight: 510 }}>{item.label}</span>}
             </NavLink>
           );
         })}
       </nav>
+
+      <div className={`pb-[18px] ${isCollapsed ? 'px-[10px]' : 'px-[13px]'}`}>
+        <button
+          onClick={onLogout}
+          title={isCollapsed ? 'Logout' : undefined}
+          aria-label="Logout"
+          className={`w-full flex items-center rounded-[8px] transition-colors cursor-pointer text-[#FCF6F0] hover:bg-[#764D2F]/30 ${
+            isCollapsed ? 'justify-center px-[12px] py-[14px]' : 'gap-[10px] px-[18px] py-[14px]'
+          }`}
+        >
+          <LogOut className="w-6 h-6" />
+          {!isCollapsed && <span className="text-[16px] whitespace-nowrap" style={{ fontWeight: 510 }}>Logout</span>}
+        </button>
+      </div>
     </div>
   );
 }

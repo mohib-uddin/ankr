@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router';
+import { AnimatePresence, motion } from 'motion/react';
 import svgPaths from '../../../imports/svg-wqvlfgpcsv';
 import checkSvgPaths from '../../../imports/svg-5t5g3jnxim';
 import summarySvgPaths from '../../../imports/svg-mogh48nt6y';
@@ -19,8 +20,7 @@ const STEPS: Step[] = [
   { id: 5, label: 'Other Assets', shortLabel: 'Other Assets' },
   { id: 6, label: 'Liabilities', shortLabel: 'Liabilities' },
   { id: 7, label: 'Income', shortLabel: 'Income' },
-  { id: 8, label: 'Disclosures', shortLabel: 'Disclosures' },
-  { id: 9, label: 'Summary', shortLabel: 'Summary' },
+  { id: 8, label: 'Summary', shortLabel: 'Summary' },
 ];
 
 type LiquidityAccount = {
@@ -56,6 +56,7 @@ export function OnboardingPage() {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [direction, setDirection] = useState(1);
   
   // Step 1 - Basic Information
   const [formData, setFormData] = useState({
@@ -130,6 +131,7 @@ export function OnboardingPage() {
 
   const handleBack = () => {
     if (currentStep > 1) {
+      setDirection(-1);
       setCurrentStep(currentStep - 1);
     } else {
       navigate('/profile-setup');
@@ -138,12 +140,14 @@ export function OnboardingPage() {
 
   const handleSkip = () => {
     if (currentStep < STEPS.length) {
+      setDirection(1);
       setCurrentStep(currentStep + 1);
     }
   };
 
   const handleNext = () => {
     if (currentStep < STEPS.length) {
+      setDirection(1);
       setCurrentStep(currentStep + 1);
     } else {
       setShowSuccess(true);
@@ -247,8 +251,7 @@ export function OnboardingPage() {
       case 5: return 'Other Assets';
       case 6: return 'Liabilities';
       case 7: return 'Income';
-      case 8: return 'Disclosures';
-      case 9: return 'Financial Snapshot';
+      case 8: return 'Financial Snapshot';
       default: return '';
     }
   };
@@ -262,8 +265,7 @@ export function OnboardingPage() {
       case 5: return 'Investments and additional holdings.';
       case 6: return 'Outstanding debt and obligations.';
       case 7: return 'Annual income from all sources.';
-      case 8: return 'Required for a complete financial profile.';
-      case 9: return 'Review your profile before activation.';
+      case 8: return 'Review your profile before activation.';
       default: return '';
     }
   };
@@ -325,7 +327,7 @@ export function OnboardingPage() {
   }
 
   return (
-    <div className="bg-[#fcf6f0] fixed inset-0 overflow-auto">
+    <div className="bg-[#fcf6f0] fixed inset-0 overflow-auto [&_button]:cursor-pointer [&_button]:transition-all [&_button]:duration-200">
       <div className="relative min-h-screen w-full px-[24px] py-[40px] lg:px-[40px] xl:px-0">
         {/* Stepper */}
         <div className="w-full max-w-[1310px] mx-auto mb-[40px] md:mb-[48px]">
@@ -373,7 +375,7 @@ export function OnboardingPage() {
         </div>
 
         {/* Form Container */}
-        <div className="w-full max-w-[1305px] mx-auto">
+        <div className="w-full max-w-[1305px] mx-auto [&_div.flex.flex-col.gap-\\[6px\\].items-start>p]:font-['SF_Pro',sans-serif] [&_div.flex.flex-col.gap-\\[6px\\].items-start>p]:font-[510] [&_div.flex.flex-col.gap-\\[6px\\].items-start>p]:leading-[normal] [&_div.flex.flex-col.gap-\\[6px\\].items-start>p]:text-[#333] [&_div.flex.flex-col.gap-\\[6px\\].items-start>p]:text-[14px]">
           {/* Title Section */}
           <div className="flex flex-col gap-[8px] items-start leading-[normal] w-full mb-[32px]">
             <p className="font-['Canela_Text_Trial',sans-serif] font-medium not-italic text-[#764d2f] text-[28px] md:text-[36px] w-full">
@@ -384,6 +386,15 @@ export function OnboardingPage() {
             </p>
           </div>
 
+          <AnimatePresence mode="wait" custom={direction}>
+            <motion.div
+              key={currentStep}
+              custom={direction}
+              initial={{ opacity: 0, y: 20, x: direction * 42, scale: 0.985, filter: 'blur(4px)' }}
+              animate={{ opacity: 1, y: 0, x: 0, scale: 1, filter: 'blur(0px)' }}
+              exit={{ opacity: 0, y: -12, x: direction * -36, scale: 0.992, filter: 'blur(3px)' }}
+              transition={{ duration: 0.42, ease: [0.16, 1, 0.3, 1] }}
+            >
           {/* Step 1 - Basic Information */}
           {currentStep === 1 && (
             <div className="bg-white relative rounded-[20px] w-full mb-[36px]">
@@ -500,7 +511,7 @@ export function OnboardingPage() {
                     <div className="flex flex-col gap-[24px] w-full">
                       <div className="flex flex-col md:flex-row gap-[24px] items-start w-full">
                         <div className="flex flex-col gap-[6px] items-start flex-1 w-full md:w-auto">
-                          <p className="font-['Figtree',sans-serif] font-normal leading-[normal] text-[#333] text-[14px] w-full">
+                          <p className="font-['SF_Pro',sans-serif] font-[510] leading-[normal] text-[#333] text-[14px] w-full" style={{ fontVariationSettings: "'wdth' 100" }}>
                             Institution
                           </p>
                           <div className="bg-white h-[46px] relative rounded-[8px] w-full">
@@ -516,7 +527,7 @@ export function OnboardingPage() {
                         </div>
 
                         <div className="flex flex-col gap-[6px] items-start flex-1 w-full md:w-auto">
-                          <p className="font-['Figtree',sans-serif] font-normal leading-[normal] text-[#333] text-[14px] w-full">
+                          <p className="font-['SF_Pro',sans-serif] font-[510] leading-[normal] text-[#333] text-[14px] w-full" style={{ fontVariationSettings: "'wdth' 100" }}>
                             Account Type
                           </p>
                           <div className="bg-white h-[46px] relative rounded-[8px] w-full">
@@ -540,7 +551,7 @@ export function OnboardingPage() {
                       </div>
 
                       <div className="flex flex-col gap-[6px] items-start w-full">
-                        <p className="font-['Figtree',sans-serif] font-normal leading-[normal] text-[#333] text-[14px] w-full">
+                        <p className="font-['SF_Pro',sans-serif] font-[510] leading-[normal] text-[#333] text-[14px] w-full" style={{ fontVariationSettings: "'wdth' 100" }}>
                           Current Balance
                         </p>
                         <div className="bg-white h-[46px] relative rounded-[8px] w-full">
@@ -573,7 +584,7 @@ export function OnboardingPage() {
 
               <button
                 onClick={addLiquidityAccount}
-                className="h-[50px] rounded-[8px] hover:bg-[#3e2d1d] hover:bg-opacity-5 transition-colors relative self-start"
+                className="h-[50px] rounded-[8px] relative self-center hover:bg-[rgba(62,45,29,0.06)]"
               >
                 <div aria-hidden="true" className="absolute border-[#3e2d1d] border-[1.5px] border-solid inset-0 pointer-events-none rounded-[8px]" />
                 <div className="flex gap-[10px] items-center justify-center px-[24px] py-[10px] size-full">
@@ -827,7 +838,7 @@ export function OnboardingPage() {
 
               <button
                 onClick={addProperty}
-                className="h-[50px] rounded-[8px] hover:bg-[#3e2d1d] hover:bg-opacity-5 transition-colors relative self-start"
+                className="h-[50px] rounded-[8px] relative self-center hover:bg-[rgba(62,45,29,0.06)]"
               >
                 <div aria-hidden="true" className="absolute border-[#3e2d1d] border-[1.5px] border-solid inset-0 pointer-events-none rounded-[8px]" />
                 <div className="flex gap-[10px] items-center justify-center px-[24px] py-[10px] size-full">
@@ -929,7 +940,7 @@ export function OnboardingPage() {
 
               <button
                 onClick={addBusiness}
-                className="h-[50px] rounded-[8px] hover:bg-[#3e2d1d] hover:bg-opacity-5 transition-colors relative self-start"
+                className="h-[50px] rounded-[8px] relative self-center hover:bg-[rgba(62,45,29,0.06)]"
               >
                 <div aria-hidden="true" className="absolute border-[#3e2d1d] border-[1.5px] border-solid inset-0 pointer-events-none rounded-[8px]" />
                 <div className="flex gap-[10px] items-center justify-center px-[24px] py-[10px] size-full">
@@ -1188,8 +1199,8 @@ export function OnboardingPage() {
             </div>
           )}
 
-          {/* Step 8 - Disclosures */}
-          {currentStep === 8 && (
+          {/* Step 8 - Disclosures (disabled for now per request) */}
+          {currentStep === 99 && (
             <div className="bg-white relative rounded-[20px] w-full mb-[36px]">
               <div className="border border-[#d0d0d0] border-solid absolute inset-0 pointer-events-none rounded-[20px] shadow-[0px_10px_40px_0px_rgba(243,219,188,0.45)]" />
               <div className="flex flex-col items-start p-[24px] relative w-full gap-[24px]">
@@ -1464,8 +1475,8 @@ export function OnboardingPage() {
             </div>
           )}
 
-          {/* Step 9 - Financial Snapshot / Summary */}
-          {currentStep === 9 && (
+          {/* Step 8 - Financial Snapshot / Summary */}
+          {currentStep === 8 && (
             <div className="flex flex-col gap-[24px] w-full mb-[36px]">
               {/* Net Worth Banner - Stacked Cards */}
               <div className="relative w-full" style={{ minHeight: '191px' }}>
@@ -1573,7 +1584,7 @@ export function OnboardingPage() {
 
               {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-[16px] sm:gap-[24px] w-full">
-                <button className="h-[50px] px-[48px] rounded-[8px] border-[#3e2d1d] border-[1.5px] bg-white hover:bg-[#3e2d1d] hover:bg-opacity-5 transition-colors relative">
+                <button className="h-[50px] px-[48px] rounded-[8px] border-[#3e2d1d] border-[1.5px] bg-white relative hover:bg-[rgba(62,45,29,0.06)]">
                   <div className="absolute border border-[#3e2d1d] border-solid inset-0 pointer-events-none rounded-[8px]" />
                   <p className="font-['SF_Pro',sans-serif] font-[590] text-[#3e2d1d] text-[16px] whitespace-nowrap" style={{ fontVariationSettings: "'wdth' 100" }}>
                     Edit Profile
@@ -1593,13 +1604,15 @@ export function OnboardingPage() {
               </div>
             </div>
           )}
+            </motion.div>
+          </AnimatePresence>
 
-          {/* Navigation Buttons - Hide on step 9 */}
-          {currentStep !== 9 && (
+          {/* Navigation Buttons - Hide on final step */}
+          {currentStep !== 8 && (
             <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-[16px] sm:gap-[24px] w-full">
               <button
                 onClick={handleBack}
-                className="flex gap-[10px] h-[50px] items-center justify-center px-[32px] md:px-[48px] py-[10px] relative rounded-[8px] border-[#3e2d1d] border-[1.5px] border-solid bg-transparent hover:bg-[#3e2d1d] hover:bg-opacity-5 transition-colors group"
+                className="flex gap-[10px] h-[50px] items-center justify-center px-[32px] md:px-[48px] py-[10px] relative rounded-[8px] border-[#3e2d1d] border-[1.5px] border-solid bg-transparent hover:bg-[rgba(62,45,29,0.06)] group"
               >
                 <div className="flex h-[9.537px] items-center justify-center w-[12.999px]">
                   <div className="-rotate-90 flex-none">
@@ -1621,7 +1634,7 @@ export function OnboardingPage() {
               <div className="flex items-center gap-[16px] sm:gap-[24px]">
                 <button
                   onClick={handleSkip}
-                  className="flex h-[50px] items-center justify-center px-[32px] md:px-[48px] py-[10px] rounded-[8px] border-[#3e2d1d] border-[1.5px] border-solid bg-transparent hover:bg-[#3e2d1d] hover:bg-opacity-5 transition-colors flex-1 sm:flex-initial"
+                  className="flex h-[50px] items-center justify-center px-[32px] md:px-[48px] py-[10px] rounded-[8px] border-[#3e2d1d] border-[1.5px] border-solid bg-transparent hover:bg-[rgba(62,45,29,0.06)] flex-1 sm:flex-initial"
                 >
                   <p
                     className="font-['SF_Pro',sans-serif] font-[590] leading-[normal] text-[#3e2d1d] text-[14px] md:text-[16px] whitespace-nowrap"

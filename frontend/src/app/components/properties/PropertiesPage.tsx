@@ -30,15 +30,18 @@ export function PropertiesPage() {
   return (
     <div className="px-4 sm:px-6 lg:px-[58px] py-[40px]">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-[36px] gap-[16px]">
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between mb-[36px] gap-[16px]">
         <div>
-          <p
-            className="text-[28px] sm:text-[36px] text-[#3E2D1D]"
+          <h1
+            className="text-[28px] text-[#3E2D1D] mb-[8px]"
             style={{ fontFamily: "'Canela Text Trial', sans-serif", fontWeight: 500 }}
           >
             Properties
-          </p>
-          <p className="text-[16px] text-[#8C8780] mt-[4px]" style={{ fontWeight: 510 }}>
+          </h1>
+          <p
+            className="text-[16px] text-[#764D2F]"
+            style={{ fontFamily: "'SF Pro', -apple-system, sans-serif", fontWeight: 510, fontVariationSettings: "'wdth' 100" }}
+          >
             {state.properties.length} {state.properties.length === 1 ? 'property' : 'properties'} in your portfolio
           </p>
         </div>

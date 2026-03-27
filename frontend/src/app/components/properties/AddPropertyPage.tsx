@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type CSSProperties } from 'react';
 import { useNavigate } from 'react-router';
 import { motion } from 'motion/react';
 import { useApp, genId } from '../../context/AppContext';
@@ -15,6 +15,10 @@ const US_STATES = [
 
 const PROPERTY_TYPES: PropertyType[] = ['Single Family', 'Multi-Family', 'Commercial', 'Mixed Use', 'Land'];
 const PROPERTY_STATUSES: PropertyStatus[] = ['Acquisition', 'Under Contract', 'Active', 'Closed'];
+const canela = "font-['Canela_Text_Trial',sans-serif] font-medium not-italic";
+const sfMed = "font-['SF_Pro',sans-serif] font-[510]";
+const sfReg = "font-['SF_Pro',sans-serif] font-normal";
+const wdth: CSSProperties = { fontVariationSettings: "'wdth' 100" };
 
 const DEFAULT_IMAGES = [
   'https://images.unsplash.com/photo-1762397794646-f19044bd0828?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixlib=rb-4.1.0&q=80&w=1080',
@@ -141,15 +145,15 @@ export function AddPropertyPage() {
   };
 
   return (
-    <div className="min-h-full px-4 sm:px-6 lg:px-[58px]">
+    <div className="min-h-full px-4 sm:px-6 lg:px-[58px] pb-[48px]">
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
-        className="max-w-[960px]"
+        className="max-w-[960px] pt-[32px] flex flex-col gap-[32px]"
       >
         {/* Breadcrumb */}
-        <div className="flex items-center pt-[24px] sm:pt-[32px] pb-[20px]">
+        <div className="flex items-center">
           <button
             onClick={() => navigate('/dashboard/properties')}
             className="text-[#8C8780] text-[16px] cursor-pointer hover:text-[#3E2D1D] transition-colors"
@@ -164,24 +168,19 @@ export function AddPropertyPage() {
         </div>
 
         {/* Page Heading */}
-        <p
-          className="text-[28px] text-[#3E2D1D] mb-[32px]"
-          style={{ fontFamily: "'Canela Text Trial', sans-serif", fontWeight: 500 }}
-        >
-          Add Property
-        </p>
+        <div>
+          <p className={`${canela} text-[28px] text-[#3E2D1D] mb-[8px]`}>Add Property</p>
+          <p className={`${sfMed} text-[16px] text-[#764D2F]`} style={wdth}>
+            Add your property profile details to start budgeting and tracking draws.
+          </p>
+        </div>
 
         {/* Form Card */}
-        <div className="bg-white rounded-[20px] border border-[#D0D0D0] p-4 sm:p-[32px] flex flex-col gap-[40px]">
+        <div className="bg-white rounded-[20px] border border-[#D0D0D0] p-4 sm:p-[32px] flex flex-col gap-[42px]">
 
           {/* ── Property Identity Section ── */}
           <div className="flex flex-col gap-[24px]">
-            <p
-              className="text-[24px] text-[#764D2F]"
-              style={{ fontFamily: "'Canela Text Trial', sans-serif", fontWeight: 500 }}
-            >
-              Property Identity
-            </p>
+            <p className={`${canela} text-[24px] text-[#3E2D1D]`}>Property Identity</p>
 
             {/* Property Name */}
             <FormField label="Property Name" error={errors.name}>
@@ -246,12 +245,7 @@ export function AddPropertyPage() {
 
           {/* ── Property Specs Section ── */}
           <div className="flex flex-col gap-[24px]">
-            <p
-              className="text-[24px] text-[#764D2F]"
-              style={{ fontFamily: "'Canela Text Trial', sans-serif", fontWeight: 500 }}
-            >
-              Property Specs
-            </p>
+            <p className={`${canela} text-[24px] text-[#3E2D1D]`}>Property Specs</p>
 
             {/* Property Type / Current Status */}
             <div className="flex flex-col sm:flex-row gap-[16px] sm:gap-[24px]">
@@ -349,14 +343,14 @@ export function AddPropertyPage() {
         </div>
 
         {/* ── Create Property Button ── */}
-        <div className="flex justify-end mt-[24px] pb-[60px]">
+        <div className="flex justify-end">
           <button
             onClick={handleSubmit}
-            className="flex items-center gap-[10px] h-[48px] px-[32px] bg-[#764D2F] text-white rounded-[8px] text-[14px] hover:bg-[#5E3C24] transition-colors cursor-pointer"
-            style={{ fontWeight: 590 }}
+            className="bg-[#764d2f] content-stretch flex gap-[10px] h-[50px] items-center justify-center px-[48px] py-[10px] relative rounded-[8px] shrink-0 cursor-pointer border-none hover:bg-[#5c3a22] transition-colors"
+            style={{ fontWeight: 590, fontFamily: "'SF Pro', -apple-system, sans-serif", fontVariationSettings: "'wdth' 100" }}
           >
             <CheckIcon />
-            Create Property
+            <span className="text-[16px] text-white leading-[normal]">Create Property</span>
           </button>
         </div>
       </motion.div>
@@ -374,7 +368,7 @@ function FormField({ label, children, className, error }: {
 }) {
   return (
     <div className={`flex flex-col gap-[6px] ${className || ''}`}>
-      <p className="text-[#333] text-[14px]" style={{ fontWeight: 400 }}>
+      <p className={`${sfReg} text-[#333] text-[14px]`} style={wdth}>
         {label}
       </p>
       {children}
@@ -386,9 +380,9 @@ function FormField({ label, children, className, error }: {
 function inputCls(error?: string) {
   return `w-full h-[46px] px-[12px] py-[10px] rounded-[8px] border ${
     error ? 'border-red-300 bg-red-50/50' : 'border-[#D0D0D0] bg-white'
-  } text-[14px] text-[#767676] placeholder-[#767676] focus:text-[#3E2D1D] focus:outline-none focus:border-[#764D2F] transition-all`;
+  } text-[14px] text-[#767676] placeholder-[#767676] focus:text-[#3E2D1D] focus:outline-none focus:border-[#764D2F] transition-all font-['Figtree',sans-serif]`;
 }
 
 function selectCls() {
-  return `w-full h-[46px] px-[12px] py-[10px] rounded-[8px] border border-[#D0D0D0] bg-white text-[14px] text-[#767676] focus:text-[#3E2D1D] focus:outline-none focus:border-[#764D2F] transition-all appearance-none cursor-pointer pr-[36px]`;
+  return `w-full h-[46px] px-[12px] py-[10px] rounded-[8px] border border-[#D0D0D0] bg-white text-[14px] text-[#767676] focus:text-[#3E2D1D] focus:outline-none focus:border-[#764D2F] transition-all appearance-none cursor-pointer pr-[36px] font-['Figtree',sans-serif]`;
 }

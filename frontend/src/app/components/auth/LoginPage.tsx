@@ -26,7 +26,7 @@ export function LoginPage() {
   };
 
   return (
-    <div className="fixed inset-0 bg-[#fcf6f0] overflow-hidden">
+    <div className="fixed inset-0 bg-[#fcf6f0] overflow-hidden [&_button]:cursor-pointer [&_button]:transition-all [&_button]:duration-200">
       <div className="relative h-full w-full flex flex-col xl:flex-row">
         <AuthSideCarousel
           initialIndex={0}
@@ -126,7 +126,7 @@ export function LoginPage() {
               {/* Submit button */}
               <button
                 type="submit"
-                className="bg-[#764d2f] h-[50px] rounded-[8px] w-full hover:bg-[#8c5d3a] transition-colors"
+                className="bg-[#764d2f] h-[50px] rounded-[8px] w-full hover:bg-[#8c5d3a] hover:-translate-y-[1px]"
               >
                 <div className="flex flex-row items-center justify-center size-full">
                   <div className="flex gap-[10px] items-center justify-center px-[48px] py-[10px] size-full">
