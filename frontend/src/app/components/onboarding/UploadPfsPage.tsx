@@ -1,24 +1,60 @@
-import { useEffect, useRef, useState, type DragEvent } from 'react';
+import React, { useEffect, useRef, useState, type DragEvent } from 'react';
 import { useNavigate } from 'react-router';
 
 type Step = {
   id: number;
   label: string;
-  active?: boolean;
+  state: 'inactive' | 'active' | 'complete';
 };
 
-const STEPS: Step[] = [
-  { id: 1, label: 'Upload\nPFS', active: true },
-  { id: 2, label: 'Review\nPFS' },
-  { id: 3, label: 'Summary' },
-];
+type UploadPhase = 'upload' | 'processing' | 'review';
 
 const processingFileIcon = 'https://www.figma.com/api/mcp/asset/ae165b82-74f7-4a1b-85f2-48b91cfc117c';
+const reviewCheckIcon = 'https://www.figma.com/api/mcp/asset/11413330-ae13-4893-ae06-b5f15cc0c66d';
+
+const extractedData = {
+  fullName: 'John A. Smith',
+  primaryAddress: '1234 Oak Street, Austin, TX 78701',
+  email: 'john.smith@email.com',
+  phone: '(512) 555-0147',
+  ssn: '***-**-1234',
+  accounts: [
+    { institution: 'Chase', accountType: 'Checking Account', currentBalance: '245,000' },
+    { institution: 'Schwab', accountType: 'Brokerage', currentBalance: '1,850,000' },
+  ],
+  properties: [
+    {
+      address: '456 Main Blvd, Austin, TX 78704',
+      propertyType: 'Multi Family',
+      estimatedValue: '2,400,000',
+      loanBalance: '1,600,000',
+      monthlyRent: '18,500',
+      showAdvanced: false,
+      interestRate: '5.75%',
+      monthlyPayment: '9,340',
+      lender: 'Wells Fargo',
+      maturityDate: '03/2029',
+      ownershipPercent: '100%',
+    },
+  ],
+  entities: [{ entityName: 'Smith Capital Holdings LLC', ownershipPercent: '100%', estimatedValue: '3,200,000' }],
+  publicInvestments: '750,000',
+  privateInvestments: '400,000',
+  otherAssets: '125,000',
+  creditCards: '12,000',
+  personalLoans: '85,000',
+  otherDebt: '0',
+  linkedDebt: 'None',
+  primaryIncome: '380,000',
+  rentalIncome: '222,000',
+  otherIncome: '48,000',
+};
 
 export function UploadPfsPage() {
   const navigate = useNavigate();
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [phase, setPhase] = useState<UploadPhase>('upload');
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
 
@@ -26,20 +62,30 @@ export function UploadPfsPage() {
     if (!file) return;
     setSelectedFile(file.name);
     setProgress(0);
+    setPhase('processing');
   };
 
   useEffect(() => {
-    if (!selectedFile) return;
+    if (phase !== 'processing') return;
 
     const timer = window.setInterval(() => {
       setProgress((prev) => {
-        if (prev >= 82) return prev;
-        return prev + 2;
+        if (prev >= 100) {
+          window.clearInterval(timer);
+          return 100;
+        }
+        return prev + 4;
       });
     }, 110);
 
     return () => window.clearInterval(timer);
-  }, [selectedFile]);
+  }, [phase]);
+
+  useEffect(() => {
+    if (phase !== 'processing' || progress < 100) return;
+    const completeTimer = window.setTimeout(() => setPhase('review'), 400);
+    return () => window.clearTimeout(completeTimer);
+  }, [phase, progress]);
 
   const onDragOver = (event: DragEvent<HTMLLabelElement>) => {
     event.preventDefault();
@@ -58,22 +104,35 @@ export function UploadPfsPage() {
     handleFile(file);
   };
 
+  const steps: Step[] =
+    phase === 'review'
+      ? [
+          { id: 1, label: 'Upload\nPFS', state: 'complete' },
+          { id: 2, label: 'Review\nPFS', state: 'active' },
+          { id: 3, label: 'Summary', state: 'inactive' },
+        ]
+      : [
+          { id: 1, label: 'Upload\nPFS', state: 'active' },
+          { id: 2, label: 'Review\nPFS', state: 'inactive' },
+          { id: 3, label: 'Summary', state: 'inactive' },
+        ];
+
   return (
     <div className="bg-[#fcf6f0] fixed inset-0 overflow-auto">
       <div className="mx-auto min-h-screen w-full max-w-[1430px] px-[20px] pb-[40px] pt-[44px] md:px-[40px] md:pb-[56px] md:pt-[56px] xl:px-[60px]">
-        <Stepper />
+        <Stepper steps={steps} />
 
-        <div className="mx-auto mt-[42px] flex w-full max-w-[1275px] flex-col gap-[36px]">
+        <div className="mx-auto mt-[42px] flex w-full max-w-[1305px] flex-col gap-[36px]">
           <section className="flex w-full flex-col gap-[32px]">
             <div className="flex w-full max-w-[417px] flex-col gap-[8px]">
               <h1
                 className="text-[32px] font-medium leading-[1] text-[#764d2f] md:text-[36px]"
                 style={{ fontFamily: "'Canela Text Trial', sans-serif" }}
               >
-                Upload Your PFS
+                {phase === 'review' ? 'Review Your PFS' : 'Upload Your PFS'}
               </h1>
               <p className="font-['Montserrat',sans-serif] text-[14px] font-medium leading-normal text-[#8c8780] md:text-[16px]">
-                Upload a PDF and we&apos;ll extract your financial data.
+                {phase === 'review' ? 'Review extracted financial data' : 'Upload a PDF and we&apos;ll extract your financial data.'}
               </p>
             </div>
 
@@ -86,7 +145,7 @@ export function UploadPfsPage() {
               onChange={(event) => handleFile(event.target.files?.[0] ?? null)}
             />
 
-            {!selectedFile ? (
+            {phase === 'upload' ? (
               <label
                 htmlFor="pfs-file-input"
                 onDragOver={onDragOver}
@@ -129,7 +188,7 @@ export function UploadPfsPage() {
                   </p>
                 </div>
               </label>
-            ) : (
+            ) : phase === 'processing' ? (
               <div className="w-full rounded-[16px] border border-[#eaeaea] bg-white p-[20px] shadow-[0px_10px_40px_0px_rgba(243,219,188,0.45)] md:p-[28px]">
                 <div className="flex max-w-full items-center gap-[16px]">
                   <div className="h-[40.222px] w-[35.722px] shrink-0">
@@ -140,7 +199,7 @@ export function UploadPfsPage() {
                       className="truncate text-[16px] font-medium leading-normal text-[#764d2f]"
                       style={{ fontFamily: "'SF Pro', sans-serif", fontVariationSettings: "'wdth' 100" }}
                     >
-                      {selectedFile}
+                      {selectedFile ?? 'YourPFS.pdf'}
                     </p>
                     <p
                       className="text-[14px] font-medium leading-normal text-[#8c8780]"
@@ -157,14 +216,43 @@ export function UploadPfsPage() {
                   />
                 </div>
               </div>
+            ) : (
+              <div className="flex w-full flex-col gap-[24px]">
+                <div className="w-full rounded-[16px] border border-[#eaeaea] bg-white p-[20px] shadow-[0px_10px_40px_0px_rgba(243,219,188,0.45)] md:p-[28px]">
+                  <div className="flex items-center gap-[12px]">
+                    <img src={reviewCheckIcon} alt="" className="size-[30px] shrink-0" />
+                    <p
+                      className="text-[16px] font-medium leading-normal text-[#764d2f]"
+                      style={{ fontFamily: "'SF Pro', sans-serif", fontVariationSettings: "'wdth' 100" }}
+                    >
+                      Data extracted from {selectedFile ?? 'YourPFS.pdf'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="w-full rounded-[20px] border border-[#d0d0d0] bg-white p-[16px] shadow-[0px_10px_40px_0px_rgba(243,219,188,0.45)] md:p-[24px]">
+                  <ReviewRow label="Accounts Found" value="2 accounts" />
+                  <ReviewRow label="Properties Found" value="1 properties" />
+                  <ReviewRow label="Entities Found" value="1 entities" />
+                  <ReviewRow label="Income Sources" value="2 sources identified" isLast />
+                </div>
+              </div>
             )}
           </section>
 
           <div className="flex w-full flex-col gap-[16px] sm:flex-row sm:items-center sm:justify-between">
             <button
               type="button"
-              onClick={() => navigate('/profile-setup')}
-              className="h-[50px] rounded-[8px] border-[1.5px] border-[#3e2d1d] px-[28px] sm:px-[48px]"
+              onClick={() => {
+                if (phase === 'review') {
+                  setPhase('upload');
+                  setSelectedFile(null);
+                  setProgress(0);
+                  return;
+                }
+                navigate('/profile-setup');
+              }}
+              className="h-[50px] rounded-[8px] border-[1.5px] border-[#3e2d1d] px-[28px] transition-all duration-200 hover:bg-[rgba(62,45,29,0.06)] active:scale-[0.99] sm:px-[48px]"
             >
               <span
                 className="flex items-center justify-center gap-[10px] text-[16px] font-semibold leading-normal text-[#3e2d1d]"
@@ -178,17 +266,33 @@ export function UploadPfsPage() {
             <div className="flex w-full gap-[12px] sm:w-auto sm:gap-[24px]">
               <button
                 type="button"
-                onClick={() => navigate('/onboarding')}
-                className="h-[50px] flex-1 rounded-[8px] border-[1.5px] border-[#3e2d1d] px-[20px] text-[16px] font-semibold leading-normal text-[#3e2d1d] sm:flex-none sm:px-[48px]"
+                onClick={() =>
+                  phase === 'review'
+                    ? navigate('/onboarding', { state: { startStep: 1, prefillData: extractedData } })
+                    : undefined
+                }
+                className="h-[50px] flex-1 rounded-[8px] border-[1.5px] border-[#3e2d1d] px-[20px] text-[16px] font-semibold leading-normal text-[#3e2d1d] transition-all duration-200 hover:bg-[rgba(62,45,29,0.06)] active:scale-[0.99] sm:flex-none sm:px-[48px]"
                 style={{ fontFamily: "'SF Pro', sans-serif", fontVariationSettings: "'wdth' 100" }}
               >
-                Skip
+                {phase === 'review' ? 'Edit Profile' : 'Skip'}
               </button>
               <button
                 type="button"
-                onClick={() => navigate('/onboarding')}
-                className="h-[50px] flex-1 rounded-[8px] bg-[#764d2f] px-[20px] text-[16px] font-semibold leading-normal text-white sm:flex-none sm:px-[48px]"
+                onClick={() => {
+                  if (phase === 'upload') {
+                    fileInputRef.current?.click();
+                    return;
+                  }
+                  if (phase === 'processing') {
+                    return;
+                  }
+                  if (phase === 'review') {
+                    navigate('/onboarding/upload-summary', { state: { prefillData: extractedData } });
+                  }
+                }}
+                className="h-[50px] flex-1 rounded-[8px] bg-[#764d2f] px-[20px] text-[16px] font-semibold leading-normal text-white transition-all duration-200 hover:bg-[#8c5d3a] hover:shadow-md active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-70 sm:flex-none sm:px-[48px]"
                 style={{ fontFamily: "'SF Pro', sans-serif", fontVariationSettings: "'wdth' 100" }}
+                disabled={phase === 'processing'}
               >
                 <span className="flex items-center justify-center gap-[10px]">
                   Next
@@ -203,44 +307,68 @@ export function UploadPfsPage() {
   );
 }
 
-function Stepper() {
+function Stepper({ steps }: { steps: Step[] }) {
   return (
-    <div className="mx-auto w-full max-w-[1310px] overflow-x-auto pb-[8px]">
-      <div className="flex min-w-[760px] items-start px-[8px]">
-        {STEPS.map((step, idx) => (
-          <div key={step.id} className="flex min-w-0 flex-1 items-start">
-            <div className="flex w-[96px] shrink-0 flex-col items-center gap-[8px]">
-              <div
-                className={`flex size-[44px] items-center justify-center rounded-full border-2 ${
-                  step.active ? 'border-[#764d2f] bg-[#fafafa]' : 'border-[#d3b597] bg-[#fafafa]'
-                }`}
-              >
-                <span
-                  className={`font-['DM_Sans',sans-serif] text-[16px] font-bold leading-normal ${
-                    step.active ? 'text-[#764d2f]' : 'text-[#d3b597]'
-                  }`}
-                  style={{ fontVariationSettings: "'opsz' 14" }}
-                >
-                  {step.id}
-                </span>
-              </div>
-              <p
-                className={`whitespace-pre-wrap text-center font-['Montserrat',sans-serif] text-[14px] font-medium leading-normal ${
-                  step.active ? 'text-[#764d2f]' : 'text-[#d3b597]'
-                }`}
-              >
-                {step.label}
-              </p>
-            </div>
+    <div className="mx-auto w-full max-w-[1305px] pb-[8px]">
+      <div className="flex w-full items-start">
+        {steps.map((step, idx) => {
+          const isActive = step.state === 'active';
+          const isComplete = step.state === 'complete';
 
-            {idx < STEPS.length - 1 && (
-              <div className="flex-1 pb-[15px] pt-[20px]">
-                <div className="h-[2px] w-full bg-[#d3b597]" />
+          return (
+            <div key={step.id} className="flex min-w-0 flex-1 items-start">
+              <div className="flex w-[96px] shrink-0 flex-col items-center gap-[8px]">
+                <div
+                  className={`flex size-[44px] items-center justify-center rounded-full border-2 ${
+                    isComplete ? 'border-[#764d2f] bg-[#764d2f]' : isActive ? 'border-[#764d2f] bg-[#fafafa]' : 'border-[#d3b597] bg-[#fafafa]'
+                  }`}
+                >
+                  <span
+                    className={`font-['DM_Sans',sans-serif] text-[16px] font-bold leading-normal ${
+                      isComplete ? 'text-white' : isActive ? 'text-[#764d2f]' : 'text-[#d3b597]'
+                    }`}
+                    style={{ fontVariationSettings: "'opsz' 14" }}
+                  >
+                    {step.id}
+                  </span>
+                </div>
+                <p
+                  className={`whitespace-pre-wrap text-center font-['Montserrat',sans-serif] text-[14px] font-medium leading-normal ${
+                    isActive || isComplete ? 'text-[#764d2f]' : 'text-[#d3b597]'
+                  }`}
+                >
+                  {step.label}
+                </p>
               </div>
-            )}
-          </div>
-        ))}
+
+              {idx < steps.length - 1 && (
+                <div className="flex-1 pb-[15px] pt-[20px]">
+                  <div className={`h-[2px] w-full ${isComplete ? 'bg-[#764d2f]' : 'bg-[#d3b597]'}`} />
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
+    </div>
+  );
+}
+
+function ReviewRow({ label, value, isLast = false }: { label: string; value: string; isLast?: boolean }) {
+  return (
+    <div className={`flex items-center justify-between py-[20px] ${isLast ? '' : 'border-b border-[#fcf6f0]'}`}>
+      <p
+        className="text-[16px] font-medium leading-normal text-[#764d2f] md:text-[18px]"
+        style={{ fontFamily: "'SF Pro', sans-serif", fontVariationSettings: "'wdth' 100" }}
+      >
+        {label}
+      </p>
+      <p
+        className="text-[16px] font-bold leading-normal text-[#764d2f] md:text-[18px]"
+        style={{ fontFamily: "'SF Pro', sans-serif", fontVariationSettings: "'wdth' 100" }}
+      >
+        {value}
+      </p>
     </div>
   );
 }

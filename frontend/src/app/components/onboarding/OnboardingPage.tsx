@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useLocation, useNavigate } from 'react-router';
 import { AnimatePresence, motion } from 'motion/react';
 import svgPaths from '../../../imports/svg-wqvlfgpcsv';
 import checkSvgPaths from '../../../imports/svg-5t5g3jnxim';
@@ -54,67 +54,137 @@ type Business = {
 
 export function OnboardingPage() {
   const navigate = useNavigate();
-  const [currentStep, setCurrentStep] = useState(1);
+  const location = useLocation();
+  const routeState = location.state as {
+    startStep?: number;
+    prefillData?: {
+      fullName?: string;
+      primaryAddress?: string;
+      email?: string;
+      phone?: string;
+      ssn?: string;
+      accounts?: Array<{ institution: string; accountType: string; currentBalance: string }>;
+      properties?: Array<{
+        address: string;
+        propertyType: string;
+        estimatedValue: string;
+        loanBalance: string;
+        monthlyRent: string;
+        showAdvanced?: boolean;
+        interestRate?: string;
+        monthlyPayment?: string;
+        lender?: string;
+        maturityDate?: string;
+        ownershipPercent?: string;
+      }>;
+      entities?: Array<{ entityName: string; ownershipPercent: string; estimatedValue: string }>;
+      publicInvestments?: string;
+      privateInvestments?: string;
+      otherAssets?: string;
+      creditCards?: string;
+      personalLoans?: string;
+      otherDebt?: string;
+      linkedDebt?: string;
+      primaryIncome?: string;
+      rentalIncome?: string;
+      otherIncome?: string;
+    };
+  } | null;
+  const startStep = routeState?.startStep && routeState.startStep >= 1 && routeState.startStep <= 8 ? routeState.startStep : 1;
+  const prefill = routeState?.prefillData;
+
+  const [currentStep, setCurrentStep] = useState(startStep);
   const [showSuccess, setShowSuccess] = useState(false);
   const [direction, setDirection] = useState(1);
   
   // Step 1 - Basic Information
   const [formData, setFormData] = useState({
-    fullName: '',
-    primaryAddress: '',
-    email: '',
-    phone: '',
-    ssn: '',
+    fullName: prefill?.fullName ?? '',
+    primaryAddress: prefill?.primaryAddress ?? '',
+    email: prefill?.email ?? '',
+    phone: prefill?.phone ?? '',
+    ssn: prefill?.ssn ?? '',
   });
 
   // Step 2 - Liquidity
-  const [liquidityAccounts, setLiquidityAccounts] = useState<LiquidityAccount[]>([
-    { id: '1', institution: '', accountType: 'Saving Account', currentBalance: '' }
-  ]);
+  const [liquidityAccounts, setLiquidityAccounts] = useState<LiquidityAccount[]>(
+    prefill?.accounts?.length
+      ? prefill.accounts.map((account, idx) => ({
+          id: String(idx + 1),
+          institution: account.institution ?? '',
+          accountType: account.accountType ?? 'Saving Account',
+          currentBalance: account.currentBalance ?? '',
+        }))
+      : [{ id: '1', institution: '', accountType: 'Saving Account', currentBalance: '' }]
+  );
 
   // Step 3 - Properties
-  const [properties, setProperties] = useState<Property[]>([
-    { 
-      id: '1', 
-      address: '', 
-      propertyType: 'Single Family', 
-      estimatedValue: '', 
-      loanBalance: '', 
-      monthlyRent: '',
-      showAdvanced: false,
-      interestRate: '',
-      monthlyPayment: '',
-      lender: '',
-      maturityDate: '',
-      ownershipPercent: ''
-    }
-  ]);
+  const [properties, setProperties] = useState<Property[]>(
+    prefill?.properties?.length
+      ? prefill.properties.map((property, idx) => ({
+          id: String(idx + 1),
+          address: property.address ?? '',
+          propertyType: property.propertyType ?? 'Single Family',
+          estimatedValue: property.estimatedValue ?? '',
+          loanBalance: property.loanBalance ?? '',
+          monthlyRent: property.monthlyRent ?? '',
+          showAdvanced: property.showAdvanced ?? false,
+          interestRate: property.interestRate ?? '',
+          monthlyPayment: property.monthlyPayment ?? '',
+          lender: property.lender ?? '',
+          maturityDate: property.maturityDate ?? '',
+          ownershipPercent: property.ownershipPercent ?? '',
+        }))
+      : [
+          {
+            id: '1',
+            address: '',
+            propertyType: 'Single Family',
+            estimatedValue: '',
+            loanBalance: '',
+            monthlyRent: '',
+            showAdvanced: false,
+            interestRate: '',
+            monthlyPayment: '',
+            lender: '',
+            maturityDate: '',
+            ownershipPercent: '',
+          },
+        ]
+  );
 
   // Step 4 - Businesses
-  const [businesses, setBusinesses] = useState<Business[]>([
-    { id: '1', entityName: '', ownershipPercent: '', estimatedValue: '' }
-  ]);
+  const [businesses, setBusinesses] = useState<Business[]>(
+    prefill?.entities?.length
+      ? prefill.entities.map((entity, idx) => ({
+          id: String(idx + 1),
+          entityName: entity.entityName ?? '',
+          ownershipPercent: entity.ownershipPercent ?? '',
+          estimatedValue: entity.estimatedValue ?? '',
+        }))
+      : [{ id: '1', entityName: '', ownershipPercent: '', estimatedValue: '' }]
+  );
 
   // Step 5 - Other Assets
   const [otherAssets, setOtherAssets] = useState({
-    publicInvestments: '',
-    privateInvestments: '',
-    otherAssets: '',
+    publicInvestments: prefill?.publicInvestments ?? '',
+    privateInvestments: prefill?.privateInvestments ?? '',
+    otherAssets: prefill?.otherAssets ?? '',
   });
 
   // Step 6 - Liabilities
   const [liabilities, setLiabilities] = useState({
-    creditCards: '',
-    personalLoans: '',
-    otherDebt: '',
-    linkedDebt: 'None',
+    creditCards: prefill?.creditCards ?? '',
+    personalLoans: prefill?.personalLoans ?? '',
+    otherDebt: prefill?.otherDebt ?? '',
+    linkedDebt: prefill?.linkedDebt ?? 'None',
   });
 
   // Step 7 - Income
   const [income, setIncome] = useState({
-    primaryIncome: '',
-    rentalIncome: '',
-    otherIncome: '',
+    primaryIncome: prefill?.primaryIncome ?? '',
+    rentalIncome: prefill?.rentalIncome ?? '',
+    otherIncome: prefill?.otherIncome ?? '',
   });
 
   // Step 8 - Disclosures
