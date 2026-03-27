@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, type CSSProperties } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import { useApp, formatCurrency } from '../../context/AppContext';
 import type { ProForma, ExitStrategy } from '../../context/AppContext';
@@ -11,7 +11,7 @@ const sfSemi = "font-['SF_Pro',sans-serif] font-[590]";
 const sfBold = "font-['SF_Pro',sans-serif] font-bold";
 const canela = "font-['Canela_Text_Trial',sans-serif] font-medium not-italic";
 const figtree = "font-['Figtree',sans-serif] font-normal";
-const wdth: React.CSSProperties = { fontVariationSettings: "'wdth' 100" };
+const wdth: CSSProperties = { fontVariationSettings: "'wdth' 100" };
 
 const STRATEGIES: { id: ExitStrategy; label: string }[] = [
   { id: 'Fix & Flip', label: 'Fix & Flip' },

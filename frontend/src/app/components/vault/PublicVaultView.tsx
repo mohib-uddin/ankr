@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, type CSSProperties } from 'react';
 import { useParams } from 'react-router';
 import { motion } from 'motion/react';
 import { Lock } from 'lucide-react';
@@ -10,7 +10,7 @@ const STORAGE_KEY = 'ankr_v2_state';
 const canela = "font-['Canela_Text_Trial',sans-serif] font-medium not-italic";
 const sfMed = "font-['SF_Pro',sans-serif] font-[510]";
 const sfSemi = "font-['SF_Pro',sans-serif] font-[590]";
-const wdth: React.CSSProperties = { fontVariationSettings: "'wdth' 100" };
+const wdth: CSSProperties = { fontVariationSettings: "'wdth' 100" };
 
 /* ─── SVG Icon Components (from Figma) ─── */
 function DocumentIcon({ color = '#FCF6F0' }: { color?: string }) {

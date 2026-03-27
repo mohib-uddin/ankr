@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState, type CSSProperties } from 'react';
 import { useNavigate } from 'react-router';
 import { motion } from 'motion/react';
 import { Check, CheckCircle, Send, Eye, Download, Trash2, Link2, Package } from 'lucide-react';
@@ -17,7 +17,7 @@ const sfSemi = "font-['SF_Pro',sans-serif] font-[590]";
 const sfReg  = "font-['SF_Pro',sans-serif] font-normal";
 const canela = "font-['Canela_Text_Trial',sans-serif] font-medium not-italic";
 const intMed = "font-['Inter',sans-serif] font-medium not-italic";
-const wdth: React.CSSProperties = { fontVariationSettings: "'wdth' 100" };
+const wdth: CSSProperties = { fontVariationSettings: "'wdth' 100" };
 
 /* ─── Figma SVG Icons ─────────────────────────────────────────── */
 function WalletIcon() {

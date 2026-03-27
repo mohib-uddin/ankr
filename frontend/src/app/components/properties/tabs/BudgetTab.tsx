@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState, type CSSProperties } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useApp, getDrawnForCategory, genId, formatCurrency } from '../../../context/AppContext';
 import type { BudgetCategory, BudgetLineItem, PropertyBudget } from '../../../context/AppContext';
@@ -13,7 +13,7 @@ const canela  = "font-['Canela_Text_Trial',sans-serif] font-medium not-italic";
 const intBold = "font-['Inter',sans-serif] font-bold not-italic";
 const intMed  = "font-['Inter',sans-serif] font-medium not-italic";
 const intReg  = "font-['Inter',sans-serif] font-normal not-italic";
-const wdth: React.CSSProperties = { fontVariationSettings: "'wdth' 100" };
+const wdth: CSSProperties = { fontVariationSettings: "'wdth' 100" };
 
 function parseMoney(v: string) { return parseFloat(v.replace(/[^0-9.]/g, '')) || 0; }
 function fmtInput(n: number)   { return n > 0 ? n.toLocaleString() : ''; }

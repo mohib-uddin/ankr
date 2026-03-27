@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState, type CSSProperties } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import {
@@ -11,41 +11,41 @@ import { getShareUrl } from './PublicDrawView';
 import svgPaths from '../../../imports/svg-msusmqtedk';
 
 /* ─── Font tokens ─────────────────────────────────────────────────────────── */
-const FONT_HEADING: React.CSSProperties = {
+const FONT_HEADING: CSSProperties = {
   fontFamily: "'Canela_Text_Trial', sans-serif",
   fontWeight: 500,
 };
-const FONT_SF_REGULAR: React.CSSProperties = {
+const FONT_SF_REGULAR: CSSProperties = {
   fontFamily: "'SF Pro', sans-serif",
   fontWeight: 510,
   fontVariationSettings: "'wdth' 100",
 };
-const FONT_SF_MEDIUM: React.CSSProperties = {
+const FONT_SF_MEDIUM: CSSProperties = {
   fontFamily: "'SF Pro', sans-serif",
   fontWeight: 510,
   fontVariationSettings: "'wdth' 100",
 };
-const FONT_SF_SEMIBOLD: React.CSSProperties = {
+const FONT_SF_SEMIBOLD: CSSProperties = {
   fontFamily: "'SF Pro', sans-serif",
   fontWeight: 590,
   fontVariationSettings: "'wdth' 100",
 };
-const FONT_SF_BOLD: React.CSSProperties = {
+const FONT_SF_BOLD: CSSProperties = {
   fontFamily: "'SF Pro', sans-serif",
   fontWeight: 700,
   fontVariationSettings: "'wdth' 100",
 };
-const FONT_FIGTREE: React.CSSProperties = {
+const FONT_FIGTREE: CSSProperties = {
   fontFamily: "'SF Pro', sans-serif",
   fontWeight: 510,
   fontVariationSettings: "'wdth' 100",
 };
-const FONT_MONTSERRAT: React.CSSProperties = {
+const FONT_MONTSERRAT: CSSProperties = {
   fontFamily: "'SF Pro', sans-serif",
   fontWeight: 510,
   fontVariationSettings: "'wdth' 100",
 };
-const FONT_INTER_MEDIUM: React.CSSProperties = {
+const FONT_INTER_MEDIUM: CSSProperties = {
   fontFamily: "'SF Pro', sans-serif",
   fontWeight: 510,
   fontVariationSettings: "'wdth' 100",

@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useRef, useMemo, useCallback, useEffect, type CSSProperties } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Upload, Search, FolderPlus, Link2, FileText, Shield,
@@ -27,10 +27,10 @@ const canela  = "font-['Canela_Text_Trial',sans-serif] font-medium not-italic";
 const sfMed   = "font-['SF_Pro',sans-serif] font-[510]";
 
 const figtree = "font-['Figtree',sans-serif] font-normal";
-const wdth: React.CSSProperties = { fontVariationSettings: "'wdth' 100" };
+const wdth: CSSProperties = { fontVariationSettings: "'wdth' 100" };
 const invoiceModalInputClass = "w-full h-[46px] bg-white border border-[#D0D0D0] rounded-[8px] px-[12px] text-[14px] text-[#333] placeholder:text-[#767676] outline-none focus:border-[#764D2F] transition-colors";
 const invoiceModalLabelClass = "block text-[14px] text-[#333] mb-[6px]";
-const invoiceModalLabelStyle: React.CSSProperties = { fontFamily: "'SF Pro', -apple-system, sans-serif", fontWeight: 400 };
+const invoiceModalLabelStyle: CSSProperties = { fontFamily: "'SF Pro', -apple-system, sans-serif", fontWeight: 400 };
 const invoiceSelectTriggerBase =
   "!h-[46px] !rounded-[8px] !border !border-[#D0D0D0] !bg-white !px-[12px] !text-[14px] !shadow-none data-[placeholder]:!text-[#767676] focus-visible:!ring-0 focus-visible:!border-[#764D2F] [&_svg]:!text-[#767676] [&_svg]:!opacity-100";
 const invoiceSelectContentBase =
@@ -1995,7 +1995,7 @@ function ModalField({
   label: string;
   children: React.ReactNode;
   labelClassName?: string;
-  labelStyle?: React.CSSProperties;
+  labelStyle?: CSSProperties;
 }) {
   return (
     <div>
