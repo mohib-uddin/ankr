@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion } from 'motion/react';
 import { Check, CheckCircle, Send, Eye, Download, Trash2, Link2, Package } from 'lucide-react';
 import { useApp, getDrawnForCategory, formatCurrency } from '../../../context/AppContext';
 import type { DrawRequest } from '../../../context/AppContext';
 import { DrawCompletionModal } from '../../draws/DrawCompletionModal';
 import { getShareUrl } from '../../draws/PublicDrawView';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../ui/table';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '../../ui/dropdown-menu';
 import svgPaths from '../../../../imports/svg-u6gkx16ihn';
 
 /* ─── Figma-exact style tokens ───────────────────────────────── */
@@ -313,135 +315,84 @@ export function DrawsTab({ propertyId }: { propertyId: string }) {
               </button>
             </div>
           ) : (
-            <div className="overflow-x-auto w-full">
-              <div className="content-stretch flex items-start relative shrink-0 min-w-[900px]">
-                <div className="bg-white flex-1 min-h-px min-w-px relative rounded-[20px]">
-                  <div className="overflow-clip rounded-[inherit] size-full">
-                    <div className="content-stretch flex flex-col items-start p-px relative w-full">
+            <div className="w-full bg-white rounded-[20px] border border-[#d0d0d0] overflow-hidden">
+              <Table className="min-w-[980px]">
+                <TableHeader className="bg-[#fafaf9] border-b border-[#d0d0d0]">
+                  <TableRow className="hover:bg-transparent border-0">
+                    <TableHead className="h-auto px-[16px] py-[12px] w-[92px] min-w-[92px] text-[11px] text-[#8c8780] uppercase tracking-[0.6145px]" style={wdth}>#</TableHead>
+                    <TableHead className="h-auto px-0 py-[12px] w-[236px] min-w-[236px] text-[11px] text-[#8c8780] uppercase tracking-[0.6145px]" style={wdth}>Draw Title</TableHead>
+                    <TableHead className="h-auto px-0 py-[12px] w-[140px] min-w-[140px] text-[11px] text-[#8c8780] uppercase tracking-[0.6145px]" style={wdth}>Lender</TableHead>
+                    <TableHead className="h-auto px-0 py-[12px] w-[120px] min-w-[120px] text-[11px] text-[#8c8780] uppercase tracking-[0.6145px]" style={wdth}>Date</TableHead>
+                    <TableHead className="h-auto px-0 py-[12px] w-[120px] min-w-[120px] text-[11px] text-[#8c8780] uppercase tracking-[0.6145px] text-right" style={wdth}>Amount</TableHead>
+                    <TableHead className="h-auto px-0 py-[12px] w-[96px] min-w-[96px] text-[11px] text-[#8c8780] uppercase tracking-[0.6145px] text-center" style={wdth}>Status</TableHead>
+                    <TableHead className="h-auto pl-0 pr-[16px] py-[12px] w-[34px] min-w-[34px]" />
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {property.draws.map((draw, i) => {
+                    const isSelected = selectedDraws.has(draw.id);
+                    const dateStr = draw.fundedDate || draw.approvedDate || draw.submittedDate || draw.requestDate;
+                    const displayStatus = draw.status === 'Draft' ? 'Pending' : draw.status;
 
-                      {/* Table Header */}
-                      <div className="bg-[#fafaf9] relative shrink-0 w-full">
-                        <div aria-hidden="true" className="absolute border-[#d0d0d0] border-b border-solid inset-0 pointer-events-none" />
-                        <div className="flex flex-row items-center size-full">
-                          <div className="content-stretch flex items-center justify-between px-[60px] py-[12px] relative w-full">
-                            <div className="h-[16.5px] relative shrink-0 w-[48px]">
-                              <p className={`absolute ${sfMed} leading-[16.5px] left-0 text-[#8c8780] text-[11px] top-[0.5px] tracking-[0.6145px] uppercase whitespace-nowrap`} style={wdth}>#</p>
+                    return (
+                      <TableRow key={draw.id} className="border-b border-[#f5f3ef] last:border-b-0 hover:bg-[#FAFAF9]">
+                        <TableCell className="px-[16px] py-[14px] w-[92px] min-w-[92px]">
+                          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.04 }} className="flex items-center gap-[24px]">
+                            <button
+                              onClick={() => toggleSelect(draw.id)}
+                              className={`relative rounded-[4px] shrink-0 size-[16px] cursor-pointer border-none p-0 flex items-center justify-center transition-colors ${
+                                isSelected ? 'bg-[#3E2D1D]' : 'bg-transparent'
+                              }`}
+                            >
+                              <div aria-hidden="true" className={`absolute border border-solid inset-0 pointer-events-none rounded-[4px] ${isSelected ? 'border-[#3E2D1D]' : 'border-[#d0d0d0]'}`} />
+                              {isSelected && <Check className="w-[10px] h-[10px] text-white relative z-10" />}
+                            </button>
+                            <span className={`${intMed} text-[#8c8780] text-[14px] tracking-[-0.1504px] whitespace-nowrap`}>#{draw.number}</span>
+                          </motion.div>
+                        </TableCell>
+                        <TableCell className="px-0 py-[14px] w-[236px] min-w-[236px]">
+                          <p className={`${sfMed} text-[#3e2d1d] text-[14px] tracking-[-0.1504px] whitespace-nowrap`} style={wdth}>{draw.title}</p>
+                          <p className={`${intMed} text-[#8c8780] text-[12px] leading-[18px] whitespace-nowrap`}>
+                            {draw.lineItems.length} line item{draw.lineItems.length !== 1 ? 's' : ''}
+                            {draw.attachments.length > 0 && ` · ${draw.attachments.length} doc${draw.attachments.length !== 1 ? 's' : ''}`}
+                          </p>
+                          {draw.documentPackageName && (
+                            <div className="flex items-center gap-[2px]">
+                              <PackageIcon />
+                              <p className={`${intMed} text-[#764d2f] text-[12px] leading-[18px] whitespace-nowrap`}>{draw.documentPackageName}</p>
                             </div>
-                            <div className="h-[16.5px] relative shrink-0 w-[206px]">
-                              <p className={`absolute ${sfMed} leading-[16.5px] left-0 text-[#8c8780] text-[11px] top-[0.5px] tracking-[0.6145px] uppercase whitespace-nowrap`} style={wdth}>Draw Title</p>
-                            </div>
-                            <div className="h-[16.5px] relative shrink-0 w-[140px]">
-                              <p className={`absolute ${sfMed} leading-[16.5px] left-0 text-[#8c8780] text-[11px] top-[0.5px] tracking-[0.6145px] uppercase whitespace-nowrap`} style={wdth}>Lender</p>
-                            </div>
-                            <div className="h-[16.5px] relative shrink-0 w-[120px]">
-                              <p className={`absolute ${sfMed} leading-[16.5px] left-0 text-[#8c8780] text-[11px] top-[0.5px] tracking-[0.6145px] uppercase whitespace-nowrap`} style={wdth}>Date</p>
-                            </div>
-                            <div className="h-[16.5px] relative shrink-0 w-[120px]">
-                              <p className={`absolute ${sfMed} leading-[16.5px] text-[#8c8780] text-[11px] text-right top-[0.5px] tracking-[0.6145px] uppercase whitespace-nowrap right-[67px]`} style={wdth}>Amount</p>
-                            </div>
-                            <div className="h-[16.5px] relative shrink-0 w-[96px]">
-                              <p className={`absolute ${sfMed} leading-[16.5px] text-[#8c8780] text-[11px] text-right top-[0.5px] tracking-[0.6145px] uppercase whitespace-nowrap right-[50px]`} style={wdth}>Status</p>
+                          )}
+                        </TableCell>
+                        <TableCell className="px-0 py-[14px] w-[140px] min-w-[140px]">
+                          <span className={`${intMed} text-[#8c8780] text-[14px] tracking-[-0.1504px] whitespace-nowrap`}>{draw.lenderName || '—'}</span>
+                        </TableCell>
+                        <TableCell className="px-0 py-[14px] w-[120px] min-w-[120px]">
+                          <span className={`${intMed} text-[#8c8780] text-[14px] tracking-[-0.1504px] whitespace-nowrap`}>{dateStr}</span>
+                        </TableCell>
+                        <TableCell className="px-0 py-[14px] w-[120px] min-w-[120px] text-right">
+                          <span className={`${sfBold} text-[#3e2d1d] text-[14px] tracking-[-0.1504px] whitespace-nowrap`} style={wdth}>{formatCurrency(draw.totalAmount)}</span>
+                        </TableCell>
+                        <TableCell className="px-0 py-[14px] w-[96px] min-w-[96px]">
+                          <div className="flex justify-center">
+                            <div className="bg-[#fcf6f0] rounded-[100px] px-[16px] py-[4px]">
+                              <p className={`${sfMed} text-[#3e2d1d] text-[14px] whitespace-nowrap`} style={wdth}>{displayStatus}</p>
                             </div>
                           </div>
-                        </div>
-                      </div>
-
-                      {/* Rows */}
-                      {property.draws.map((draw, i) => {
-                        const isSelected = selectedDraws.has(draw.id);
-                        const dateStr = draw.fundedDate || draw.approvedDate || draw.submittedDate || draw.requestDate;
-                        const displayStatus = draw.status === 'Draft' ? 'Pending' : draw.status;
-
-                        return (
-                          <motion.div
-                            key={draw.id}
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            transition={{ delay: i * 0.04 }}
-                            className="relative shrink-0 w-full hover:bg-[#FAFAF9] transition-colors"
-                          >
-                            <div aria-hidden="true" className="absolute border-[#f5f3ef] border-b border-solid inset-0 pointer-events-none" />
-                            <div className="flex flex-row items-center size-full">
-                              <div className="content-stretch flex gap-[62px] items-center px-[16px] py-[14px] relative w-full">
-
-                                {/* Checkbox + # */}
-                                <div className="content-stretch flex gap-[24px] items-center relative shrink-0 w-[92px]">
-                                  <button
-                                    onClick={() => toggleSelect(draw.id)}
-                                    className={`relative rounded-[4px] shrink-0 size-[16px] cursor-pointer border-none p-0 flex items-center justify-center transition-colors ${
-                                      isSelected ? 'bg-[#3E2D1D]' : 'bg-transparent'
-                                    }`}
-                                  >
-                                    <div aria-hidden="true" className={`absolute border border-solid inset-0 pointer-events-none rounded-[4px] ${isSelected ? 'border-[#3E2D1D]' : 'border-[#d0d0d0]'}`} />
-                                    {isSelected && <Check className="w-[10px] h-[10px] text-white relative z-10" />}
-                                  </button>
-                                  <div className="h-[21px] relative shrink-0 w-[48px]">
-                                    <p className={`absolute ${intMed} leading-[21px] left-0 text-[#8c8780] text-[14px] top-0 tracking-[-0.1504px] whitespace-nowrap`}>#{draw.number}</p>
-                                  </div>
-                                </div>
-
-                                {/* Draw Title */}
-                                <div className="content-stretch flex flex-col gap-[2px] items-start relative shrink-0 w-[206px]">
-                                  <div className="h-[21px] relative shrink-0 w-full">
-                                    <p className={`absolute ${sfMed} leading-[21px] left-0 text-[#3e2d1d] text-[14px] top-0 tracking-[-0.1504px] whitespace-nowrap`} style={wdth}>{draw.title}</p>
-                                  </div>
-                                  <div className="content-stretch flex flex-col items-start relative shrink-0 w-full">
-                                    <p className={`${intMed} leading-[18px] relative shrink-0 text-[#8c8780] text-[12px] whitespace-nowrap`}>
-                                      {draw.lineItems.length} line item{draw.lineItems.length !== 1 ? 's' : ''}
-                                      {draw.attachments.length > 0 && ` · ${draw.attachments.length} doc${draw.attachments.length !== 1 ? 's' : ''}`}
-                                    </p>
-                                    {draw.documentPackageName && (
-                                      <div className="content-stretch flex gap-[2px] items-center relative shrink-0">
-                                        <PackageIcon />
-                                        <p className={`${intMed} leading-[18px] relative shrink-0 text-[#764d2f] text-[12px] whitespace-nowrap`}> {draw.documentPackageName}</p>
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-
-                                {/* Lender */}
-                                <div className="h-[21px] overflow-clip relative shrink-0 w-[140px]">
-                                  <p className={`absolute ${intMed} leading-[21px] left-0 text-[#8c8780] text-[14px] top-0 tracking-[-0.1504px] whitespace-nowrap`}>{draw.lenderName || '—'}</p>
-                                </div>
-
-                                {/* Date */}
-                                <div className="h-[21px] relative shrink-0 w-[120px]">
-                                  <p className={`absolute ${intMed} leading-[21px] left-0 text-[#8c8780] text-[14px] top-0 tracking-[-0.1504px] whitespace-nowrap`}>{dateStr}</p>
-                                </div>
-
-                                {/* Amount */}
-                                <div className="h-[21px] relative shrink-0 w-[120px]">
-                                  <p className={`absolute right-0 ${sfBold} leading-[21px] text-[#3e2d1d] text-[14px] text-right top-0 tracking-[-0.1504px] whitespace-nowrap`} style={wdth}>{formatCurrency(draw.totalAmount)}</p>
-                                </div>
-
-                                {/* Status + Chevron */}
-                                <div className="content-stretch flex gap-[10px] items-center relative shrink-0">
-                                  <div className="content-stretch flex h-[26px] items-center relative shrink-0 w-[96px]">
-                                    <div className="bg-[#fcf6f0] relative rounded-[100px] shrink-0">
-                                      <div className="content-stretch flex items-center justify-center px-[16px] py-[4px] relative">
-                                        <p className={`${sfMed} leading-[normal] relative shrink-0 text-[#3e2d1d] text-[14px] whitespace-nowrap`} style={wdth}>{displayStatus}</p>
-                                      </div>
-                                    </div>
-                                  </div>
-                                  <DrawRowActions
-                                    draw={draw}
-                                    propertyId={propertyId}
-                                    onSubmit={() => submitDraw(propertyId, draw.id)}
-                                    onDelete={() => deleteDraw(propertyId, draw.id)}
-                                    onCompletion={() => setCompletionDraw(draw)}
-                                  />
-                                </div>
-
-                              </div>
-                            </div>
-                          </motion.div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                  <div aria-hidden="true" className="absolute border border-[#d0d0d0] border-solid inset-0 pointer-events-none rounded-[20px]" />
-                </div>
-              </div>
+                        </TableCell>
+                        <TableCell className="pl-0 pr-[16px] py-[14px] w-[34px] min-w-[34px]">
+                          <DrawRowActions
+                            draw={draw}
+                            propertyId={propertyId}
+                            onSubmit={() => submitDraw(propertyId, draw.id)}
+                            onDelete={() => deleteDraw(propertyId, draw.id)}
+                            onCompletion={() => setCompletionDraw(draw)}
+                          />
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
             </div>
           )}
 
@@ -595,7 +546,6 @@ function DrawRowActions({ draw, propertyId, onSubmit, onDelete, onCompletion }: 
   onDelete: () => void;
   onCompletion: () => void;
 }) {
-  const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const navigate = useNavigate();
 
@@ -603,55 +553,70 @@ function DrawRowActions({ draw, propertyId, onSubmit, onDelete, onCompletion }: 
     const url = getShareUrl(propertyId, draw.id);
     navigator.clipboard.writeText(url).then(() => {
       setCopied(true);
-      setTimeout(() => { setCopied(false); setOpen(false); }, 1200);
+      setTimeout(() => { setCopied(false); }, 1200);
     });
   };
 
   return (
-    <div className="relative">
-      <button onClick={() => setOpen(!open)} className="cursor-pointer bg-transparent border-none p-0 hover:opacity-80 transition-opacity">
-        <ChevronRightIcon />
-      </button>
-      <AnimatePresence>
-        {open && (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button className="cursor-pointer bg-transparent border-none p-0 hover:opacity-80 transition-opacity">
+          <ChevronRightIcon />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" sideOffset={8} className="bg-white border border-[#D0D0D0] rounded-[12px] p-0 shadow-lg min-w-[190px] overflow-hidden">
+        <DropdownMenuItem
+          onSelect={() => navigate(`/dashboard/properties/${propertyId}/draws/${draw.id}`)}
+          className={`flex items-center gap-[10px] px-[12px] py-[12px] text-[14px] text-[#3E2D1D] focus:bg-[#FCF6F0] focus:text-[#3E2D1D] cursor-pointer rounded-none ${sfMed}`}
+          style={wdth}
+        >
+          <Eye className="w-[14px] h-[14px] text-[#8C8780]" /> View Details
+        </DropdownMenuItem>
+        {(draw.status === 'Submitted' || draw.status === 'Approved' || draw.status === 'Funded') && (
+          <DropdownMenuItem
+            onSelect={onCompletion}
+            className={`flex items-center gap-[10px] px-[12px] py-[12px] text-[14px] text-[#3E2D1D] focus:bg-[#FCF6F0] focus:text-[#3E2D1D] cursor-pointer rounded-none ${sfMed}`}
+            style={wdth}
+          >
+            <CheckCircle className="w-[14px] h-[14px] text-[#764D2F]" /> Draw Completion
+          </DropdownMenuItem>
+        )}
+        <DropdownMenuItem
+          onSelect={handleCopyLink}
+          className={`flex items-center gap-[10px] px-[12px] py-[12px] text-[14px] text-[#764D2F] focus:bg-[#FCF6F0] focus:text-[#764D2F] cursor-pointer rounded-none ${sfMed}`}
+          style={wdth}
+        >
+          {copied ? <Check className="w-[14px] h-[14px]" /> : <Link2 className="w-[14px] h-[14px]" />}
+          {copied ? 'Link Copied!' : 'Copy Public Link'}
+        </DropdownMenuItem>
+        {draw.status === 'Draft' && (
+          <DropdownMenuItem
+            onSelect={onSubmit}
+            className={`flex items-center gap-[10px] px-[12px] py-[12px] text-[14px] text-[#764D2F] focus:bg-[#FCF6F0] focus:text-[#764D2F] cursor-pointer rounded-none ${sfMed}`}
+            style={wdth}
+          >
+            <Send className="w-[14px] h-[14px]" /> Submit Draw
+          </DropdownMenuItem>
+        )}
+        <DropdownMenuItem
+          className={`flex items-center gap-[10px] px-[12px] py-[12px] text-[14px] text-[#8C8780] focus:bg-[#FCF6F0] focus:text-[#8C8780] cursor-pointer rounded-none ${sfMed}`}
+          style={wdth}
+        >
+          <Download className="w-[14px] h-[14px]" /> Export PDF
+        </DropdownMenuItem>
+        {draw.status === 'Draft' && (
           <>
-            <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: -4 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              transition={{ duration: 0.1 }}
-              className="absolute right-0 top-[28px] bg-white border border-[#D0D0D0] rounded-[12px] shadow-lg z-20 overflow-hidden min-w-[180px]"
+            <DropdownMenuSeparator className="m-0 bg-[#D0D0D0]" />
+            <DropdownMenuItem
+              onSelect={onDelete}
+              className={`flex items-center gap-[10px] px-[12px] py-[12px] text-[14px] text-red-500 focus:bg-red-50 focus:text-red-500 cursor-pointer rounded-none ${sfMed}`}
+              style={wdth}
             >
-              <button onClick={() => { navigate(`/dashboard/properties/${propertyId}/draws/${draw.id}`); setOpen(false); }} className={`flex items-center gap-[10px] w-full px-[12px] py-[12px] text-[14px] text-[#3E2D1D] hover:bg-[#FCF6F0] cursor-pointer bg-transparent border-none ${sfMed}`} style={wdth}>
-                <Eye className="w-[14px] h-[14px] text-[#8C8780]" /> View Details
-              </button>
-              {(draw.status === 'Submitted' || draw.status === 'Approved' || draw.status === 'Funded') && (
-                <button onClick={() => { onCompletion(); setOpen(false); }} className={`flex items-center gap-[10px] w-full px-[12px] py-[12px] text-[14px] text-[#3E2D1D] hover:bg-[#FCF6F0] cursor-pointer bg-transparent border-none ${sfMed}`} style={wdth}>
-                  <CheckCircle className="w-[14px] h-[14px] text-[#764D2F]" /> Draw Completion
-                </button>
-              )}
-              <button onClick={handleCopyLink} className={`flex items-center gap-[10px] w-full px-[12px] py-[12px] text-[14px] cursor-pointer bg-transparent border-none transition-colors ${copied ? 'text-[#764D2F] bg-[#FCF6F0]' : 'text-[#764D2F] hover:bg-[#FCF6F0]'} ${sfMed}`} style={wdth}>
-                {copied ? <Check className="w-[14px] h-[14px]" /> : <Link2 className="w-[14px] h-[14px]" />}
-                {copied ? 'Link Copied!' : 'Copy Public Link'}
-              </button>
-              {draw.status === 'Draft' && (
-                <button onClick={() => { onSubmit(); setOpen(false); }} className={`flex items-center gap-[10px] w-full px-[12px] py-[12px] text-[14px] text-[#764D2F] hover:bg-[#FCF6F0] cursor-pointer bg-transparent border-none ${sfMed}`} style={wdth}>
-                  <Send className="w-[14px] h-[14px]" /> Submit Draw
-                </button>
-              )}
-              <button className={`flex items-center gap-[10px] w-full px-[12px] py-[12px] text-[14px] text-[#8C8780] hover:bg-[#FCF6F0] cursor-pointer bg-transparent border-none ${sfMed}`} style={wdth}>
-                <Download className="w-[14px] h-[14px]" /> Export PDF
-              </button>
-              {draw.status === 'Draft' && (
-                <button onClick={() => { onDelete(); setOpen(false); }} className={`flex items-center gap-[10px] w-full px-[12px] py-[12px] text-[14px] text-red-500 hover:bg-red-50 cursor-pointer border-t border-[#D0D0D0] bg-transparent ${sfMed}`} style={wdth}>
-                  <Trash2 className="w-[14px] h-[14px]" /> Delete
-                </button>
-              )}
-            </motion.div>
+              <Trash2 className="w-[14px] h-[14px]" /> Delete
+            </DropdownMenuItem>
           </>
         )}
-      </AnimatePresence>
-    </div>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
