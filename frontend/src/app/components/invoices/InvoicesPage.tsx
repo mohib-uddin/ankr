@@ -32,6 +32,24 @@ const INVOICES = [
   { id: 4, name: 'Lighting Fixtures', code: 'INV-2024-004', contractor: 'Lumina Studio', property: 'North Wing Extension', amount: '$8,200', status: 'Paid' },
 ];
 
+const PROPERTY_FILTER_OPTIONS = [
+  {
+    value: 'obsidian-heights',
+    label: 'The Obsidian Heights',
+    image: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=96&q=60',
+  },
+  {
+    value: 'south-shore',
+    label: 'South Shore Pavilion',
+    image: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=96&q=60',
+  },
+  {
+    value: 'north-wing',
+    label: 'North Wing Extension',
+    image: 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=96&q=60',
+  },
+];
+
 function StatusBadge({ status }: { status: string }) {
   return (
     <div className="bg-[#FCF6F0] rounded-[100px] px-[16px] py-[4px] inline-flex items-center justify-center">
@@ -213,7 +231,8 @@ function NewInvoiceModal({ open, onClose }: { open: boolean; onClose: () => void
 export function InvoicesPage() {
   const navigate = useNavigate();
   const [modalOpen, setModalOpen] = useState(false);
-  const [propertyFilter, setPropertyFilter] = useState('all');
+  const [propertyFilter, setPropertyFilter] = useState<string | undefined>(undefined);
+  const selectedPropertyOption = PROPERTY_FILTER_OPTIONS.find(option => option.value === propertyFilter);
 
   return (
     <div className="px-4 sm:px-6 lg:px-[58px] py-[28px] sm:py-[40px]">
@@ -254,15 +273,39 @@ export function InvoicesPage() {
         <Select value={propertyFilter} onValueChange={setPropertyFilter}>
           <SelectTrigger
             className={`w-full max-w-[355px] !text-[#767676] ${invoiceSelectTriggerBase}`}
-            style={{ fontFamily: "'Figtree', sans-serif" }}
+            style={{ fontFamily: "'SF Pro', -apple-system, sans-serif", fontWeight: 510 }}
           >
-            <SelectValue placeholder="Select Property" />
+            <SelectValue placeholder="Select Property">
+              {selectedPropertyOption && (
+                <span className="flex items-center gap-[8px]">
+                  <img
+                    src={selectedPropertyOption.image}
+                    alt={selectedPropertyOption.label}
+                    className="w-[28px] h-[28px] rounded-[6px] object-cover shrink-0"
+                  />
+                  <span className="truncate text-[#3E2D1D]">{selectedPropertyOption.label}</span>
+                </span>
+              )}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent className={invoiceSelectContentBase}>
-            <SelectItem value="all" className={invoiceSelectItemBase}>Select Property</SelectItem>
-            <SelectItem value="obsidian-heights" className={invoiceSelectItemBase}>The Obsidian Heights</SelectItem>
-            <SelectItem value="south-shore" className={invoiceSelectItemBase}>South Shore Pavilion</SelectItem>
-            <SelectItem value="north-wing" className={invoiceSelectItemBase}>North Wing Extension</SelectItem>
+            {PROPERTY_FILTER_OPTIONS.map(option => (
+              <SelectItem
+                key={option.value}
+                value={option.value}
+                className={invoiceSelectItemBase}
+                style={{ fontFamily: "'SF Pro', -apple-system, sans-serif", fontWeight: 510, color: '#3E2D1D' }}
+              >
+                <span className="flex items-center gap-[10px]">
+                  <img
+                    src={option.image}
+                    alt={option.label}
+                    className="w-[28px] h-[28px] rounded-[6px] object-cover shrink-0"
+                  />
+                  <span className="truncate">{option.label}</span>
+                </span>
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>
