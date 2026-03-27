@@ -6,8 +6,7 @@ export function ProfileSetupPage() {
   const navigate = useNavigate();
 
   const handleUploadPFS = () => {
-    // TODO: Open file picker and handle PDF upload
-    console.log('Upload PFS clicked');
+    navigate('/onboarding/upload');
   };
 
   const handleBuildProfile = () => {
