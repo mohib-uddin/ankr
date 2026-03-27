@@ -11,14 +11,46 @@ import { getShareUrl } from './PublicDrawView';
 import svgPaths from '../../../imports/svg-msusmqtedk';
 
 /* ─── Font tokens ─────────────────────────────────────────────────────────── */
-const FONT_HEADING: React.CSSProperties = { fontFamily: "'Canela Text Trial', sans-serif", fontWeight: 500 };
-const FONT_SF_REGULAR: React.CSSProperties = { fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro', Inter, sans-serif", fontWeight: 400 };
-const FONT_SF_MEDIUM: React.CSSProperties = { fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro', Inter, sans-serif", fontWeight: 510 };
-const FONT_SF_SEMIBOLD: React.CSSProperties = { fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro', Inter, sans-serif", fontWeight: 590 };
-const FONT_SF_BOLD: React.CSSProperties = { fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro', Inter, sans-serif", fontWeight: 700 };
-const FONT_FIGTREE: React.CSSProperties = { fontFamily: "'Figtree', sans-serif", fontWeight: 400 };
-const FONT_MONTSERRAT: React.CSSProperties = { fontFamily: "'Montserrat', sans-serif", fontWeight: 500 };
-const FONT_INTER_MEDIUM: React.CSSProperties = { fontFamily: "'Inter', sans-serif", fontWeight: 500, fontStyle: 'normal' };
+const FONT_HEADING: React.CSSProperties = {
+  fontFamily: "'Canela_Text_Trial', sans-serif",
+  fontWeight: 500,
+};
+const FONT_SF_REGULAR: React.CSSProperties = {
+  fontFamily: "'SF Pro', sans-serif",
+  fontWeight: 510,
+  fontVariationSettings: "'wdth' 100",
+};
+const FONT_SF_MEDIUM: React.CSSProperties = {
+  fontFamily: "'SF Pro', sans-serif",
+  fontWeight: 510,
+  fontVariationSettings: "'wdth' 100",
+};
+const FONT_SF_SEMIBOLD: React.CSSProperties = {
+  fontFamily: "'SF Pro', sans-serif",
+  fontWeight: 590,
+  fontVariationSettings: "'wdth' 100",
+};
+const FONT_SF_BOLD: React.CSSProperties = {
+  fontFamily: "'SF Pro', sans-serif",
+  fontWeight: 700,
+  fontVariationSettings: "'wdth' 100",
+};
+const FONT_FIGTREE: React.CSSProperties = {
+  fontFamily: "'SF Pro', sans-serif",
+  fontWeight: 510,
+  fontVariationSettings: "'wdth' 100",
+};
+const FONT_MONTSERRAT: React.CSSProperties = {
+  fontFamily: "'SF Pro', sans-serif",
+  fontWeight: 510,
+  fontVariationSettings: "'wdth' 100",
+};
+const FONT_INTER_MEDIUM: React.CSSProperties = {
+  fontFamily: "'SF Pro', sans-serif",
+  fontWeight: 510,
+  fontVariationSettings: "'wdth' 100",
+  fontStyle: 'normal',
+};
 
 function parseMoney(v: string) { return parseFloat(v.replace(/[^0-9.]/g, '')) || 0; }
 function fmtInput(n: number) { return n > 0 ? n.toLocaleString() : ''; }
@@ -92,7 +124,7 @@ function StepCircle({ index, state }: { index: number; state: 'completed' | 'act
       </svg>
       <p
         className="absolute flex items-center justify-center inset-0 text-[16px] whitespace-nowrap"
-        style={{ fontFamily: "'DM Sans', sans-serif", fontWeight: 700, color: textColor }}
+        style={{ ...FONT_SF_BOLD, color: textColor }}
       >
         {index + 1}
       </p>
@@ -164,7 +196,6 @@ export function NewDrawRequestPage() {
 
   // Step 2 - line items per category
   const [lineAmounts, setLineAmounts] = useState<Record<string, string>>({});
-  const [linePercents, setLinePercents] = useState<Record<string, string>>({});
 
   // Step 3 - document package + attachments
   const [selectedPackageId, setSelectedPackageId] = useState<DocumentPackageId | null>(null);
@@ -191,6 +222,9 @@ export function NewDrawRequestPage() {
       const catBudget = c.items.reduce((s, i) => s + i.budget, 0);
       const previouslyDrawn = getDrawnForCategory(c.id, property.draws);
       const requested = parseMoney(lineAmounts[c.id] || '0');
+      const percentTakenToDate = catBudget > 0
+        ? Math.min(100, Math.round(((previouslyDrawn + requested) / catBudget) * 100))
+        : 0;
       return {
         id: genId(),
         categoryId: c.id,
@@ -198,7 +232,7 @@ export function NewDrawRequestPage() {
         budgetAmount: catBudget,
         previouslyDrawn,
         requestedAmount: requested,
-        percentComplete: parseInt(linePercents[c.id] || '0') || 0,
+        percentComplete: percentTakenToDate,
       };
     });
 
@@ -362,10 +396,10 @@ export function NewDrawRequestPage() {
               idx < step ? 'bg-[#3E2D1D] text-white' :
               idx === step ? 'border-2 border-[#3E2D1D] text-[#3E2D1D]' :
               'border-2 border-[#D3B597] text-[#D3B597]'
-            }`} style={{ fontWeight: 700 }}>
+            }`} style={FONT_SF_BOLD}>
               {idx < step ? '✓' : idx + 1}
             </div>
-            <span className={`text-[12px] ${idx === step ? 'text-[#3E2D1D]' : 'text-[#D3B597]'} hidden sm:inline`} style={{ fontWeight: 510 }}>{s.label}</span>
+            <span className={`text-[12px] ${idx === step ? 'text-[#3E2D1D]' : 'text-[#D3B597]'} hidden sm:inline`} style={FONT_SF_MEDIUM}>{s.label}</span>
             {idx < STEPS.length - 1 && <div className="w-[16px] h-[2px] bg-[#D3B597] rounded-full" />}
           </div>
         ))}
@@ -403,8 +437,6 @@ export function NewDrawRequestPage() {
                   draws={property.draws}
                   lineAmounts={lineAmounts}
                   setLineAmounts={setLineAmounts}
-                  linePercents={linePercents}
-                  setLinePercents={setLinePercents}
                 />
               )}
               {step === 2 && (
@@ -628,10 +660,9 @@ function StepSetup({ title, setTitle, lenderName, setLenderName, lenderEmail, se
 
 /* ─── STEP 2: LINE ITEMS ───────────────────────────────────────────────────── */
 
-function StepLineItems({ categories, draws, lineAmounts, setLineAmounts, linePercents, setLinePercents }: {
+function StepLineItems({ categories, draws, lineAmounts, setLineAmounts }: {
   categories: any[]; draws: any[];
   lineAmounts: Record<string, string>; setLineAmounts: (fn: any) => void;
-  linePercents: Record<string, string>; setLinePercents: (fn: any) => void;
 }) {
   return (
     <div className="flex flex-col gap-[12px]">
@@ -653,6 +684,10 @@ function StepLineItems({ categories, draws, lineAmounts, setLineAmounts, linePer
           const catDrawn = getDrawnForCategory(cat.id, draws);
           const available = catBudget - catDrawn;
           const isFullyDrawn = available <= 0;
+          const requestedAmount = parseMoney(lineAmounts[cat.id] || '0');
+          const drawTakenPct = catBudget > 0
+            ? Math.min(100, Math.round(((catDrawn + requestedAmount) / catBudget) * 100))
+            : 0;
 
           return (
             <div
@@ -726,17 +761,13 @@ function StepLineItems({ categories, draws, lineAmounts, setLineAmounts, linePer
                     </div>
                   </div>
                   <div className="flex-1 flex flex-col gap-[6px]">
-                    <p className="text-[#333] text-[14px]" style={FONT_SF_REGULAR}>Work Completed (%)</p>
+                    <p className="text-[#333] text-[14px]" style={FONT_SF_REGULAR}>Draw Taken To Date (%)</p>
                     <div className="bg-white h-[46px] relative rounded-[8px] w-full">
                       <div aria-hidden="true" className="absolute border border-[#d0d0d0] border-solid inset-0 pointer-events-none rounded-[8px]" />
                       <input
-                        type="number"
-                        min="0"
-                        max="100"
-                        value={linePercents[cat.id] || ''}
-                        onChange={e => setLinePercents((prev: any) => ({ ...prev, [cat.id]: e.target.value }))}
-                        disabled={isFullyDrawn}
-                        placeholder="0"
+                        type="text"
+                        value={`${drawTakenPct}%`}
+                        disabled
                         className="w-full h-full px-[12px] py-[10px] rounded-[8px] text-[14px] text-[#3e2d1d] focus:outline-none bg-transparent relative z-10 disabled:opacity-40"
                         style={FONT_FIGTREE}
                       />
