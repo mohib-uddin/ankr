@@ -2,7 +2,7 @@ import { useState, FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router';
 import { SignupSubmitChevronIcon } from '@/icons/signup';
 import imgChatGptImageMar22026014513Am2 from "@/assets/d4e288c194e513c6042ea3d990c5b1165f94f4b0.png";
-import { AuthSideCarousel } from './AuthSideCarousel';
+import { AuthSideCarousel } from '../components/AuthSideCarousel';
 
 export function SignupPage() {
   const navigate = useNavigate();

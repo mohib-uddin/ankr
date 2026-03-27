@@ -2,10 +2,10 @@ import { useState, useRef, useLayoutEffect, useEffect, useCallback } from 'react
 import { useParams, useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import { useApp, getBudgetTotals, formatCurrency, getDrawnForCategory } from '@/app/context/AppContext';
-import { ProFormaTab } from './tabs/ProFormaTab';
-import { BudgetTab } from './tabs/BudgetTab';
-import { DrawsTab } from './tabs/DrawsTab';
-import { DocumentsTab } from './tabs/DocumentsTab';
+import { ProFormaTab } from '../components/tabs/ProFormaTab';
+import { BudgetTab } from '../components/tabs/BudgetTab';
+import { DrawsTab } from '../components/tabs/DrawsTab';
+import { DocumentsTab } from '../components/tabs/DocumentsTab';
 import {
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip,
   AreaChart, Area, XAxis, YAxis, CartesianGrid,

@@ -18,9 +18,9 @@ import {
 import { useApp } from '@/app/context/AppContext';
 import type { VaultCategory, VaultDocument, VaultFolder, VaultShareLink } from '@/app/context/AppContext';
 import svgPaths from '@/icons/dashboard-shared';
-import packageIconAsset from '../../assets/figma/documents-package/package-icon.svg';
-import listRadioAsset from '../../assets/figma/documents-package/list-radio.svg';
-import closeIconAsset from '../../assets/figma/documents-package/close-icon.svg';
+import packageIconAsset from '../../../assets/figma/documents-package/package-icon.svg';
+import listRadioAsset from '../../../assets/figma/documents-package/list-radio.svg';
+import closeIconAsset from '../../../assets/figma/documents-package/close-icon.svg';
 
 /* ─── Font tokens (matching Budget/Draw tabs exactly) ─── */
 const canela  = "font-['Canela_Text_Trial',sans-serif] font-medium not-italic";

@@ -13,7 +13,7 @@ import { IncomeStep } from './IncomeStep';
 import { YesNoStep } from './YesNoStep';
 import { SnapshotStep } from './SnapshotStep';
 import { UploadReviewStep } from './UploadReviewStep';
-import { ActivatedScreen } from './ActivatedScreen';
+import { ActivatedScreen } from '../pages/ActivatedScreen';
 
 export function OnboardingWizard() {
   const [currentStep, setCurrentStep] = useState<StepId>('welcome');
