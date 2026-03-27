@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import {
-  Check, FileText, Sparkles, Package, Save, Link2,
+  Check, FileText, Package, Save, Link2,
   DollarSign,
 } from 'lucide-react';
 import { useApp, getDrawnForCategory, formatCurrency, genId, DOCUMENT_PACKAGES } from '../../context/AppContext';
@@ -298,6 +298,87 @@ export function NewDrawRequestPage() {
 
   // Success screen
   if (submitted || savedAsDraft) {
+    if (submitted) {
+      return (
+        <div className="min-h-full px-4 sm:px-6 lg:px-[58px] flex items-center justify-center py-[40px]">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.98 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="w-full max-w-[626px]"
+          >
+            <div className="bg-[#3E2D1D] rounded-[16px] overflow-hidden">
+              <div className="flex flex-col items-center px-[36px] py-[64px]">
+                {/* Check icon with rings */}
+                <div className="relative w-[158.5px] h-[158.5px] mb-[24px]">
+                  <div className="absolute left-1/2 -translate-x-1/2 top-0 w-[158.5px] h-[158.5px] rounded-full border border-[#C4B29A] opacity-20" />
+                  <div className="absolute left-1/2 -translate-x-1/2 top-[17.01px] w-[124.487px] h-[124.487px] rounded-full border border-[#C4B29A] opacity-50" />
+                  <div className="absolute left-1/2 -translate-x-1/2 top-[31.97px] w-[94.556px] h-[94.556px] rounded-full bg-[#764D2F] flex items-center justify-center">
+                    <Check className="w-[40px] h-[40px] text-white" />
+                  </div>
+                </div>
+
+                {/* Title and subtitle */}
+                <h2 className="text-[28px] text-white text-center mb-[4px]" style={FONT_HEADING}>
+                  Draw Submitted!
+                </h2>
+                <p className="text-[16px] text-[#D3B597] text-center mb-[52px]" style={FONT_SF_MEDIUM}>
+                  Verify the transaction details for this draw package.
+                </p>
+
+                {/* Amount panel */}
+                <div className="w-full bg-white/5 rounded-[8px] py-[32px] flex flex-col items-center mb-[52px]">
+                  <p className="text-[16px] text-[#D3B597] mb-[4px]" style={FONT_SF_MEDIUM}>
+                    Total Amount
+                  </p>
+                  <p className="text-[48px] text-white leading-[50px]" style={FONT_SF_MEDIUM}>
+                    {formatCurrency(totalRequested)}
+                  </p>
+                  <p className="text-[16px] text-[#D3B597] mt-[4px]" style={FONT_SF_MEDIUM}>
+                    {title}
+                  </p>
+                </div>
+
+                {/* Details */}
+                <div className="w-full space-y-[24px] mb-[32px]">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[14px] text-[#D3B597]" style={FONT_SF_SEMIBOLD}>Lender</span>
+                    <span className="text-[16px] text-white" style={FONT_SF_MEDIUM}>{lenderName}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[14px] text-[#D3B597]" style={FONT_SF_SEMIBOLD}>Request Date</span>
+                    <span className="text-[16px] text-white" style={FONT_SF_MEDIUM}>{requestDate}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[14px] text-[#D3B597]" style={FONT_SF_SEMIBOLD}>Package</span>
+                    <span className="text-[16px] text-white" style={FONT_SF_MEDIUM}>{selectedPackage?.name || 'Custom Uploads'}</span>
+                  </div>
+                </div>
+
+                {/* Actions */}
+                {createdDrawId && (
+                  <button
+                    onClick={handleCopyPublicLink}
+                    className="w-full h-[50px] rounded-[8px] border-[1.5px] border-white text-white flex items-center justify-center gap-[10px] cursor-pointer hover:bg-white/10 transition-colors mb-[12px]"
+                    style={FONT_SF_SEMIBOLD}
+                  >
+                    {linkCopied ? <Check className="w-[16px] h-[16px]" /> : <Link2 className="w-[16px] h-[16px]" />}
+                    <span className="text-[16px]">{linkCopied ? 'Public Link Copied!' : 'Copy Public Link for Lender'}</span>
+                  </button>
+                )}
+                <button
+                  onClick={goBackToDraws}
+                  className="w-full h-[50px] rounded-[8px] border-[1.5px] border-white text-white flex items-center justify-center gap-[10px] cursor-pointer hover:bg-white/10 transition-colors"
+                  style={FONT_SF_SEMIBOLD}
+                >
+                  <span className="text-[16px]">Return To Property</span>
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      );
+    }
+
     return (
       <div className="min-h-full px-4 sm:px-6 lg:px-[58px] flex items-center justify-center py-[60px]">
         <motion.div
@@ -327,14 +408,6 @@ export function NewDrawRequestPage() {
             <p className="text-[14px] text-[#8C8780] mb-[32px]" style={FONT_SF_MEDIUM}>
               Your draw has been saved as a draft. You can review and submit it from the Draws tab.
             </p>
-          )}
-          {submitted && (
-            <div className="bg-[#FCF6F0] border border-[#E8DFD4] rounded-[12px] p-[16px] mb-[20px] text-left">
-              <p className="text-[13px] text-[#764D2F] flex items-start gap-[8px]" style={FONT_SF_MEDIUM}>
-                <Sparkles className="w-[14px] h-[14px] mt-[2px] shrink-0" />
-                <span>Share the public link below with your lender to give them read-only access to this draw package.</span>
-              </p>
-            </div>
           )}
           {createdDrawId && (
             <button

@@ -1281,59 +1281,77 @@ function PackageShareSuccess({ link, pkgName, onBack }: {
     <motion.div
       initial={{ opacity: 0, scale: 0.98 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="max-w-[560px] mx-auto"
+      className="max-w-[626px] mx-auto"
     >
-      <div className="bg-white rounded-[20px] border border-[#D0D0D0] p-[32px] sm:p-[40px] text-center">
-        {/* Success icon */}
-        <div className="w-[64px] h-[64px] rounded-full bg-[#EEF5EE] flex items-center justify-center mx-auto mb-[20px]">
-          <CheckCircle className="w-[28px] h-[28px] text-[#3E6B3E]" />
-        </div>
-        <p className={`${canela} text-[24px] text-[#3E2D1D] mb-[6px]`}>Package Link Created</p>
-        <p className={`${sfMed} text-[14px] text-[#8C8780] mb-[28px]`} style={wdth}>
-          Your <strong className="text-[#3E2D1D]">{pkgName}</strong> is ready to share with your lender.
-        </p>
-
-        {/* Link display */}
-        <div className="bg-[#FAFAF9] rounded-[12px] p-[14px] mb-[20px]">
-          <p className="text-[11px] text-[#8C8780] mb-[8px] text-left" style={{ fontWeight: 590, letterSpacing: '0.5px' }}>SHAREABLE LINK</p>
-          <div className="flex items-center gap-[10px]">
-            <div className="flex-1 bg-white rounded-[8px] border border-[#E8E4DD] px-[12px] py-[10px]">
-              <p className="text-[13px] text-[#3E2D1D] truncate text-left" style={{ fontWeight: 510 }}>{shareUrl}</p>
+      <div className="bg-[#3E2D1D] rounded-[16px] overflow-hidden">
+        <div className="flex flex-col items-center px-[36px] py-[64px]">
+          {/* Success icon with rings */}
+          <div className="relative w-[158.5px] h-[158.5px] mb-[24px]">
+            <div className="absolute left-1/2 -translate-x-1/2 top-0 w-[158.5px] h-[158.5px] rounded-full border border-[#C4B29A] opacity-20" />
+            <div className="absolute left-1/2 -translate-x-1/2 top-[17.01px] w-[124.487px] h-[124.487px] rounded-full border border-[#C4B29A] opacity-50" />
+            <div className="absolute left-1/2 -translate-x-1/2 top-[31.97px] w-[94.556px] h-[94.556px] rounded-full bg-[#764D2F] flex items-center justify-center">
+              <Check className="w-[40px] h-[40px] text-white" />
             </div>
-            <button
-              onClick={handleCopy}
-              className="flex items-center gap-[6px] h-[40px] px-[16px] rounded-[8px] bg-[#3E2D1D] text-white text-[13px] cursor-pointer hover:bg-[#764D2F] transition-colors shrink-0"
-              style={{ fontWeight: 590 }}
+          </div>
+
+          <p className={`${canela} text-[28px] text-white text-center mb-[4px]`}>Package Link Created</p>
+          <p className={`${sfMed} text-[16px] text-[#D3B597] text-center mb-[52px]`} style={wdth}>
+            Your <strong className="text-white">{pkgName}</strong> is ready to share with your lender.
+          </p>
+
+          {/* Shareable link panel */}
+          <div className="w-full bg-white/5 rounded-[8px] py-[20px] px-[20px] mb-[52px]">
+            <p className={`${sfMed} text-[16px] text-[#D3B597] mb-[10px] text-center`} style={wdth}>
+              Shareable Link
+            </p>
+            <div className="flex items-center gap-[10px]">
+              <div className="flex-1 bg-white/10 rounded-[8px] border border-[#C4B29A]/30 px-[12px] py-[10px]">
+                <p className="text-[13px] text-white truncate text-left" style={{ fontWeight: 510 }}>{shareUrl}</p>
+              </div>
+              <button
+                onClick={handleCopy}
+                className="flex items-center gap-[6px] h-[40px] px-[16px] rounded-[8px] bg-[#764D2F] text-white text-[13px] cursor-pointer hover:bg-[#8A5B39] transition-colors shrink-0"
+                style={{ fontWeight: 590 }}
+              >
+                {copied ? <Check className="w-[14px] h-[14px]" /> : <Copy className="w-[14px] h-[14px]" />}
+                {copied ? 'Copied!' : 'Copy'}
+              </button>
+            </div>
+          </div>
+
+          {/* Details */}
+          <div className="w-full space-y-[24px] mb-[24px]">
+            <div className="flex items-center justify-between">
+              <span className="text-[14px] text-[#D3B597]" style={{ ...wdth, fontWeight: 590 }}>Expires</span>
+              <span className="text-[16px] text-white" style={{ ...wdth, fontWeight: 510 }}>{link.expiresAt}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-[14px] text-[#D3B597]" style={{ ...wdth, fontWeight: 590 }}>Max Views</span>
+              <span className="text-[16px] text-white" style={{ ...wdth, fontWeight: 510 }}>{link.maxAccess}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-[14px] text-[#D3B597]" style={{ ...wdth, fontWeight: 590 }}>Documents</span>
+              <span className="text-[16px] text-white" style={{ ...wdth, fontWeight: 510 }}>{link.documentIds.length}</span>
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="w-full flex flex-col sm:flex-row gap-[10px]">
+            <Link
+              to={`/share/vault/${link.token}`}
+              className="flex-1 inline-flex items-center justify-center gap-[8px] h-[50px] rounded-[8px] border-[1.5px] border-white text-[16px] text-white hover:bg-white/10 transition-colors cursor-pointer no-underline"
+              style={{ ...wdth, fontWeight: 590 }}
             >
-              {copied ? <Check className="w-[14px] h-[14px]" /> : <Copy className="w-[14px] h-[14px]" />}
-              {copied ? 'Copied!' : 'Copy'}
+              <ExternalLink className="w-[16px] h-[16px]" /> Preview Lender View
+            </Link>
+            <button
+              onClick={onBack}
+              className="flex-1 h-[50px] rounded-[8px] border-[1.5px] border-white text-[16px] text-white hover:bg-white/10 transition-colors cursor-pointer"
+              style={{ ...wdth, fontWeight: 590 }}
+            >
+              Done
             </button>
           </div>
-        </div>
-
-        {/* Link info */}
-        <div className="flex justify-center gap-[20px] text-[12px] text-[#8C8780] mb-[24px]" style={{ fontWeight: 510 }}>
-          <span className="flex items-center gap-[4px]"><Clock className="w-[12px] h-[12px]" /> Expires {link.expiresAt}</span>
-          <span className="flex items-center gap-[4px]"><Eye className="w-[12px] h-[12px]" /> {link.maxAccess} max views</span>
-          <span className="flex items-center gap-[4px]"><FileText className="w-[12px] h-[12px]" /> {link.documentIds.length} docs</span>
-        </div>
-
-        {/* Open lender preview */}
-        <div className="flex flex-col sm:flex-row gap-[10px] justify-center">
-          <Link
-            to={`/share/vault/${link.token}`}
-            className="inline-flex items-center justify-center gap-[8px] h-[40px] px-[20px] rounded-[8px] border-[1.5px] border-[#3E2D1D] text-[14px] text-[#3E2D1D] hover:bg-[#F3EFE6] transition-colors cursor-pointer no-underline"
-            style={{ fontWeight: 590 }}
-          >
-            <ExternalLink className="w-[14px] h-[14px]" /> Preview Lender View
-          </Link>
-          <button
-            onClick={onBack}
-            className="h-[40px] px-[20px] rounded-[8px] bg-[#3E2D1D] text-white text-[14px] hover:bg-[#764D2F] transition-colors cursor-pointer"
-            style={{ fontWeight: 590 }}
-          >
-            Done
-          </button>
         </div>
       </div>
     </motion.div>
