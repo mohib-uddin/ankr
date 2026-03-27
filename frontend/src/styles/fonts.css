@@ -1,0 +1,73 @@
+/* ─── Google Fonts (Inter, Cormorant Garamond, Figtree, Montserrat, DM Sans) ─── */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600;700&display=swap');
+
+/* ─── SF Pro (local) ──────────────────────────────────────────────────
+   Registered under three family names so every usage pattern resolves:
+     • 'SF Pro Text'  – body default
+     • 'SF Pro'       – inline style={{ fontFamily: "'SF Pro'" }}
+     • 'SF_Pro'       – Tailwind font-['SF_Pro',sans-serif]
+   ──────────────────────────────────────────────────────────────────── */
+@font-face { font-family: 'SF Pro Text'; src: url('../assets/fonts/sf-pro/SF-Pro-Text-Regular.otf') format('opentype'); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: 'SF Pro Text'; src: url('../assets/fonts/sf-pro/SF-Pro-Text-Medium.otf') format('opentype'); font-weight: 500; font-style: normal; font-display: swap; }
+@font-face { font-family: 'SF Pro Text'; src: url('../assets/fonts/sf-pro/SF-Pro-Text-Medium.otf') format('opentype'); font-weight: 510; font-style: normal; font-display: swap; }
+@font-face { font-family: 'SF Pro Text'; src: url('../assets/fonts/sf-pro/SF-Pro-Text-Semibold.otf') format('opentype'); font-weight: 590; font-style: normal; font-display: swap; }
+@font-face { font-family: 'SF Pro Text'; src: url('../assets/fonts/sf-pro/SF-Pro-Text-Semibold.otf') format('opentype'); font-weight: 600; font-style: normal; font-display: swap; }
+@font-face { font-family: 'SF Pro Text'; src: url('../assets/fonts/sf-pro/SF-Pro-Text-Bold.otf') format('opentype'); font-weight: 700; font-style: normal; font-display: swap; }
+
+@font-face { font-family: 'SF Pro'; src: url('../assets/fonts/sf-pro/SF-Pro-Text-Regular.otf') format('opentype'); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: 'SF Pro'; src: url('../assets/fonts/sf-pro/SF-Pro-Text-Medium.otf') format('opentype'); font-weight: 500; font-style: normal; font-display: swap; }
+@font-face { font-family: 'SF Pro'; src: url('../assets/fonts/sf-pro/SF-Pro-Text-Medium.otf') format('opentype'); font-weight: 510; font-style: normal; font-display: swap; }
+@font-face { font-family: 'SF Pro'; src: url('../assets/fonts/sf-pro/SF-Pro-Text-Semibold.otf') format('opentype'); font-weight: 590; font-style: normal; font-display: swap; }
+@font-face { font-family: 'SF Pro'; src: url('../assets/fonts/sf-pro/SF-Pro-Text-Semibold.otf') format('opentype'); font-weight: 600; font-style: normal; font-display: swap; }
+@font-face { font-family: 'SF Pro'; src: url('../assets/fonts/sf-pro/SF-Pro-Text-Bold.otf') format('opentype'); font-weight: 700; font-style: normal; font-display: swap; }
+
+@font-face { font-family: 'SF_Pro'; src: url('../assets/fonts/sf-pro/SF-Pro-Text-Regular.otf') format('opentype'); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: 'SF_Pro'; src: url('../assets/fonts/sf-pro/SF-Pro-Text-Medium.otf') format('opentype'); font-weight: 500; font-style: normal; font-display: swap; }
+@font-face { font-family: 'SF_Pro'; src: url('../assets/fonts/sf-pro/SF-Pro-Text-Medium.otf') format('opentype'); font-weight: 510; font-style: normal; font-display: swap; }
+@font-face { font-family: 'SF_Pro'; src: url('../assets/fonts/sf-pro/SF-Pro-Text-Semibold.otf') format('opentype'); font-weight: 590; font-style: normal; font-display: swap; }
+@font-face { font-family: 'SF_Pro'; src: url('../assets/fonts/sf-pro/SF-Pro-Text-Semibold.otf') format('opentype'); font-weight: 600; font-style: normal; font-display: swap; }
+@font-face { font-family: 'SF_Pro'; src: url('../assets/fonts/sf-pro/SF-Pro-Text-Bold.otf') format('opentype'); font-weight: 700; font-style: normal; font-display: swap; }
+
+/* ─── Canela Text Trial (local) ───────────────────────────────────────
+     • 'Canela Text Trial'  – inline style={{ fontFamily: "'Canela Text Trial'" }}
+     • 'Canela_Text_Trial'  – Tailwind font-['Canela_Text_Trial',sans-serif]
+   ──────────────────────────────────────────────────────────────────── */
+@font-face { font-family: 'Canela Text Trial'; src: url('../assets/fonts/canela/CanelaText-Regular-Trial.otf') format('opentype'); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Canela Text Trial'; src: url('../assets/fonts/canela/CanelaText-Medium-Trial.otf') format('opentype'); font-weight: 500; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Canela Text Trial'; src: url('../assets/fonts/canela/CanelaText-Bold-Trial.otf') format('opentype'); font-weight: 700; font-style: normal; font-display: swap; }
+
+@font-face { font-family: 'Canela_Text_Trial'; src: url('../assets/fonts/canela/CanelaText-Regular-Trial.otf') format('opentype'); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Canela_Text_Trial'; src: url('../assets/fonts/canela/CanelaText-Medium-Trial.otf') format('opentype'); font-weight: 500; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Canela_Text_Trial'; src: url('../assets/fonts/canela/CanelaText-Bold-Trial.otf') format('opentype'); font-weight: 700; font-style: normal; font-display: swap; }
+
+/* ─── Tailwind underscore aliases for Google Fonts ────────────────────
+   Tailwind arbitrary font classes produce names like 'Cormorant_Garamond'.
+   These aliases map them to the same files Google Fonts already loaded.
+   ──────────────────────────────────────────────────────────────────── */
+
+/* Cormorant Garamond → Cormorant_Garamond */
+@font-face { font-family: 'Cormorant_Garamond'; src: local('Cormorant Garamond'), local('CormorantGaramond-Regular'); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Cormorant_Garamond'; src: local('Cormorant Garamond Bold'), local('CormorantGaramond-Bold'); font-weight: 700; font-style: normal; font-display: swap; }
+
+/* DM Sans → DM_Sans */
+@font-face { font-family: 'DM_Sans'; src: local('DM Sans'), local('DMSans-Regular'); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: 'DM_Sans'; src: local('DM Sans Medium'), local('DMSans-Medium'); font-weight: 500; font-style: normal; font-display: swap; }
+@font-face { font-family: 'DM_Sans'; src: local('DM Sans Bold'), local('DMSans-Bold'); font-weight: 700; font-style: normal; font-display: swap; }
+
+/* Noto Sans → Noto_Sans */
+@font-face { font-family: 'Noto_Sans'; src: local('Noto Sans'), local('NotoSans-Regular'); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Noto_Sans'; src: local('Noto Sans Medium'), local('NotoSans-Medium'); font-weight: 500; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Noto_Sans'; src: local('Noto Sans SemiBold'), local('NotoSans-SemiBold'); font-weight: 600; font-style: normal; font-display: swap; }
+@font-face { font-family: 'Noto_Sans'; src: local('Noto Sans Bold'), local('NotoSans-Bold'); font-weight: 700; font-style: normal; font-display: swap; }
+
+/* ─── Body default ──────────────────────────────────────────────────── */
+body {
+  font-family: 'SF Pro Text', 'SF Pro', -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
