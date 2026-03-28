@@ -39,7 +39,7 @@ export class AuthService {
       role
     });
 
-    const mailSubject: string = 'Email Verification - ILC Therapist App';
+    const mailSubject: string = 'Email Verification - Ankr';
     const replacements = 'Your verification token is: ' + verificationCode;
 
     await this.appHelper.sendMail(createdUser.email, mailSubject, replacements);
@@ -68,7 +68,7 @@ export class AuthService {
       verificationCode,
     });
 
-    const mailSubject: string = 'Resend Verification Code - ILC Therapist App';
+    const mailSubject: string = 'Resend Verification Code - Ankr';
     const replacements = 'Your verification token is: ' + verificationCode;
 
     await this.appHelper.sendMail(userExists.email, mailSubject, replacements);
@@ -139,7 +139,7 @@ export class AuthService {
     const passwordChangeCode: string = await this.appHelper.generateCode();
     user.verificationCode = passwordChangeCode;
 
-    const mailSubject: string = 'Forgot Password - ILC Therapist App';
+    const mailSubject: string = 'Forgot Password - Ankr';
     const replacements = {
       userName: user.firstName,
       text: `You requested a forgot password request.<br/>Use the token ${passwordChangeCode} below to complete the password reset process.`,
@@ -207,7 +207,7 @@ export class AuthService {
     user.password = await this.appHelper.hashData(newPassword);
     await this.userRepository.save(user);
 
-    const mailSubject: string = 'Password Update - ILC Therapist App';
+    const mailSubject: string = 'Password Update - Ankr';
     const replacements = {
       userName: user.firstName,
       text: 'You password has been updated successfully',
