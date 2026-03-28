@@ -50,7 +50,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"email\": \"john.doe@example.com\",\n  \"code\": \"123456\"\n}",
+							"raw": "{\n  \"email\": \"john.doe@example.com\",\n  \"code\": \"12345\"\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -84,7 +84,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"email\": \"john.doe@example.com\",\n  \"code\": \"123456\"\n}",
+							"raw": "{\n  \"email\": \"john.doe@example.com\",\n  \"code\": \"12345\"\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -101,7 +101,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"email\": \"john.doe@example.com\",\n  \"code\": \"123456\",\n  \"newPassword\": \"NewSecuredPassword1!\"\n}",
+							"raw": "{\n  \"email\": \"john.doe@example.com\",\n  \"newPassword\": \"NewSecuredPassword1!\",\n  \"confirmPassword\": \"NewSecuredPassword1!\"\n}",
 							"options": {
 								"raw": {
 									"language": "json"

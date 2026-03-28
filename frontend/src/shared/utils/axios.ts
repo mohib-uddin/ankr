@@ -37,7 +37,12 @@ api.interceptors.response.use(
         useSessionStore.getState().clearSession();
         queryClient.clear();
         const path = window.location.pathname;
-        if (path !== '/login' && path !== '/signup') {
+        if (
+          path !== '/login' &&
+          path !== '/signup' &&
+          path !== '/forgot-password' &&
+          path !== '/reset-password'
+        ) {
           window.location.assign(`/login?session=expired`);
         }
       }

@@ -18,6 +18,7 @@ export function LoginPage() {
   const loginMutation = useLoginMutation();
 
   const sessionExpired = searchParams.get('session') === 'expired';
+  const passwordResetSuccess = searchParams.get('reset') === 'success';
 
   const { control, handleSubmit } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -88,6 +89,12 @@ export function LoginPage() {
                 </div>
               )}
 
+              {passwordResetSuccess && (
+                <div className="bg-emerald-50 border border-emerald-200 text-emerald-900 px-4 py-3 rounded-[8px] text-[14px]">
+                  Your password was updated. Sign in with your new password.
+                </div>
+              )}
+
               {serverError && (
                 <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-[8px] text-[14px]">
                   {serverError}
@@ -113,6 +120,14 @@ export function LoginPage() {
                   autoComplete="current-password"
                   placeholder="Password"
                 />
+                <div className="w-full flex justify-end">
+                  <Link
+                    to="/forgot-password"
+                    className="font-['Figtree',sans-serif] font-semibold text-[14px] text-[#764d2f] underline hover:text-[#8c5d3a] [text-decoration-skip-ink:none]"
+                  >
+                    Forgot password?
+                  </Link>
+                </div>
               </div>
 
               <button

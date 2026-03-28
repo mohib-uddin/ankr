@@ -41,3 +41,28 @@ export interface SignupRequest {
   email: string;
   password: string;
 }
+
+export interface ForgotPasswordRequest {
+  email: string;
+}
+
+export interface ValidateForgotPasswordCodeRequest {
+  email: string;
+  code: string;
+}
+
+export interface ForgotPasswordChangeRequest {
+  email: string;
+  newPassword: string;
+  confirmPassword: string;
+}
+
+/** Backend `EmailVerificationDto`: 5-digit numeric `code` from `generateCode`. */
+export interface EmailVerificationRequest {
+  email: string;
+  code: string;
+}
+
+export interface ResendVerificationCodeRequest {
+  email: string;
+}

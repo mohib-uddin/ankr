@@ -22,3 +22,4 @@ export {
   type OutlinedTextFieldProps,
   type OutlinedTextFieldRhfProps,
 } from './OutlinedTextField';
+export { OutlinedOtpField, type OutlinedOtpFieldProps } from './OutlinedOtpField';

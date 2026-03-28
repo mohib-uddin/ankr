@@ -17,15 +17,19 @@ import { InvoicesPage } from '@/features/invoices/pages/InvoicesPage';
 import { InvoiceDetailPage } from '@/features/invoices/pages/InvoiceDetailPage';
 import { InvoicePaidPage } from '@/features/invoices/pages/InvoicePaidPage';
 import { PublicVaultView } from '@/features/vault/pages/PublicVaultView';
+import { ForgotPasswordPage } from '@/features/auth/pages/ForgotPasswordPage';
 import { LoginPage } from '@/features/auth/pages/LoginPage';
+import { ResetPasswordPage } from '@/features/auth/pages/ResetPasswordPage';
 import { SignupPage } from '@/features/auth/pages/SignupPage';
 import { ProfileSetupPage } from '@/features/auth/pages/ProfileSetupPage';
+import { VerifyEmailPage } from '@/features/auth/pages/VerifyEmailPage';
 import { OnboardingPage } from '@/features/onboarding/pages/OnboardingPage';
 import { UploadPfsPage } from '@/features/onboarding/pages/UploadPfsPage';
 import { UploadPfsSummaryPage } from '@/features/onboarding/pages/UploadPfsSummaryPage';
 import { GuestOnly } from '@/features/auth/components/GuestOnly';
 import { RequireAuth } from '@/features/auth/components/RequireAuth';
 import { RequireCompleteProfile } from '@/features/auth/components/RequireCompleteProfile';
+import { RequireVerifiedEmail } from '@/features/auth/components/RequireVerifiedEmail';
 
 export const router = createBrowserRouter([
   {
@@ -33,6 +37,8 @@ export const router = createBrowserRouter([
     children: [
       { path: '/login', Component: LoginPage },
       { path: '/signup', Component: SignupPage },
+      { path: '/forgot-password', Component: ForgotPasswordPage },
+      { path: '/reset-password', Component: ResetPasswordPage },
     ],
   },
   {
@@ -46,38 +52,44 @@ export const router = createBrowserRouter([
   {
     Component: RequireAuth,
     children: [
-      { path: '/profile-setup', Component: ProfileSetupPage },
-      { path: '/onboarding', Component: OnboardingPage },
-      { path: '/onboarding/upload', Component: UploadPfsPage },
-      { path: '/onboarding/upload-summary', Component: UploadPfsSummaryPage },
+      { path: '/verify-email', Component: VerifyEmailPage },
       {
-        Component: RequireCompleteProfile,
+        Component: RequireVerifiedEmail,
         children: [
+          { path: '/profile-setup', Component: ProfileSetupPage },
+          { path: '/onboarding', Component: OnboardingPage },
+          { path: '/onboarding/upload', Component: UploadPfsPage },
+          { path: '/onboarding/upload-summary', Component: UploadPfsSummaryPage },
           {
-            path: '/',
-            Component: Root,
+            Component: RequireCompleteProfile,
             children: [
-              { index: true, Component: DashboardRedirect },
               {
-                path: 'dashboard',
-                Component: DashboardLayout,
+                path: '/',
+                Component: Root,
                 children: [
-                  { index: true, Component: DashboardHome },
-                  { path: 'properties', Component: PropertiesPage },
-                  { path: 'properties/new', Component: AddPropertyPage },
-                  { path: 'properties/:id', Component: PropertyDetailPage },
-                  { path: 'properties/:id/proforma/edit', Component: EditProFormaPage },
-                  { path: 'properties/:id/draws/new', Component: NewDrawRequestPage },
-                  { path: 'properties/:id/draws/:drawId', Component: DrawDetailPage },
-                  { path: 'properties/:id/pfs', Component: ProjectFinancialStatement },
-                  { path: 'documents', Component: DocumentVault },
-                  { path: 'invoices', Component: InvoicesPage },
-                  { path: 'invoices/paid', Component: InvoicePaidPage },
-                  { path: 'invoices/:invoiceId', Component: InvoiceDetailPage },
-                  { path: 'pfs', Component: PFSStub },
+                  { index: true, Component: DashboardRedirect },
+                  {
+                    path: 'dashboard',
+                    Component: DashboardLayout,
+                    children: [
+                      { index: true, Component: DashboardHome },
+                      { path: 'properties', Component: PropertiesPage },
+                      { path: 'properties/new', Component: AddPropertyPage },
+                      { path: 'properties/:id', Component: PropertyDetailPage },
+                      { path: 'properties/:id/proforma/edit', Component: EditProFormaPage },
+                      { path: 'properties/:id/draws/new', Component: NewDrawRequestPage },
+                      { path: 'properties/:id/draws/:drawId', Component: DrawDetailPage },
+                      { path: 'properties/:id/pfs', Component: ProjectFinancialStatement },
+                      { path: 'documents', Component: DocumentVault },
+                      { path: 'invoices', Component: InvoicesPage },
+                      { path: 'invoices/paid', Component: InvoicePaidPage },
+                      { path: 'invoices/:invoiceId', Component: InvoiceDetailPage },
+                      { path: 'pfs', Component: PFSStub },
+                    ],
+                  },
+                  { path: '*', Component: DashboardRedirect },
                 ],
               },
-              { path: '*', Component: DashboardRedirect },
             ],
           },
         ],
