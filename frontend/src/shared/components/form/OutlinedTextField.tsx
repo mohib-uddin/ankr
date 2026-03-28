@@ -2,6 +2,7 @@ import { forwardRef, type CSSProperties, type InputHTMLAttributes, type ReactEle
 import { useController, type Control, type FieldPath, type FieldValues } from 'react-hook-form';
 import {
   outlinedControlBorderClass,
+  outlinedControlShellClassName,
   outlinedFieldErrorTextClass,
   outlinedInputClassName,
   outlinedLabelClassName,
@@ -77,7 +78,7 @@ function OutlinedTextFieldShell({
       <label htmlFor={id} className={labCn} style={labStyle}>
         {label}
       </label>
-      <div className="bg-white h-[46px] relative rounded-[8px] w-full">
+      <div className={outlinedControlShellClassName}>
         <input
           id={id}
           aria-invalid={invalid}

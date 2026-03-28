@@ -1,5 +1,6 @@
 export {
   outlinedControlBorderClass,
+  outlinedControlShellClassName,
   outlinedFieldErrorTextClass,
   outlinedInputClassName,
   outlinedLabelClassName,
