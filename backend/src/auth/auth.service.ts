@@ -55,7 +55,10 @@ export class AuthService {
   async resendCode(resendCodeBody: ResendCodeDto): Promise<ApiMessage> {
     const { email } = resendCodeBody;
 
-    const userExists = await this.userRepository.findOne({ where: { email } });
+    const userExists = await this.userRepository.findOne({
+      where: { email },
+      select: ['id', 'email', 'verificationCode'],
+    });
     if (!userExists) throw new NotFoundException(UserErrorMessages.userNotExists);
 
     if (userExists.verificationCode === null || userExists.verificationCode === '') throw new BadRequestException(AuthErrorMessages.accessDenied);
@@ -78,7 +81,10 @@ export class AuthService {
 
   async verifyEmail(emailVerificationBody: EmailVerificationDto) {
     const { code, email } = emailVerificationBody;
-    const user = await this.userRepository.findOne({ where: { email } });
+    const user = await this.userRepository.findOne({
+      where: { email },
+      select: ['id', 'email', 'verificationCode', 'isVerified'],
+    });
     if (!user) throw new NotFoundException(UserErrorMessages.userNotExists);
     if (user.isVerified) throw new BadRequestException(AuthErrorMessages.emailVerified);
     if (code !== user.verificationCode) throw new BadRequestException(AuthErrorMessages.invalidCode);
@@ -93,8 +99,9 @@ export class AuthService {
 
     const user = await this.userRepository.findOne({
       where: { email },
-      select: ['id', 'firstName', 'lastName', 'email', 'password', 'isVerified', 'isActive'], // Explicitly select safe fields + password for comparison
+      select: ['id', 'firstName', 'lastName', 'email', 'password', 'isVerified', 'isActive', 'picture'], // Added picture
       relations: [
+        'role', // Added role
         'profile',
         'profile.investorProfile',
         'profile.accounts',
@@ -149,7 +156,10 @@ export class AuthService {
   async validateCode(validateCodeBody: ValidateCodeDto) {
     const { email, code } = validateCodeBody;
 
-    const user = await this.userRepository.findOne({ where: { email } });
+    const user = await this.userRepository.findOne({
+      where: { email },
+      select: ['id', 'email', 'verificationCode'],
+    });
     if (!user) throw new BadRequestException(AuthErrorMessages.invalidEmail);
     if (code !== user.verificationCode) {
       throw new UnauthorizedException(AuthErrorMessages.invalidPassCode);
@@ -163,7 +173,10 @@ export class AuthService {
   async changePassword(changePasswordBody: ForgotPassChangeDto) {
     const { email, newPassword, confirmPassword } = changePasswordBody;
 
-    const user = await this.userRepository.findOne({ where: { email } });
+    const user = await this.userRepository.findOne({
+      where: { email },
+      select: ['id', 'email', 'isPassCodeValid'],
+    });
     if (!user) throw new BadRequestException(AuthErrorMessages.invalidEmail);
     if (!user.isPassCodeValid) throw new BadRequestException(AuthErrorMessages.passCodeNotVerified);
     if (newPassword !== confirmPassword) {
@@ -179,7 +192,10 @@ export class AuthService {
   async updatePassword(id: string, updatePasswordBody: UpdatePasswordDto) {
     const { currentPassword, newPassword, confirmPassword } = updatePasswordBody;
 
-    const user = await this.userRepository.findOne({ where: { id } });
+    const user = await this.userRepository.findOne({
+      where: { id },
+      select: ['id', 'password', 'email', 'firstName'],
+    });
     if (!user) throw new BadRequestException(AuthErrorMessages.invalidEmail);
 
     if (!(await this.appHelper.compareData(currentPassword, user.password))) {

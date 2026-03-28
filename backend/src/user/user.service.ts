@@ -16,8 +16,9 @@ export class UserService {
     const fetchedUser = await this.userRepository.findOne({
       where: { id: userId },
       // Select safe fields, strictly avoiding password, verificationCode, and isPassCodeValid
-      select: ['id', 'firstName', 'lastName', 'email', 'isVerified', 'isActive'],
+      select: ['id', 'firstName', 'lastName', 'email', 'isVerified', 'isActive', 'picture'],
       relations: [
+        'role',
         'profile',
         'profile.investorProfile',
         'profile.accounts',
