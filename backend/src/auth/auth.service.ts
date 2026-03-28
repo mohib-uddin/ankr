@@ -60,8 +60,7 @@ export class AuthService {
       select: ['id', 'email', 'verificationCode'],
     });
     if (!userExists) throw new NotFoundException(UserErrorMessages.userNotExists);
-
-    if (userExists.verificationCode === null || userExists.verificationCode === '') throw new BadRequestException(AuthErrorMessages.accessDenied);
+    if (userExists.isVerified) throw new BadRequestException(AuthErrorMessages.emailVerified);
 
     const verificationCode: string = await this.appHelper.generateCode();
 

@@ -1,0 +1,126 @@
+---
+description: Ankr React/Vite frontend — feature structure, path aliases, React Query, Zustand, routing, forms, styling, and UI primitives.
+globs: frontend/src/**/*.tsx,frontend/src/**/*.ts
+alwaysApply: false
+---
+
+# Ankr frontend — structure and conventions
+
+Use **React 18+** (see `peerDependencies`), **Vite 6**, **TypeScript strict**, **Tailwind CSS v4** (`@tailwindcss/vite`), and the libraries already in `frontend/package.json`. **Do not add new UI stacks** (e.g. Chakra, Ant Design) unless the user explicitly requests it; prefer **Radix-based** `@/ui/*` and **Tailwind**.
+
+## Directory layout (`frontend/src/`)
+
+| Path | Role |
+|------|------|
+| `app/` | **Application shell:** `App.tsx` (providers order), `routes.ts` (`createBrowserRouter`), `Root.tsx`, `query-client.ts`, `SessionReadyGate.tsx`, `context/AppContext.tsx` (demo/dashboard mock state). |
+| `features/{domain}/` | **Feature slices:** e.g. `auth`, `dashboard`, `properties`, `draws`, `invoices`, `onboarding`, `vault`, `ai`. Typical subfolders: `pages/`, `components/`, optional `api/`, `schemas/`, `types/`, `components/*` for tabs or wizards. |
+| `shared/icons/` | **SVG icon modules** (pattern: TSX exporting path data / components). Import via `@/icons/...`. |
+| `shared/components/ui/` | **Shadcn-style primitives** (Radix + `cva` + `cn`). Import via `@/ui/...`. |
+| `shared/components/figma/` | Small helpers (e.g. `ImageWithFallback`). |
+| `shared/utils/` | **Axios instance** (`axios.ts`), `getApiErrorMessage`, shared non-UI helpers. |
+| `services/` | **React Query hooks** co-located per domain (e.g. `auth.service.tsx` exports `useLoginMutation`, `useLogout`, `useCurrentUserQuery`). |
+| `store/` | **Zustand** stores (e.g. `session.store.ts` + `persist` + `localStorage`). |
+| `styles/` | Global CSS: `index.css` imports `fonts.css`, `tailwind.css`, `theme.css`. |
+| `assets/` | Static images referenced from features. |
+
+## Path aliases (`tsconfig` / `vite`)
+
+- `@/*` → `src/*`
+- `@/features/*` → `src/features/*`
+- `@/app/*` → `src/app/*`
+- `@/ui/*` → `src/shared/components/ui/*`
+- `@/icons/*` → `src/shared/icons/*`
+
+**Vite** mirrors the same aliases in `vite.config.ts`. Prefer **`@/...`** over deep relative imports (`../../../`) for anything under `src/`.
+
+## Provider order (`App.tsx`)
+
+Wrap exactly in this order (outer → inner):
+
+1. `QueryClientProvider` (`queryClient` from `@/app/query-client`)
+2. `SessionReadyGate` (waits for Zustand persist hydration — avoids auth guard flash)
+3. `AppProvider` (`AppContext` — local demo state; do not use for real auth)
+4. `RouterProvider` (`router` from `@/app/routes`)
+
+Do not insert random providers above `SessionReadyGate` without a reason.
+
+## Routing (`app/routes.ts`)
+
+- Use **`createBrowserRouter`** and **`react-router`** v7 imports (`RouterProvider`, `Navigate`, `Outlet`, `Link`, `useNavigate`, `useLocation`, etc. — from **`react-router`**, not `react-router-dom`).
+- **Guest-only routes** (`/login`, `/signup`): parent layout `GuestOnly` → redirects to `/dashboard` if `accessToken` exists.
+- **Protected routes:** parent layout `RequireAuth` → redirects to `/login` with `state.from` if no token.
+- **Public share links:** `/share/draw/:token`, `/share/vault/:token` — **outside** `RequireAuth`.
+- Register new routes in `routes.ts`; keep layout boundaries consistent.
+
+## Data fetching and mutations
+
+- **HTTP:** use the shared **`api`** axios instance from `@/shared/utils/axios` only (base URL: `VITE_API_BASE_URL` in prod; in dev default **`/api`** with Vite **`server.proxy`** to the Nest server).
+- **Feature API modules:** `features/{domain}/api/{domain}.api.ts` — thin functions calling `api.get/post/patch/delete`.
+- **React Query:** define **`useQuery` / `useMutation`** (and `useQueryClient`) in **`services/{domain}.service.tsx`** (or similar), export hooks as the public API for components.
+- **Defaults:** align with `app/query-client.ts` (`staleTime`, retry skips 401/403, mutations `retry: false`).
+- **After auth mutations:** session updates live in **`useSessionStore`**; invalidate or clear queries via `useQueryClient` as in `auth.service.tsx`.
+- **Errors:** use **`getApiErrorMessage`** from `@/shared/utils/axios` for user-visible API errors.
+
+## Session and auth UI
+
+- **Zustand:** `useSessionStore` in `@/store/session.store.ts` (`accessToken`, `user`, `setSession`, `clearSession`, persist `ankr-session`).
+- **Logout:** call **`useLogout()`** from `@/services/auth.service` (clears session + query cache) **before** `navigate('/login')` — navigating alone will **not** log out (`GuestOnly` will bounce back).
+- **401 handling:** axios response interceptor clears session and redirects when a token was present; do not duplicate that logic in every component.
+
+## Forms and validation
+
+- **react-hook-form** + **zod** schemas (e.g. `features/auth/schemas/auth.schemas.ts`) + **`@hookform/resolvers/zod`** (`zodResolver`).
+- Prefer **`resolver: zodResolver(schema)`** and typed `useForm<FormValues>()`.
+- For composable fields, `@/ui/form.tsx` integrates RHF with Radix **`FormField`**, **`Controller`**, etc. — use when building forms from design-system primitives.
+- Many screens use **native inputs + Tailwind** with RHF `register` — **match the surrounding file** when editing.
+
+## Styling
+
+- **Tailwind v4** via `@import` in `styles/index.css` and `@tailwindcss/vite`.
+- Use **`cn()`** from `@/ui/utils` (or `@/shared/components/ui/utils`) to merge **`clsx`** + **`tailwind-merge`** for conditional classes.
+- **Design-heavy pages** use explicit hex / font tokens in classNames (e.g. `#764d2f`, `font-['SF_Pro',sans-serif]`). **Preserve** that style when touching those files; for new UI inside the dashboard shell, prefer **`@/ui/*`** components + theme tokens from `theme.css` where they exist.
+- **Animation:** **`motion/react`** (`AnimatePresence`, `motion.div`) is used in layout — use the same import path for consistency.
+- **Icons (UI chrome):** **`lucide-react`** in shell/navigation; **feature icons** often come from **`@/icons/*`** modules.
+
+## UI components
+
+- Prefer **`@/ui/button`**, `@/ui/input`, `@/ui/dialog`, etc. (Radix + `class-variance-authority`) for new interactive UI **unless** the screen is explicitly a full custom marketing layout (auth/onboarding style).
+- **Do not** duplicate primitives; extend variants with `cva` like `button.tsx`.
+- MUI / Emotion are in **package.json** but **not** the default pattern in `src/` — avoid introducing MUI for new code unless the user asks.
+
+## Feature module checklist
+
+When adding a domain (e.g. `features/invoices` pattern):
+
+1. `pages/` for route-level components; `components/` for split UI.
+2. Optional `api/*.api.ts` using **`api`** from `@/shared/utils/axios`.
+3. Optional `schemas/*.ts` (zod) for forms.
+4. Optional `types/*.ts` for DTOs shared in the feature.
+5. **`services/{domain}.service.tsx`** for React Query hooks; import hooks from pages/components.
+6. Export public pages from `features/{domain}/index.ts` **if** other modules need them (optional; `routes.ts` may import pages directly).
+
+## TypeScript and React patterns
+
+- **`"strict": true`**: no implicit `any`; define props and API types.
+- **Components:** function components; use **`React.FC` sparingly** — prefer explicit prop types `function Foo({ x }: { x: string })`.
+- **Hooks:** prefix `use`; keep data-loading hooks in `services/` or colocated `useXxx.ts` only if tiny and feature-local.
+- **Avoid** storing server state in Zustand or `AppContext` — use **React Query** for server data; Zustand for **session** and other client-only global UI state.
+
+## Environment
+
+- **`VITE_*`** only for env vars exposed to the client; document in `vite-env.d.ts` when adding new keys.
+- Production API URL must set **`VITE_API_BASE_URL`** (full origin + `/api` prefix as appropriate); dev relies on **proxy** + relative `/api`.
+
+## Anti-patterns
+
+- Raw **`fetch`** or ad-hoc **`axios.create`** in feature code (bypasses interceptors and base URL).
+- **`navigate('/login')`** without clearing session on logout.
+- Putting **JWT / accessToken** only in React state without **persist** — breaks refresh; session store already persists.
+- New routes that skip **`GuestOnly` / `RequireAuth`** without intentional public access design.
+- Adding a second global CSS framework or duplicate component libraries.
+
+## Commands
+
+- **`npm run dev`** — Vite dev server.
+- **`npm run typecheck`** — `tsc` (run after substantive TS changes).
+- **`npm run build`** — production build.

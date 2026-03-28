@@ -1,0 +1,174 @@
+---
+description: Ankr NestJS backend — folder layout, path aliases, and coding conventions for controllers, services, DTOs, entities, and API responses.
+globs: backend/**/*.ts
+alwaysApply: false
+---
+
+# Ankr backend — structure and conventions
+
+Follow these patterns exactly when adding or changing code under `backend/`. Deviations break barrels, Swagger, guards, and the shared response contract.
+
+## Top-level layout (`backend/src/`)
+
+| Area | Purpose |
+|------|---------|
+| `app.module.ts`, `app.controller.ts`, `app.service.ts` | Root module; registers `APP_GUARD` (`AtGuard`), `ConfigModule`, `TypeOrmModule`, `ThrottlerModule`, feature modules. |
+| `main.ts` | Bootstrap: `ValidationPipe` (transform, whitelist, forbidNonWhitelisted, stopAtFirstError), `ClassSerializerInterceptor`, `helmet`, CORS, global prefix from config, static `/api/media`, Swagger. |
+| `config/configuration.ts` | `ConfigFactory` shape; env keys under `environment`, `port`, `DB`, `app`, `jwt`, `storage`, `email`, `creds`, `encryption`. |
+| `database/` | `db-config.ts` (TypeORM + seeds path), `migrations/*.ts`, `seeds/*.ts`. |
+| `swagger/` | `createDocument`, swagger config; bearer name **`JWT-auth`**. |
+| `logger/` | Winston-based `LoggerModule` / `LoggerService`; app uses `app.useLogger(logger)`. |
+| `auth/` | Auth-only: `auth.module.ts`, `auth.controller.ts`, `auth.service.ts`, local `dto/`, `messages/`. |
+| `user/` | User domain: controller, service, `entities/`, `dto/`, `messages/`, `types/`. |
+| **Feature domains** | One folder per domain: `accounts`, `assets`, `businesses-entities`, `income`, `liabilities`, `properties`, `profile`, `roles`. Each follows the same inner layout (see below). |
+| `common/` | Shared building blocks: `constants`, `decorators`, `dto` (barrels), `entities` (barrels + `base.entity.ts`), `filters`, `guards`, `helpers`, `messages` (barrels), `middleware`, `pipes`, `providers`, `strategies`, `types`. |
+
+## Feature module folder anatomy (standard)
+
+Use this structure for a domain like `accounts` (adjust names; keep plural resource folder names where the project already does, e.g. `businesses-entities`):
+
+```text
+{domain}/
+  {domain}.module.ts          # TypeOrmModule.forFeature([...entities]), providers, controllers, exports: [Service]
+  {domain}.controller.ts      # REST controller
+  {domain}.service.ts         # Injectable service
+  {domain}.controller.spec.ts # optional, matches Nest defaults
+  {domain}.service.spec.ts
+  dto/
+    create-{resource}.dto.ts
+    update-{resource}.dto.ts   # often PartialType of create
+    index.ts                   # export * from each dto file
+  entities/
+    {resource}.entity.ts
+    index.ts                   # export * from each entity file
+  types/                       # optional: enums / local types + index.ts
+  messages/                    # optional: domain error strings + index.ts, re-export via common/messages if needed
+```
+
+**Exception (existing only):** `profile/` uses `ProfilesController` and `ProfilesService` (plural class names) but `@Controller('profile')` — match this folder’s naming if you touch it; do not rename unless refactoring the whole module.
+
+## Path aliases (`backend/tsconfig.json` `paths`)
+
+Import from these aliases **from `src/` code**; avoid long `../../../` chains. Use **`src/...`** only where the codebase already does (e.g. some seeds, `common/dto/index.ts` re-exports).
+
+| Alias | Resolves to | Typical use |
+|-------|-------------|-------------|
+| `@types` | `src/common/types` | `ApiMessage`, `ApiMessageData`, shared enums exported from `common/types`. |
+| `@entities` | `src/common/entities` | All entities (barrel re-exports feature `entities/index.ts`). |
+| `@dtos` | `src/common/dto` | All DTOs (barrel re-exports feature `dto/index.ts`). |
+| `@messages` | `src/common/messages` | `SuccessResponseMessages`, shared + feature message barrels. |
+| `@decorators` | `src/common/decorators` | `Public`, `SwaggerApiResponse`, `Trim`, etc. |
+| `@constants` | `src/common/constants` | e.g. `RegexConstants`. |
+| `@guards/*` | `src/common/guards/*` | e.g. `@guards/at.guard` → `AtGuard`. |
+| `@helpers/*` | `src/common/helpers/*` | e.g. `AppHelper`. |
+| `@pipes/*` | `src/common/pipes/*` | |
+| `@filters` | `src/common/filters` | |
+| `@strategies/*` | `src/common/strategies/*` | JWT, OAuth strategies. |
+| `@config/*` | `src/config/*` | e.g. `@config/configuration`. |
+| `@swagger/*` | `src/swagger/*` | |
+
+**Note:** `tsconfig` lists `@middlewares/*` → `./src/common/middlewares/*`, but the real folder is **`src/common/middleware`**. Existing code imports e.g. `src/common/middleware/logger.middleware`. **Do not** use the broken `@middlewares` alias; use `src/common/middleware/...` or add a fixed alias in a dedicated PR.
+
+## Registering new DTOs and entities (required)
+
+When you add a feature’s DTOs or entities:
+
+1. Export them from that feature’s `dto/index.ts` or `entities/index.ts`.
+2. Add a **barrel line** in:
+   - `src/common/dto/index.ts` → `export * from 'src/{feature}/dto';`
+   - `src/common/entities/index.ts` → `export * from 'src/{feature}/entities';`
+3. Import in controllers/services as `from '@dtos'` / `from '@entities'` when using shared barrels (matches `accounts`, `roles`, etc.).
+
+**Auth** and some modules may import from **local** `./dto`; new cross-cutting DTOs still belong in a feature `dto/` folder and should be re-exported from `@dtos` if other modules need them.
+
+## Controllers
+
+- Decorate with `@ApiTags('PascalCase Name')` (e.g. `'Accounts'`, `'Authentication'`).
+- `@Controller('kebab-or-plural-segment')` — no leading slash in path segment; global prefix adds `/api` (from env).
+- Use `@HttpCode(HttpStatus.OK)` (or `CREATED` where appropriate) on handlers.
+- Document responses with **`@SwaggerApiResponse`** from `@decorators`:
+  - With body: `@SwaggerApiResponse({ description: '...', type: EntityOrDto })` or include `statusCode` for 201.
+  - Message-only: `@SwaggerApiResponse('Human readable summary')`.
+- **JWT routes:** add `@ApiBearerAuth('JWT-auth')` on controller or method (same string as Swagger setup).
+- **Public routes:** `@Public()` from `@decorators` on method (or class). Required for anything that must skip `AtGuard`.
+- Use `@Req() req: Request` and `req.user.id` when the user id comes from JWT (typing may be loose; follow existing controllers).
+- Import `Request` from `express`.
+
+## Services
+
+- `@Injectable()`; inject repositories with `@InjectRepository(Entity)`.
+- Return types use **`ApiMessageData<T>`** or **`ApiMessage`** from `@types` for JSON bodies.
+- Success payloads use **`SuccessResponseMessages`** from `@messages`, usually `SuccessResponseMessages.successGeneral`, shape:
+  - With data: `{ message: SuccessResponseMessages.successGeneral, data: entityOrList }`
+  - Delete / no body: `{ message: SuccessResponseMessages.successGeneral }` as `ApiMessage`.
+- Throw Nest HTTP exceptions (`BadRequestException`, `NotFoundException`, `UnauthorizedException`, etc.) with messages from domain `messages` or `@messages` where the project does so (`auth` uses `AuthErrorMessages`, etc.).
+- **Do not** return raw entities without the `{ message, data }` wrapper for HTTP APIs unless you are inside a module that already does something different (stay consistent within the module).
+
+## DTOs (`class-validator` + `@nestjs/swagger`)
+
+- Every exposed field: `@ApiProperty({ ... })` or `@ApiPropertyOptional`.
+- Use `class-validator` decorators (`@IsString`, `@IsNotEmpty`, `@IsEmail`, `@Matches(RegexConstants....)`, `@Trim()` from `@decorators` where used in auth, etc.).
+- Prefer **`@constants`** `RegexConstants` and **`@messages`** `ErrorResponseMessages` for `@Matches` messages to match existing auth/profile validation.
+- `ValidationPipe` uses **whitelist** and **forbidNonWhitelisted**: do not send extra properties; DTOs must list all allowed fields.
+- Use `PartialType`, `OmitType`, `PickType` from `@nestjs/swagger` when mirroring create/update patterns already used in `accounts`, `properties`, etc.
+
+## Entities (TypeORM)
+
+- Extend **`BaseEntity`** from `@entities` for `id`, `createdAt`, `updatedAt` (UUID PK).
+- `@Entity({ name: 'snake_or_lower_case_table' })` — match existing DB table naming (e.g. `account`, `business_entity`, `user`).
+- Use `@Column`, `@ManyToOne`, `@OneToOne`, `@JoinColumn` as in existing entities.
+- Swagger: `@ApiProperty` / `@ApiPropertyOptional` on safe columns; hide relations with `@ApiHideProperty()` and **`@Exclude()`** from `class-transformer` when serialization should omit them.
+- Sensitive fields: `@Exclude()`, often `@Column({ select: false })` for passwords/codes.
+
+## Guards and auth
+
+- Global **`AtGuard`** extends `AuthGuard('jwt')`; uses reflector keys **`isPublic`** and **`tokenAuth`**.
+- **`Public()`** sets `isPublic` so JWT is not required.
+- For “optional query token” behavior, see `AtGuard` (`tokenAuth` + `query.t`); only use if you replicate an existing pattern.
+
+## Swagger wrapper types
+
+- `SwaggerApiResponse` builds on `ApiMessage` / `ApiMessageData` / `ApiMessageDataPagination` from `@types`. Prefer passing concrete `type:` for CRUD responses so OpenAPI shows `data` shape.
+
+## Database
+
+- **Migrations:** `database/migrations/{timestamp}-{Name}.ts`, class `export class Name{timestamp} implements MigrationInterface`, `name` property matches. Use `up`/`down` with `queryRunner.query` as existing files.
+- **Synchronize** is **false**; schema changes go through migrations.
+- **Seeds:** `database/seeds/*.ts`, `typeorm-extension` `Seeder` interface; register in `db-config.ts` `seeds` array. Existing seed imports entities via `src/...` paths — follow the same style in this repo until barrels are used consistently in seeds.
+
+## Config and environment
+
+- Runtime loads **`.env.${ENVIRONMENT}`** (e.g. `.env.development` when `ENVIRONMENT=development`).
+- Never commit secrets; align new config keys with `config/configuration.ts` and document in `.env.example` if you add variables.
+
+## Logging
+
+- Inject **`LoggerService`** from the project logger where other services do; avoid `console.log` in new production paths unless matching an existing seed script style.
+
+## Tests
+
+- Nest default: `*.spec.ts` next to the file under test; use `@nestjs/testing` `Test.createTestingModule` as generated specs do.
+
+## NPM / peer dependencies
+
+- Installing packages: if `npm install` fails on peer conflicts, use **`npm install --legacy-peer-deps`** (known issue with mixed Nest 10/11 deps in this repo).
+
+## Checklist — new REST feature
+
+1. Create `{domain}/` with `module`, `controller`, `service`, `dto/`, `entities/`, index barrels.
+2. Wire **`TypeOrmModule.forFeature([...])`** in the module.
+3. Append **`export *`** lines to **`src/common/dto/index.ts`** and **`src/common/entities/index.ts`**.
+4. Register **`{Domain}Module`** in **`app.module.ts`** `imports`.
+5. Controller: `@ApiTags`, `@Controller`, `@HttpCode`, `@SwaggerApiResponse`, `@Public()` / `@ApiBearerAuth('JWT-auth')` as appropriate.
+6. Service: return **`ApiMessageData` / `ApiMessage`** with **`SuccessResponseMessages`**.
+7. Add **migration** if schema changes; run `migration:run:dev` locally.
+8. DTOs: validators + `@ApiProperty`; respect **whitelist / forbidNonWhitelisted**.
+
+## Anti-patterns (do not do)
+
+- Raw JSON shapes without `{ message, data? }` for standard REST endpoints.
+- Skipping **`@SwaggerApiResponse`** on new controller methods.
+- New entities/DTOs without updating **`common/dto`** and **`common/entities`** barrels.
+- Using **`@middlewares/*`** path alias (broken path).
+- Enabling **`synchronize: true`** or changing schema only in entity decorators without a migration.
+- Public auth routes without **`@Public()`**.

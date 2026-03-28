@@ -1,0 +1,33 @@
+import { defineConfig } from 'vite'
+import path from 'path'
+import tailwindcss from '@tailwindcss/vite'
+import react from '@vitejs/plugin-react'
+
+export default defineConfig({
+  server: {
+    proxy: {
+      // Matches backend `.env` APP_PREFIX `/api` and PORT (default 5000 in `.env.example`)
+      '/api': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+      },
+    },
+  },
+  plugins: [
+    // The React and Tailwind plugins are both required for Make, even if
+    // Tailwind is not being actively used – do not remove them
+    react(),
+    tailwindcss(),
+  ],
+  resolve: {
+    alias: {
+      // Figma icon modules (must be before @ so @/icons does not resolve to src/icons)
+      '@/icons': path.resolve(__dirname, './src/shared/icons'),
+      '@/ui': path.resolve(__dirname, './src/shared/components/ui'),
+      '@': path.resolve(__dirname, './src'),
+    },
+  },
+
+  // File types to support raw imports. Never add .css, .tsx, or .ts files to this.
+  assetsInclude: ['**/*.svg', '**/*.csv'],
+})
