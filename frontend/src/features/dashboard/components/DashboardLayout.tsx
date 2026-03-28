@@ -3,6 +3,7 @@ import { Outlet, NavLink, useNavigate } from 'react-router';
 import { AnimatePresence, motion } from 'motion/react';
 import { LogOut, Menu, X } from 'lucide-react';
 import { AICopilot } from '@/features/ai/components/AICopilot';
+import { useLogout } from '@/services/auth.service';
 import svgPaths from '@/icons/dashboard-shared';
 import svgInvoicePaths from '@/icons/dashboard-invoice-nav';
 import imgEllipse3 from '@/assets/4f3d3d31e8f035df10a1a48ab89d7f060cac4fe0.png';
@@ -120,6 +121,13 @@ export function DashboardLayout() {
   const [aiOpen, setAiOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const navigate = useNavigate();
+  const logout = useLogout();
+
+  const handleLogout = () => {
+    logout();
+    setMobileOpen(false);
+    navigate('/login', { replace: true });
+  };
 
   return (
     <div className="flex min-h-screen" style={{ background: '#FCF6F0' }}>
@@ -147,7 +155,7 @@ export function DashboardLayout() {
           onClose={undefined}
           isCollapsed={sidebarCollapsed}
           onToggleCollapse={() => setSidebarCollapsed(prev => !prev)}
-          onLogout={() => navigate('/login')}
+          onLogout={handleLogout}
         />
       </aside>
 
@@ -162,7 +170,7 @@ export function DashboardLayout() {
             className="fixed left-0 top-0 h-full w-[260px] z-40 lg:hidden flex flex-col"
             style={{ backgroundColor: '#3E2D1D' }}
           >
-            <SidebarContent onClose={() => setMobileOpen(false)} isCollapsed={false} onToggleCollapse={undefined} onLogout={() => navigate('/login')} />
+            <SidebarContent onClose={() => setMobileOpen(false)} isCollapsed={false} onToggleCollapse={undefined} onLogout={handleLogout} />
           </motion.aside>
         )}
       </AnimatePresence>
