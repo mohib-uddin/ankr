@@ -1,16 +1,43 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 import { AnimatePresence, motion } from 'motion/react';
+import { useShallow } from 'zustand/shallow';
 import svgPaths from '@/icons/onboarding';
 import checkSvgPaths from '@/icons/onboarding-check';
 import summarySvgPaths from '@/icons/onboarding-summary';
 import advancedSvgPaths from '@/icons/onboarding-advanced';
+import type {
+  LiquidityAccount,
+  OnboardingBasicInfo,
+  OnboardingBusiness,
+  OnboardingLocationState,
+  OnboardingProperty,
+} from '@/features/onboarding/types/wizard.types';
+import { computeOnboardingSummary, formatUsdCompact } from '@/features/onboarding/utils/compute-onboarding-summary';
+import { mapOnboardingStateToDto } from '@/features/onboarding/utils/map-onboarding-to-dto';
+import {
+  type BasicInfoValidatedFieldKey,
+  getBasicInfoStepFieldErrors,
+} from '@/features/onboarding/utils/onboarding-validation';
+import { useInvestorOnboardMutation } from '@/services/onboarding.service';
+import { OutlinedDatePicker, OutlinedSelect, OutlinedTextField } from '@/shared/components/form';
+import { getApiErrorMessage } from '@/shared/utils/axios';
+import { clearOnboardingDraft, useOnboardingStore } from '@/store/onboarding.store';
+import { useSessionStore } from '@/store/session.store';
+import {
+  ONBOARDING_ACCOUNT_TYPE_OPTIONS,
+  ONBOARDING_PROPERTY_TYPE_OPTIONS,
+} from '@/features/onboarding/constants/select-options';
 
 type Step = {
   id: number;
   label: string;
   shortLabel?: string;
 };
+
+/** Matches legacy `<p>` labels on property/business/income steps (Figtree, not SF Pro). */
+const ONBOARDING_FIGTREE_LABEL_CLASS =
+  "font-['Figtree',sans-serif] font-normal leading-[normal] text-[#333] text-[14px] w-full";
 
 const STEPS: Step[] = [
   { id: 1, label: 'Basic\nInformation', shortLabel: 'Basic Information' },
@@ -23,183 +50,118 @@ const STEPS: Step[] = [
   { id: 8, label: 'Summary', shortLabel: 'Summary' },
 ];
 
-type LiquidityAccount = {
-  id: string;
-  institution: string;
-  accountType: string;
-  currentBalance: string;
-};
-
-type Property = {
-  id: string;
-  address: string;
-  propertyType: string;
-  estimatedValue: string;
-  loanBalance: string;
-  monthlyRent: string;
-  showAdvanced: boolean;
-  interestRate: string;
-  monthlyPayment: string;
-  lender: string;
-  maturityDate: string;
-  ownershipPercent: string;
-};
-
-type Business = {
-  id: string;
-  entityName: string;
-  ownershipPercent: string;
-  estimatedValue: string;
-};
-
 export function OnboardingPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const routeState = location.state as {
-    startStep?: number;
-    prefillData?: {
-      fullName?: string;
-      primaryAddress?: string;
-      email?: string;
-      phone?: string;
-      ssn?: string;
-      accounts?: Array<{ institution: string; accountType: string; currentBalance: string }>;
-      properties?: Array<{
-        address: string;
-        propertyType: string;
-        estimatedValue: string;
-        loanBalance: string;
-        monthlyRent: string;
-        showAdvanced?: boolean;
-        interestRate?: string;
-        monthlyPayment?: string;
-        lender?: string;
-        maturityDate?: string;
-        ownershipPercent?: string;
-      }>;
-      entities?: Array<{ entityName: string; ownershipPercent: string; estimatedValue: string }>;
-      publicInvestments?: string;
-      privateInvestments?: string;
-      otherAssets?: string;
-      creditCards?: string;
-      personalLoans?: string;
-      otherDebt?: string;
-      linkedDebt?: string;
-      primaryIncome?: string;
-      rentalIncome?: string;
-      otherIncome?: string;
-    };
-  } | null;
-  const startStep = routeState?.startStep && routeState.startStep >= 1 && routeState.startStep <= 8 ? routeState.startStep : 1;
-  const prefill = routeState?.prefillData;
+  const appliedNavState = useRef<string>('');
+  const [onboardingHydrated, setOnboardingHydrated] = useState(() => useOnboardingStore.persist.hasHydrated());
 
-  const [currentStep, setCurrentStep] = useState(startStep);
+  const userId = useSessionStore((s) => s.user?.id);
+
+  useEffect(() => {
+    if (onboardingHydrated) return;
+    const unsub = useOnboardingStore.persist.onFinishHydration(() => setOnboardingHydrated(true));
+    return unsub;
+  }, [onboardingHydrated]);
+
+  const {
+    currentStep,
+    direction,
+    basicInfo,
+    liquidityAccounts,
+    properties,
+    businesses,
+    otherAssets,
+    liabilities,
+    income,
+    disclosures,
+    setCurrentStep,
+    setDirection,
+    setBasicInfo,
+    setLiquidityAccounts,
+    setProperties,
+    setBusinesses,
+    setOtherAssets,
+    setLiabilities,
+    setIncome,
+    setDisclosures,
+    resetDraftForUser,
+    applyRoutePrefill,
+  } = useOnboardingStore(
+    useShallow((s) => ({
+      currentStep: s.currentStep,
+      direction: s.direction,
+      basicInfo: s.basicInfo,
+      liquidityAccounts: s.liquidityAccounts,
+      properties: s.properties,
+      businesses: s.businesses,
+      otherAssets: s.otherAssets,
+      liabilities: s.liabilities,
+      income: s.income,
+      disclosures: s.disclosures,
+      setCurrentStep: s.setCurrentStep,
+      setDirection: s.setDirection,
+      setBasicInfo: s.setBasicInfo,
+      setLiquidityAccounts: s.setLiquidityAccounts,
+      setProperties: s.setProperties,
+      setBusinesses: s.setBusinesses,
+      setOtherAssets: s.setOtherAssets,
+      setLiabilities: s.setLiabilities,
+      setIncome: s.setIncome,
+      setDisclosures: s.setDisclosures,
+      resetDraftForUser: s.resetDraftForUser,
+      applyRoutePrefill: s.applyRoutePrefill,
+    })),
+  );
+
+  useEffect(() => {
+    if (!onboardingHydrated || !userId) return;
+    if (useOnboardingStore.getState().ownerUserId !== userId) {
+      resetDraftForUser(userId);
+    }
+  }, [userId, onboardingHydrated, resetDraftForUser]);
+
+  useEffect(() => {
+    const st = location.state as OnboardingLocationState;
+    if (st == null) return;
+    const serialized = JSON.stringify(st);
+    if (serialized === '{}' || appliedNavState.current === serialized) return;
+    const hasPrefill = Boolean(st.prefillData && Object.keys(st.prefillData).length > 0);
+    const hasStart = typeof st.startStep === 'number' && st.startStep >= 1 && st.startStep <= 8;
+    if (!hasPrefill && !hasStart) return;
+    appliedNavState.current = serialized;
+    const start = hasStart ? st.startStep! : 1;
+    if (hasPrefill && st.prefillData) {
+      applyRoutePrefill(st.prefillData, start);
+    } else {
+      setCurrentStep(start);
+    }
+    navigate(`${location.pathname}${location.search || ''}`, { replace: true, state: {} });
+  }, [location.state, location.pathname, location.search, navigate, applyRoutePrefill, setCurrentStep]);
+
+  const summaryInputs = useOnboardingStore(
+    useShallow((s) => ({
+      liquidityAccounts: s.liquidityAccounts,
+      properties: s.properties,
+      businesses: s.businesses,
+      otherAssets: s.otherAssets,
+      liabilities: s.liabilities,
+      income: s.income,
+    })),
+  );
+  const summary = useMemo(() => computeOnboardingSummary(summaryInputs), [summaryInputs]);
+
   const [showSuccess, setShowSuccess] = useState(false);
-  const [direction, setDirection] = useState(1);
-  
-  // Step 1 - Basic Information
-  const [formData, setFormData] = useState({
-    fullName: prefill?.fullName ?? '',
-    primaryAddress: prefill?.primaryAddress ?? '',
-    email: prefill?.email ?? '',
-    phone: prefill?.phone ?? '',
-    ssn: prefill?.ssn ?? '',
-  });
+  const [step1FieldErrors, setStep1FieldErrors] = useState<
+    Partial<Record<BasicInfoValidatedFieldKey, string>>
+  >({});
+  const [activateError, setActivateError] = useState('');
 
-  // Step 2 - Liquidity
-  const [liquidityAccounts, setLiquidityAccounts] = useState<LiquidityAccount[]>(
-    prefill?.accounts?.length
-      ? prefill.accounts.map((account, idx) => ({
-          id: String(idx + 1),
-          institution: account.institution ?? '',
-          accountType: account.accountType ?? 'Saving Account',
-          currentBalance: account.currentBalance ?? '',
-        }))
-      : [{ id: '1', institution: '', accountType: 'Saving Account', currentBalance: '' }]
-  );
-
-  // Step 3 - Properties
-  const [properties, setProperties] = useState<Property[]>(
-    prefill?.properties?.length
-      ? prefill.properties.map((property, idx) => ({
-          id: String(idx + 1),
-          address: property.address ?? '',
-          propertyType: property.propertyType ?? 'Single Family',
-          estimatedValue: property.estimatedValue ?? '',
-          loanBalance: property.loanBalance ?? '',
-          monthlyRent: property.monthlyRent ?? '',
-          showAdvanced: property.showAdvanced ?? false,
-          interestRate: property.interestRate ?? '',
-          monthlyPayment: property.monthlyPayment ?? '',
-          lender: property.lender ?? '',
-          maturityDate: property.maturityDate ?? '',
-          ownershipPercent: property.ownershipPercent ?? '',
-        }))
-      : [
-          {
-            id: '1',
-            address: '',
-            propertyType: 'Single Family',
-            estimatedValue: '',
-            loanBalance: '',
-            monthlyRent: '',
-            showAdvanced: false,
-            interestRate: '',
-            monthlyPayment: '',
-            lender: '',
-            maturityDate: '',
-            ownershipPercent: '',
-          },
-        ]
-  );
-
-  // Step 4 - Businesses
-  const [businesses, setBusinesses] = useState<Business[]>(
-    prefill?.entities?.length
-      ? prefill.entities.map((entity, idx) => ({
-          id: String(idx + 1),
-          entityName: entity.entityName ?? '',
-          ownershipPercent: entity.ownershipPercent ?? '',
-          estimatedValue: entity.estimatedValue ?? '',
-        }))
-      : [{ id: '1', entityName: '', ownershipPercent: '', estimatedValue: '' }]
-  );
-
-  // Step 5 - Other Assets
-  const [otherAssets, setOtherAssets] = useState({
-    publicInvestments: prefill?.publicInvestments ?? '',
-    privateInvestments: prefill?.privateInvestments ?? '',
-    otherAssets: prefill?.otherAssets ?? '',
-  });
-
-  // Step 6 - Liabilities
-  const [liabilities, setLiabilities] = useState({
-    creditCards: prefill?.creditCards ?? '',
-    personalLoans: prefill?.personalLoans ?? '',
-    otherDebt: prefill?.otherDebt ?? '',
-    linkedDebt: prefill?.linkedDebt ?? 'None',
-  });
-
-  // Step 7 - Income
-  const [income, setIncome] = useState({
-    primaryIncome: prefill?.primaryIncome ?? '',
-    rentalIncome: prefill?.rentalIncome ?? '',
-    otherIncome: prefill?.otherIncome ?? '',
-  });
-
-  // Step 8 - Disclosures
-  const [disclosures, setDisclosures] = useState({
-    guarantor: null as boolean | null,
-    guarantorDetails: '',
-    legalActions: null as boolean | null,
-    bankruptcy: null as boolean | null,
-    alimony: null as boolean | null,
-    pledgedAssets: null as boolean | null,
-    foreclosure: null as boolean | null,
-    lawsuits: null as boolean | null,
-  });
+  const onboardMutation = useInvestorOnboardMutation();
 
   const handleBack = () => {
+    setStep1FieldErrors({});
+    setActivateError('');
     if (currentStep > 1) {
       setDirection(-1);
       setCurrentStep(currentStep - 1);
@@ -209,6 +171,7 @@ export function OnboardingPage() {
   };
 
   const handleSkip = () => {
+    setStep1FieldErrors({});
     if (currentStep < STEPS.length) {
       setDirection(1);
       setCurrentStep(currentStep + 1);
@@ -216,6 +179,15 @@ export function OnboardingPage() {
   };
 
   const handleNext = () => {
+    setActivateError('');
+    if (currentStep === 1) {
+      const errs = getBasicInfoStepFieldErrors(useOnboardingStore.getState().basicInfo);
+      if (Object.keys(errs).length > 0) {
+        setStep1FieldErrors(errs);
+        return;
+      }
+      setStep1FieldErrors({});
+    }
     if (currentStep < STEPS.length) {
       setDirection(1);
       setCurrentStep(currentStep + 1);
@@ -225,91 +197,124 @@ export function OnboardingPage() {
   };
 
   const handleActivate = () => {
-    setShowSuccess(true);
+    setActivateError('');
+    if (!userId) {
+      setActivateError('You must be signed in to activate your profile.');
+      return;
+    }
+    const state = useOnboardingStore.getState();
+    const mapped = mapOnboardingStateToDto(state, userId);
+    if (!mapped.ok) {
+      setActivateError(mapped.message);
+      return;
+    }
+    onboardMutation.mutate(mapped.payload, {
+      onSuccess: () => {
+        clearOnboardingDraft();
+        setShowSuccess(true);
+      },
+      onError: (err) => setActivateError(getApiErrorMessage(err)),
+    });
   };
 
   const handleGoToDashboard = () => {
     navigate('/dashboard');
   };
 
-  const handleInputChange = (field: keyof typeof formData, value: string) => {
-    setFormData({ ...formData, [field]: value });
+  const handleInputChange = (field: keyof OnboardingBasicInfo, value: string) => {
+    setBasicInfo({ [field]: value });
+    const schemaKey: BasicInfoValidatedFieldKey | null =
+      field === 'fullName'
+        ? 'fullName'
+        : field === 'primaryAddress'
+          ? 'primaryAddress'
+          : field === 'phone'
+            ? 'phone'
+            : field === 'ssn'
+              ? 'ssn'
+              : null;
+    if (!schemaKey) return;
+    setStep1FieldErrors((prev) => {
+      if (!prev[schemaKey]) return prev;
+      const next = { ...prev };
+      delete next[schemaKey];
+      return next;
+    });
   };
 
   const addLiquidityAccount = () => {
+    const rows = useOnboardingStore.getState().liquidityAccounts;
     setLiquidityAccounts([
-      ...liquidityAccounts,
-      { id: String(liquidityAccounts.length + 1), institution: '', accountType: 'Saving Account', currentBalance: '' }
+      ...rows,
+      { id: String(rows.length + 1), institution: '', accountType: 'Saving Account', currentBalance: '' },
     ]);
   };
 
   const removeLiquidityAccount = (id: string) => {
-    if (liquidityAccounts.length > 1) {
-      setLiquidityAccounts(liquidityAccounts.filter(acc => acc.id !== id));
+    const rows = useOnboardingStore.getState().liquidityAccounts;
+    if (rows.length > 1) {
+      setLiquidityAccounts(rows.filter((acc) => acc.id !== id));
     }
   };
 
   const updateLiquidityAccount = (id: string, field: keyof LiquidityAccount, value: string) => {
-    setLiquidityAccounts(liquidityAccounts.map(acc =>
-      acc.id === id ? { ...acc, [field]: value } : acc
-    ));
+    const rows = useOnboardingStore.getState().liquidityAccounts;
+    setLiquidityAccounts(rows.map((acc) => (acc.id === id ? { ...acc, [field]: value } : acc)));
   };
 
   const addProperty = () => {
+    const rows = useOnboardingStore.getState().properties;
     setProperties([
-      ...properties,
-      { 
-        id: String(properties.length + 1), 
-        address: '', 
-        propertyType: 'Single Family', 
-        estimatedValue: '', 
-        loanBalance: '', 
+      ...rows,
+      {
+        id: String(rows.length + 1),
+        address: '',
+        propertyType: 'Single Family',
+        estimatedValue: '',
+        loanBalance: '',
         monthlyRent: '',
         showAdvanced: false,
         interestRate: '',
         monthlyPayment: '',
         lender: '',
         maturityDate: '',
-        ownershipPercent: ''
-      }
+        ownershipPercent: '',
+      },
     ]);
   };
 
   const removeProperty = (id: string) => {
-    if (properties.length > 1) {
-      setProperties(properties.filter(prop => prop.id !== id));
+    const rows = useOnboardingStore.getState().properties;
+    if (rows.length > 1) {
+      setProperties(rows.filter((prop) => prop.id !== id));
     }
   };
 
-  const updateProperty = (id: string, field: keyof Property, value: string | boolean) => {
-    setProperties(properties.map(prop =>
-      prop.id === id ? { ...prop, [field]: value } : prop
-    ));
+  const updateProperty = (id: string, field: keyof OnboardingProperty, value: string | boolean) => {
+    const rows = useOnboardingStore.getState().properties;
+    setProperties(rows.map((prop) => (prop.id === id ? { ...prop, [field]: value } : prop)));
   };
 
   const toggleAdvancedDetails = (id: string) => {
-    setProperties(properties.map(prop =>
-      prop.id === id ? { ...prop, showAdvanced: !prop.showAdvanced } : prop
-    ));
+    const rows = useOnboardingStore.getState().properties;
+    setProperties(rows.map((prop) => (prop.id === id ? { ...prop, showAdvanced: !prop.showAdvanced } : prop)));
   };
 
   const addBusiness = () => {
-    setBusinesses([
-      ...businesses,
-      { id: String(businesses.length + 1), entityName: '', ownershipPercent: '', estimatedValue: '' }
-    ]);
+    const rows = useOnboardingStore.getState().businesses;
+    setBusinesses([...rows, { id: String(rows.length + 1), entityName: '', ownershipPercent: '', estimatedValue: '' }]);
   };
 
   const removeBusiness = (id: string) => {
-    if (businesses.length > 1) {
-      setBusinesses(businesses.filter(bus => bus.id !== id));
+    const rows = useOnboardingStore.getState().businesses;
+    if (rows.length > 1) {
+      setBusinesses(rows.filter((bus) => bus.id !== id));
     }
   };
 
-  const updateBusiness = (id: string, field: keyof Business, value: string) => {
-    setBusinesses(businesses.map(bus =>
-      bus.id === id ? { ...bus, [field]: value } : bus
-    ));
+  const updateBusiness = (id: string, field: keyof OnboardingBusiness, value: string) => {
+    const rows = useOnboardingStore.getState().businesses;
+    setBusinesses(rows.map((bus) => (bus.id === id ? { ...bus, [field]: value } : bus)));
   };
 
   const getStepTitle = () => {
@@ -471,90 +476,65 @@ export function OnboardingPage() {
               <div className="border border-[#d0d0d0] border-solid absolute inset-0 pointer-events-none rounded-[20px] shadow-[0px_10px_40px_0px_rgba(243,219,188,0.45)]" />
               <div className="flex flex-col items-start p-[24px] relative w-full">
                 <div className="flex flex-col gap-[24px] items-start w-full">
-                  <div className="flex flex-col gap-[6px] items-start w-full">
-                    <p className="font-['SF_Pro',sans-serif] font-[510] leading-[normal] text-[#333] text-[14px] w-full" style={{ fontVariationSettings: "'wdth' 100" }}>
-                      Full Legal Name
-                    </p>
-                    <div className="bg-white h-[46px] relative rounded-[8px] w-full">
-                      <input
-                        type="text"
-                        value={formData.fullName}
-                        onChange={(e) => handleInputChange('fullName', e.target.value)}
-                        placeholder="Jane A. Smith"
-                        className="font-['Figtree',sans-serif] font-normal leading-[21px] text-[#767676] text-[14px] bg-transparent w-full h-full px-[12px] py-[10px] rounded-[8px] border-none outline-none focus:outline-none placeholder:text-[#767676]"
-                      />
-                      <div aria-hidden="true" className="absolute border border-[#d0d0d0] border-solid inset-0 pointer-events-none rounded-[8px]" />
-                    </div>
-                  </div>
+                  <OutlinedTextField
+                    id="onboarding-basic-full-name"
+                    label="Full Legal Name"
+                    type="text"
+                    value={basicInfo.fullName}
+                    onChange={(e) => handleInputChange('fullName', e.target.value)}
+                    placeholder="Jane A. Smith"
+                    error={step1FieldErrors.fullName}
+                  />
 
-                  <div className="flex flex-col gap-[6px] items-start w-full">
-                    <p className="font-['SF_Pro',sans-serif] font-[510] leading-[normal] text-[#333] text-[14px] w-full" style={{ fontVariationSettings: "'wdth' 100" }}>
-                      Primary Address
-                    </p>
-                    <div className="bg-white h-[46px] relative rounded-[8px] w-full">
-                      <input
-                        type="text"
-                        value={formData.primaryAddress}
-                        onChange={(e) => handleInputChange('primaryAddress', e.target.value)}
-                        placeholder="123 Main Street, New York"
-                        className="font-['Figtree',sans-serif] font-normal leading-[21px] text-[#767676] text-[14px] bg-transparent w-full h-full px-[12px] py-[10px] rounded-[8px] border-none outline-none focus:outline-none placeholder:text-[#767676]"
-                      />
-                      <div aria-hidden="true" className="absolute border border-[#d0d0d0] border-solid inset-0 pointer-events-none rounded-[8px]" />
-                    </div>
-                  </div>
+                  <OutlinedTextField
+                    id="onboarding-basic-primary-address"
+                    label="Primary Address"
+                    type="text"
+                    value={basicInfo.primaryAddress}
+                    onChange={(e) => handleInputChange('primaryAddress', e.target.value)}
+                    placeholder="123 Main Street, New York"
+                    error={step1FieldErrors.primaryAddress}
+                  />
 
                   <div className="flex flex-col md:flex-row gap-[24px] items-start w-full">
-                    <div className="flex flex-col gap-[6px] items-start flex-1 w-full md:w-auto">
-                      <p className="font-['SF_Pro',sans-serif] font-[510] leading-[normal] text-[#333] text-[14px] w-full" style={{ fontVariationSettings: "'wdth' 100" }}>
-                        Email
-                      </p>
-                      <div className="bg-white h-[46px] relative rounded-[8px] w-full">
-                        <input
-                          type="email"
-                          value={formData.email}
-                          onChange={(e) => handleInputChange('email', e.target.value)}
-                          placeholder="jane@example.com"
-                          className="font-['Figtree',sans-serif] font-normal leading-[21px] text-[#767676] text-[14px] bg-transparent w-full h-full px-[12px] py-[10px] rounded-[8px] border-none outline-none focus:outline-none placeholder:text-[#767676]"
-                        />
-                        <div aria-hidden="true" className="absolute border border-[#d0d0d0] border-solid inset-0 pointer-events-none rounded-[8px]" />
-                      </div>
-                    </div>
-
-                    <div className="flex flex-col gap-[6px] items-start flex-1 w-full md:w-auto">
-                      <p className="font-['SF_Pro',sans-serif] font-[510] leading-[normal] text-[#333] text-[14px] w-full" style={{ fontVariationSettings: "'wdth' 100" }}>
-                        Phone
-                      </p>
-                      <div className="bg-white h-[46px] relative rounded-[8px] w-full">
-                        <input
-                          type="tel"
-                          value={formData.phone}
-                          onChange={(e) => handleInputChange('phone', e.target.value)}
-                          placeholder="(555) 000 - 0000"
-                          className="font-['Figtree',sans-serif] font-normal leading-[21px] text-[#767676] text-[14px] bg-transparent w-full h-full px-[12px] py-[10px] rounded-[8px] border-none outline-none focus:outline-none placeholder:text-[#767676]"
-                        />
-                        <div aria-hidden="true" className="absolute border border-[#d0d0d0] border-solid inset-0 pointer-events-none rounded-[8px]" />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-[6px] items-start w-full">
-                    <p className="font-['SF_Pro',sans-serif] font-[510] leading-[normal] text-[#333] text-[14px] w-full" style={{ fontVariationSettings: "'wdth' 100" }}>
-                      Social Security Number
-                    </p>
-                    <div className="bg-white h-[46px] relative rounded-[8px] w-full">
-                      <input
-                        type="password"
-                        value={formData.ssn}
-                        onChange={(e) => handleInputChange('ssn', e.target.value)}
-                        placeholder="********"
-                        className="font-['Figtree',sans-serif] font-normal leading-[21px] text-[#767676] text-[14px] bg-transparent w-full h-full px-[12px] py-[10px] rounded-[8px] border-none outline-none focus:outline-none placeholder:text-[#767676]"
+                    <div className="flex-1 w-full md:w-auto">
+                      <OutlinedTextField
+                        id="onboarding-basic-email"
+                        label="Email"
+                        type="email"
+                        value={basicInfo.email}
+                        onChange={(e) => handleInputChange('email', e.target.value)}
+                        placeholder="jane@example.com"
                       />
-                      <div aria-hidden="true" className="absolute border border-[#d0d0d0] border-solid inset-0 pointer-events-none rounded-[8px]" />
                     </div>
-                    <p className="font-['Figtree',sans-serif] font-normal leading-[normal] text-[#8c8780] text-[12px] w-full">
-                      Encrypted and stored securely. Required for identity verification.
-                    </p>
+
+                    <div className="flex-1 w-full md:w-auto">
+                      <OutlinedTextField
+                        id="onboarding-basic-phone"
+                        label="Phone"
+                        type="tel"
+                        value={basicInfo.phone}
+                        onChange={(e) => handleInputChange('phone', e.target.value)}
+                        placeholder="(555) 000 - 0000"
+                        error={step1FieldErrors.phone}
+                      />
+                    </div>
                   </div>
+
+                  <OutlinedTextField
+                    id="onboarding-basic-ssn"
+                    label="Social Security Number"
+                    type="password"
+                    value={basicInfo.ssn}
+                    onChange={(e) => handleInputChange('ssn', e.target.value)}
+                    placeholder="********"
+                    error={step1FieldErrors.ssn}
+                    footer={
+                      <p className="font-['Figtree',sans-serif] font-normal leading-[normal] text-[#8c8780] text-[12px] w-full">
+                        Encrypted and stored securely. Required for identity verification.
+                      </p>
+                    }
+                  />
                 </div>
               </div>
             </div>
@@ -580,61 +560,41 @@ export function OnboardingPage() {
 
                     <div className="flex flex-col gap-[24px] w-full">
                       <div className="flex flex-col md:flex-row gap-[24px] items-start w-full">
-                        <div className="flex flex-col gap-[6px] items-start flex-1 w-full md:w-auto">
-                          <p className="font-['SF_Pro',sans-serif] font-[510] leading-[normal] text-[#333] text-[14px] w-full" style={{ fontVariationSettings: "'wdth' 100" }}>
-                            Institution
-                          </p>
-                          <div className="bg-white h-[46px] relative rounded-[8px] w-full">
-                            <input
-                              type="text"
-                              value={account.institution}
-                              onChange={(e) => updateLiquidityAccount(account.id, 'institution', e.target.value)}
-                              placeholder="Chase,wells,fargo...."
-                              className="font-['Figtree',sans-serif] font-normal leading-[21px] text-[#767676] text-[14px] bg-transparent w-full h-full px-[12px] py-[10px] rounded-[8px] border-none outline-none focus:outline-none placeholder:text-[#767676]"
-                            />
-                            <div aria-hidden="true" className="absolute border border-[#d0d0d0] border-solid inset-0 pointer-events-none rounded-[8px]" />
-                          </div>
+                        <div className="flex-1 w-full md:w-auto">
+                          <OutlinedTextField
+                            id={`liquidity-institution-${account.id}`}
+                            label="Institution"
+                            type="text"
+                            value={account.institution}
+                            onChange={(e) => updateLiquidityAccount(account.id, 'institution', e.target.value)}
+                            placeholder="Chase,wells,fargo...."
+                          />
                         </div>
 
                         <div className="flex flex-col gap-[6px] items-start flex-1 w-full md:w-auto">
                           <p className="font-['SF_Pro',sans-serif] font-[510] leading-[normal] text-[#333] text-[14px] w-full" style={{ fontVariationSettings: "'wdth' 100" }}>
                             Account Type
                           </p>
-                          <div className="bg-white h-[46px] relative rounded-[8px] w-full">
-                            <select
+                          <div className="w-full">
+                            <OutlinedSelect
                               value={account.accountType}
-                              onChange={(e) => updateLiquidityAccount(account.id, 'accountType', e.target.value)}
-                              className="font-['Figtree',sans-serif] font-normal leading-[21px] text-[#767676] text-[14px] bg-transparent w-full h-full px-[12px] py-[10px] rounded-[8px] border-none outline-none focus:outline-none appearance-none"
-                            >
-                              <option>Saving Account</option>
-                              <option>Checking Account</option>
-                              <option>Money Market</option>
-                            </select>
-                            <div className="absolute right-[12px] top-1/2 -translate-y-1/2 pointer-events-none">
-                              <svg className="size-[16px]" fill="none" viewBox="0 0 16 16">
-                                <path clipRule="evenodd" d={advancedSvgPaths.p22c4cb00} fill="#767676" fillRule="evenodd" />
-                              </svg>
-                            </div>
-                            <div aria-hidden="true" className="absolute border border-[#d0d0d0] border-solid inset-0 pointer-events-none rounded-[8px]" />
+                              onValueChange={(v) => updateLiquidityAccount(account.id, 'accountType', v)}
+                              options={ONBOARDING_ACCOUNT_TYPE_OPTIONS}
+                              placeholder="Select account type"
+                              aria-label={`Account ${index + 1} type`}
+                            />
                           </div>
                         </div>
                       </div>
 
-                      <div className="flex flex-col gap-[6px] items-start w-full">
-                        <p className="font-['SF_Pro',sans-serif] font-[510] leading-[normal] text-[#333] text-[14px] w-full" style={{ fontVariationSettings: "'wdth' 100" }}>
-                          Current Balance
-                        </p>
-                        <div className="bg-white h-[46px] relative rounded-[8px] w-full">
-                          <input
-                            type="text"
-                            value={account.currentBalance}
-                            onChange={(e) => updateLiquidityAccount(account.id, 'currentBalance', e.target.value)}
-                            placeholder="000000"
-                            className="font-['Figtree',sans-serif] font-normal leading-[21px] text-[#767676] text-[14px] bg-transparent w-full h-full px-[12px] py-[10px] rounded-[8px] border-none outline-none focus:outline-none placeholder:text-[#767676]"
-                          />
-                          <div aria-hidden="true" className="absolute border border-[#d0d0d0] border-solid inset-0 pointer-events-none rounded-[8px]" />
-                        </div>
-                      </div>
+                      <OutlinedTextField
+                        id={`liquidity-balance-${account.id}`}
+                        label="Current Balance"
+                        type="text"
+                        value={account.currentBalance}
+                        onChange={(e) => updateLiquidityAccount(account.id, 'currentBalance', e.target.value)}
+                        placeholder="000000"
+                      />
 
                       <button className="bg-[#fffdf8] h-[50px] relative rounded-[8px] w-full hover:bg-[#faf7f0] transition-colors">
                         <div aria-hidden="true" className="absolute border-[#3e2d1d] border-[1.5px] border-dashed inset-0 pointer-events-none rounded-[8px]" />
@@ -689,92 +649,66 @@ export function OnboardingPage() {
 
                     <div className="flex flex-col gap-[36px] w-full">
                       <div className="flex flex-col gap-[24px] w-full">
-                        <div className="flex flex-col gap-[6px] items-start w-full">
-                          <p className="font-['Figtree',sans-serif] font-normal leading-[normal] text-[#333] text-[14px] w-full">
-                            Property Address
-                          </p>
-                          <div className="bg-white h-[46px] relative rounded-[8px] w-full">
-                            <input
-                              type="text"
-                              value={property.address}
-                              onChange={(e) => updateProperty(property.id, 'address', e.target.value)}
-                              placeholder="123 Oak Ave, Austin, TX"
-                              className="font-['Figtree',sans-serif] font-normal leading-[21px] text-[#767676] text-[14px] bg-transparent w-full h-full px-[12px] py-[10px] rounded-[8px] border-none outline-none focus:outline-none placeholder:text-[#767676]"
-                            />
-                            <div aria-hidden="true" className="absolute border border-[#d0d0d0] border-solid inset-0 pointer-events-none rounded-[8px]" />
-                          </div>
-                        </div>
+                        <OutlinedTextField
+                          id={`property-address-${property.id}`}
+                          label="Property Address"
+                          labelClassName={ONBOARDING_FIGTREE_LABEL_CLASS}
+                          type="text"
+                          value={property.address}
+                          onChange={(e) => updateProperty(property.id, 'address', e.target.value)}
+                          placeholder="123 Oak Ave, Austin, TX"
+                        />
 
                         <div className="flex flex-col gap-[6px] items-start w-full">
                           <p className="font-['Figtree',sans-serif] font-normal leading-[normal] text-[#333] text-[14px] w-full">
                             Property Type
                           </p>
-                          <div className="bg-white h-[46px] relative rounded-[8px] w-full">
-                            <select
+                          <div className="w-full">
+                            <OutlinedSelect
                               value={property.propertyType}
-                              onChange={(e) => updateProperty(property.id, 'propertyType', e.target.value)}
-                              className="font-['Figtree',sans-serif] font-normal leading-[21px] text-[#767676] text-[14px] bg-transparent w-full h-full px-[12px] py-[10px] rounded-[8px] border-none outline-none focus:outline-none appearance-none"
-                            >
-                              <option>Single Family</option>
-                              <option>Multi-Family</option>
-                              <option>Commercial</option>
-                            </select>
-                            <div className="absolute right-[12px] top-1/2 -translate-y-1/2 pointer-events-none">
-                              <svg className="size-[16px]" fill="none" viewBox="0 0 16 16">
-                                <path clipRule="evenodd" d={advancedSvgPaths.p22c4cb00} fill="#767676" fillRule="evenodd" />
-                              </svg>
-                            </div>
-                            <div aria-hidden="true" className="absolute border border-[#d0d0d0] border-solid inset-0 pointer-events-none rounded-[8px]" />
+                              onValueChange={(v) => updateProperty(property.id, 'propertyType', v)}
+                              options={ONBOARDING_PROPERTY_TYPE_OPTIONS}
+                              placeholder="Select property type"
+                              aria-label={`Property ${index + 1} type`}
+                            />
                           </div>
                         </div>
 
                         <div className="flex flex-col lg:flex-row gap-[24px] items-start w-full">
-                          <div className="flex flex-col gap-[6px] items-start flex-1 w-full">
-                            <p className="font-['Figtree',sans-serif] font-normal leading-[normal] text-[#333] text-[14px] w-full">
-                              Estimated Value
-                            </p>
-                            <div className="bg-white h-[46px] relative rounded-[8px] w-full">
-                              <input
-                                type="text"
-                                value={property.estimatedValue}
-                                onChange={(e) => updateProperty(property.id, 'estimatedValue', e.target.value)}
-                                placeholder="0"
-                                className="font-['Figtree',sans-serif] font-normal leading-[21px] text-[#767676] text-[14px] bg-transparent w-full h-full px-[12px] py-[10px] rounded-[8px] border-none outline-none focus:outline-none placeholder:text-[#767676]"
-                              />
-                              <div aria-hidden="true" className="absolute border border-[#d0d0d0] border-solid inset-0 pointer-events-none rounded-[8px]" />
-                            </div>
+                          <div className="flex-1 w-full">
+                            <OutlinedTextField
+                              id={`property-estimated-${property.id}`}
+                              label="Estimated Value"
+                              labelClassName={ONBOARDING_FIGTREE_LABEL_CLASS}
+                              type="text"
+                              value={property.estimatedValue}
+                              onChange={(e) => updateProperty(property.id, 'estimatedValue', e.target.value)}
+                              placeholder="0"
+                            />
                           </div>
 
-                          <div className="flex flex-col gap-[6px] items-start flex-1 w-full">
-                            <p className="font-['Figtree',sans-serif] font-normal leading-[normal] text-[#333] text-[14px] w-full">
-                              Loan Balance
-                            </p>
-                            <div className="bg-white h-[46px] relative rounded-[8px] w-full">
-                              <input
-                                type="text"
-                                value={property.loanBalance}
-                                onChange={(e) => updateProperty(property.id, 'loanBalance', e.target.value)}
-                                placeholder="0"
-                                className="font-['Figtree',sans-serif] font-normal leading-[21px] text-[#767676] text-[14px] bg-transparent w-full h-full px-[12px] py-[10px] rounded-[8px] border-none outline-none focus:outline-none placeholder:text-[#767676]"
-                              />
-                              <div aria-hidden="true" className="absolute border border-[#d0d0d0] border-solid inset-0 pointer-events-none rounded-[8px]" />
-                            </div>
+                          <div className="flex-1 w-full">
+                            <OutlinedTextField
+                              id={`property-loan-${property.id}`}
+                              label="Loan Balance"
+                              labelClassName={ONBOARDING_FIGTREE_LABEL_CLASS}
+                              type="text"
+                              value={property.loanBalance}
+                              onChange={(e) => updateProperty(property.id, 'loanBalance', e.target.value)}
+                              placeholder="0"
+                            />
                           </div>
 
-                          <div className="flex flex-col gap-[6px] items-start flex-1 w-full">
-                            <p className="font-['Figtree',sans-serif] font-normal leading-[normal] text-[#333] text-[14px] w-full">
-                              Monthly Rent
-                            </p>
-                            <div className="bg-white h-[46px] relative rounded-[8px] w-full">
-                              <input
-                                type="text"
-                                value={property.monthlyRent}
-                                onChange={(e) => updateProperty(property.id, 'monthlyRent', e.target.value)}
-                                placeholder="0"
-                                className="font-['Figtree',sans-serif] font-normal leading-[21px] text-[#767676] text-[14px] bg-transparent w-full h-full px-[12px] py-[10px] rounded-[8px] border-none outline-none focus:outline-none placeholder:text-[#767676]"
-                              />
-                              <div aria-hidden="true" className="absolute border border-[#d0d0d0] border-solid inset-0 pointer-events-none rounded-[8px]" />
-                            </div>
+                          <div className="flex-1 w-full">
+                            <OutlinedTextField
+                              id={`property-rent-${property.id}`}
+                              label="Monthly Rent"
+                              labelClassName={ONBOARDING_FIGTREE_LABEL_CLASS}
+                              type="text"
+                              value={property.monthlyRent}
+                              onChange={(e) => updateProperty(property.id, 'monthlyRent', e.target.value)}
+                              placeholder="0"
+                            />
                           </div>
                         </div>
 
@@ -814,91 +748,73 @@ export function OnboardingPage() {
                       {property.showAdvanced && (
                         <div className="flex flex-col gap-[24px] w-full">
                           <div className="flex flex-col md:flex-row gap-[24px] items-start w-full">
-                            <div className="flex flex-col gap-[6px] items-start flex-1 w-full md:w-auto">
-                              <p className="font-['Figtree',sans-serif] font-normal leading-[normal] text-[#333] text-[14px] w-full">
-                                Interest Rate
-                              </p>
-                              <div className="bg-white h-[46px] relative rounded-[8px] w-full">
-                                <input
-                                  type="text"
-                                  value={property.interestRate}
-                                  onChange={(e) => updateProperty(property.id, 'interestRate', e.target.value)}
-                                  placeholder="6.5%"
-                                  className="font-['Figtree',sans-serif] font-normal leading-[21px] text-[#767676] text-[14px] bg-transparent w-full h-full px-[12px] py-[10px] rounded-[8px] border-none outline-none focus:outline-none placeholder:text-[#767676]"
-                                />
-                                <div aria-hidden="true" className="absolute border border-[#d0d0d0] border-solid inset-0 pointer-events-none rounded-[8px]" />
-                              </div>
+                            <div className="flex-1 w-full md:w-auto">
+                              <OutlinedTextField
+                                id={`property-rate-${property.id}`}
+                                label="Interest Rate"
+                                labelClassName={ONBOARDING_FIGTREE_LABEL_CLASS}
+                                type="text"
+                                value={property.interestRate}
+                                onChange={(e) => updateProperty(property.id, 'interestRate', e.target.value)}
+                                placeholder="6.5%"
+                              />
                             </div>
 
-                            <div className="flex flex-col gap-[6px] items-start flex-1 w-full md:w-auto">
-                              <p className="font-['Figtree',sans-serif] font-normal leading-[normal] text-[#333] text-[14px] w-full">
-                                Monthly Payment
-                              </p>
-                              <div className="bg-white h-[46px] relative rounded-[8px] w-full">
-                                <input
-                                  type="text"
-                                  value={property.monthlyPayment}
-                                  onChange={(e) => updateProperty(property.id, 'monthlyPayment', e.target.value)}
-                                  placeholder="0"
-                                  className="font-['Figtree',sans-serif] font-normal leading-[21px] text-[#767676] text-[14px] bg-transparent w-full h-full px-[12px] py-[10px] rounded-[8px] border-none outline-none focus:outline-none placeholder:text-[#767676]"
-                                />
-                                <div aria-hidden="true" className="absolute border border-[#d0d0d0] border-solid inset-0 pointer-events-none rounded-[8px]" />
-                              </div>
+                            <div className="flex-1 w-full md:w-auto">
+                              <OutlinedTextField
+                                id={`property-payment-${property.id}`}
+                                label="Monthly Payment"
+                                labelClassName={ONBOARDING_FIGTREE_LABEL_CLASS}
+                                type="text"
+                                value={property.monthlyPayment}
+                                onChange={(e) => updateProperty(property.id, 'monthlyPayment', e.target.value)}
+                                placeholder="0"
+                              />
                             </div>
                           </div>
 
                           <div className="flex flex-col md:flex-row gap-[24px] items-start w-full">
-                            <div className="flex flex-col gap-[6px] items-start flex-1 w-full md:w-auto">
-                              <p className="font-['Figtree',sans-serif] font-normal leading-[normal] text-[#333] text-[14px] w-full">
-                                Lender
-                              </p>
-                              <div className="bg-white h-[46px] relative rounded-[8px] w-full">
-                                <input
-                                  type="text"
-                                  value={property.lender}
-                                  onChange={(e) => updateProperty(property.id, 'lender', e.target.value)}
-                                  placeholder="First National Bank"
-                                  className="font-['Figtree',sans-serif] font-normal leading-[21px] text-[#767676] text-[14px] bg-transparent w-full h-full px-[12px] py-[10px] rounded-[8px] border-none outline-none focus:outline-none placeholder:text-[#767676]"
-                                />
-                                <div aria-hidden="true" className="absolute border border-[#d0d0d0] border-solid inset-0 pointer-events-none rounded-[8px]" />
-                              </div>
+                            <div className="flex-1 w-full md:w-auto">
+                              <OutlinedTextField
+                                id={`property-lender-${property.id}`}
+                                label="Lender"
+                                labelClassName={ONBOARDING_FIGTREE_LABEL_CLASS}
+                                type="text"
+                                value={property.lender}
+                                onChange={(e) => updateProperty(property.id, 'lender', e.target.value)}
+                                placeholder="First National Bank"
+                              />
                             </div>
 
                             <div className="flex flex-col gap-[6px] items-start flex-1 w-full md:w-auto">
                               <p className="font-['Figtree',sans-serif] font-normal leading-[normal] text-[#333] text-[14px] w-full">
                                 Maturity Date
                               </p>
-                              <div className="bg-white h-[46px] relative rounded-[8px] w-full">
-                                <input
-                                  type="text"
+                              <div className="w-full">
+                                <OutlinedDatePicker
                                   value={property.maturityDate}
-                                  onChange={(e) => updateProperty(property.id, 'maturityDate', e.target.value)}
-                                  placeholder="MM/YYYY"
-                                  className="font-['Figtree',sans-serif] font-normal leading-[21px] text-[#767676] text-[14px] bg-transparent w-full h-full px-[12px] py-[10px] rounded-[8px] border-none outline-none focus:outline-none placeholder:text-[#767676]"
+                                  onChange={(ymd) => updateProperty(property.id, 'maturityDate', ymd)}
+                                  placeholder="Select maturity date"
+                                  aria-label={`Property ${index + 1} loan maturity date`}
                                 />
-                                <div aria-hidden="true" className="absolute border border-[#d0d0d0] border-solid inset-0 pointer-events-none rounded-[8px]" />
                               </div>
                             </div>
                           </div>
 
-                          <div className="flex flex-col gap-[6px] items-start w-full">
-                            <p className="font-['Figtree',sans-serif] font-normal leading-[normal] text-[#333] text-[14px] w-full">
-                              Ownership %
-                            </p>
-                            <div className="bg-white h-[46px] relative rounded-[8px] w-full">
-                              <input
-                                type="text"
-                                value={property.ownershipPercent}
-                                onChange={(e) => updateProperty(property.id, 'ownershipPercent', e.target.value)}
-                                placeholder="100%"
-                                className="font-['Figtree',sans-serif] font-normal leading-[21px] text-[#767676] text-[14px] bg-transparent w-full h-full px-[12px] py-[10px] rounded-[8px] border-none outline-none focus:outline-none placeholder:text-[#767676]"
-                              />
-                              <div aria-hidden="true" className="absolute border border-[#d0d0d0] border-solid inset-0 pointer-events-none rounded-[8px]" />
-                            </div>
-                            <p className="font-['Figtree',sans-serif] font-normal leading-[normal] text-[#8c8780] text-[12px] w-full">
-                              Your ownership percentage in this property
-                            </p>
-                          </div>
+                          <OutlinedTextField
+                            id={`property-ownership-${property.id}`}
+                            label="Ownership %"
+                            labelClassName={ONBOARDING_FIGTREE_LABEL_CLASS}
+                            type="text"
+                            value={property.ownershipPercent}
+                            onChange={(e) => updateProperty(property.id, 'ownershipPercent', e.target.value)}
+                            placeholder="100%"
+                            footer={
+                              <p className="font-['Figtree',sans-serif] font-normal leading-[normal] text-[#8c8780] text-[12px] w-full">
+                                Your ownership percentage in this property
+                              </p>
+                            }
+                          />
                         </div>
                       )}
                     </div>
@@ -942,53 +858,39 @@ export function OnboardingPage() {
                     </div>
 
                     <div className="flex flex-col gap-[24px] w-full">
-                      <div className="flex flex-col gap-[6px] items-start w-full">
-                        <p className="font-['Figtree',sans-serif] font-normal leading-[normal] text-[#333] text-[14px] w-full">
-                          Entity Name
-                        </p>
-                        <div className="bg-white h-[46px] relative rounded-[8px] w-full">
-                          <input
-                            type="text"
-                            value={business.entityName}
-                            onChange={(e) => updateBusiness(business.id, 'entityName', e.target.value)}
-                            placeholder="Smith Holding LLC"
-                            className="font-['Figtree',sans-serif] font-normal leading-[21px] text-[#767676] text-[14px] bg-transparent w-full h-full px-[12px] py-[10px] rounded-[8px] border-none outline-none focus:outline-none placeholder:text-[#767676]"
-                          />
-                          <div aria-hidden="true" className="absolute border border-[#d0d0d0] border-solid inset-0 pointer-events-none rounded-[8px]" />
-                        </div>
-                      </div>
+                      <OutlinedTextField
+                        id={`business-name-${business.id}`}
+                        label="Entity Name"
+                        labelClassName={ONBOARDING_FIGTREE_LABEL_CLASS}
+                        type="text"
+                        value={business.entityName}
+                        onChange={(e) => updateBusiness(business.id, 'entityName', e.target.value)}
+                        placeholder="Smith Holding LLC"
+                      />
 
                       <div className="flex flex-col md:flex-row gap-[24px] items-start w-full">
-                        <div className="flex flex-col gap-[6px] items-start flex-1 w-full md:w-auto">
-                          <p className="font-['Figtree',sans-serif] font-normal leading-[normal] text-[#333] text-[14px] w-full">
-                            Ownership %
-                          </p>
-                          <div className="bg-white h-[46px] relative rounded-[8px] w-full">
-                            <input
-                              type="text"
-                              value={business.ownershipPercent}
-                              onChange={(e) => updateBusiness(business.id, 'ownershipPercent', e.target.value)}
-                              placeholder="100"
-                              className="font-['Figtree',sans-serif] font-normal leading-[21px] text-[#767676] text-[14px] bg-transparent w-full h-full px-[12px] py-[10px] rounded-[8px] border-none outline-none focus:outline-none placeholder:text-[#767676]"
-                            />
-                            <div aria-hidden="true" className="absolute border border-[#d0d0d0] border-solid inset-0 pointer-events-none rounded-[8px]" />
-                          </div>
+                        <div className="flex-1 w-full md:w-auto">
+                          <OutlinedTextField
+                            id={`business-ownership-${business.id}`}
+                            label="Ownership %"
+                            labelClassName={ONBOARDING_FIGTREE_LABEL_CLASS}
+                            type="text"
+                            value={business.ownershipPercent}
+                            onChange={(e) => updateBusiness(business.id, 'ownershipPercent', e.target.value)}
+                            placeholder="100"
+                          />
                         </div>
 
-                        <div className="flex flex-col gap-[6px] items-start flex-1 w-full md:w-auto">
-                          <p className="font-['Figtree',sans-serif] font-normal leading-[normal] text-[#333] text-[14px] w-full">
-                            Estimated Value
-                          </p>
-                          <div className="bg-white h-[46px] relative rounded-[8px] w-full">
-                            <input
-                              type="text"
-                              value={business.estimatedValue}
-                              onChange={(e) => updateBusiness(business.id, 'estimatedValue', e.target.value)}
-                              placeholder="0"
-                              className="font-['Figtree',sans-serif] font-normal leading-[21px] text-[#767676] text-[14px] bg-transparent w-full h-full px-[12px] py-[10px] rounded-[8px] border-none outline-none focus:outline-none placeholder:text-[#767676]"
-                            />
-                            <div aria-hidden="true" className="absolute border border-[#d0d0d0] border-solid inset-0 pointer-events-none rounded-[8px]" />
-                          </div>
+                        <div className="flex-1 w-full md:w-auto">
+                          <OutlinedTextField
+                            id={`business-value-${business.id}`}
+                            label="Estimated Value"
+                            labelClassName={ONBOARDING_FIGTREE_LABEL_CLASS}
+                            type="text"
+                            value={business.estimatedValue}
+                            onChange={(e) => updateBusiness(business.id, 'estimatedValue', e.target.value)}
+                            placeholder="0"
+                          />
                         </div>
                       </div>
 
@@ -1031,62 +933,50 @@ export function OnboardingPage() {
               <div className="border border-[#d0d0d0] border-solid absolute inset-0 pointer-events-none rounded-[20px] shadow-[0px_10px_40px_0px_rgba(243,219,188,0.45)]" />
               <div className="flex flex-col items-start p-[24px] relative w-full">
                 <div className="flex flex-col gap-[24px] items-start w-full">
-                  <div className="flex flex-col gap-[6px] items-start w-full">
-                    <p className="font-['Figtree',sans-serif] font-normal leading-[normal] text-[#333] text-[14px] w-full">
-                      Public Investments Total
-                    </p>
-                    <div className="bg-white h-[46px] relative rounded-[8px] w-full">
-                      <input
-                        type="text"
-                        value={otherAssets.publicInvestments}
-                        onChange={(e) => setOtherAssets({ ...otherAssets, publicInvestments: e.target.value })}
-                        placeholder="0"
-                        className="font-['Figtree',sans-serif] font-normal leading-[21px] text-[#767676] text-[14px] bg-transparent w-full h-full px-[12px] py-[10px] rounded-[8px] border-none outline-none focus:outline-none placeholder:text-[#767676]"
-                      />
-                      <div aria-hidden="true" className="absolute border border-[#d0d0d0] border-solid inset-0 pointer-events-none rounded-[8px]" />
-                    </div>
-                    <p className="font-['Figtree',sans-serif] font-normal leading-[normal] text-[#8c8780] text-[12px] w-full">
-                      Stocks, ETFs, mutual funds, retirement accounts
-                    </p>
-                  </div>
+                  <OutlinedTextField
+                    id="onboarding-other-public"
+                    label="Public Investments Total"
+                    labelClassName={ONBOARDING_FIGTREE_LABEL_CLASS}
+                    type="text"
+                    value={otherAssets.publicInvestments}
+                    onChange={(e) => setOtherAssets({ publicInvestments: e.target.value })}
+                    placeholder="0"
+                    footer={
+                      <p className="font-['Figtree',sans-serif] font-normal leading-[normal] text-[#8c8780] text-[12px] w-full">
+                        Stocks, ETFs, mutual funds, retirement accounts
+                      </p>
+                    }
+                  />
 
-                  <div className="flex flex-col gap-[6px] items-start w-full">
-                    <p className="font-['Figtree',sans-serif] font-normal leading-[normal] text-[#333] text-[14px] w-full">
-                      Private Investments
-                    </p>
-                    <div className="bg-white h-[46px] relative rounded-[8px] w-full">
-                      <input
-                        type="text"
-                        value={otherAssets.privateInvestments}
-                        onChange={(e) => setOtherAssets({ ...otherAssets, privateInvestments: e.target.value })}
-                        placeholder="0"
-                        className="font-['Figtree',sans-serif] font-normal leading-[21px] text-[#767676] text-[14px] bg-transparent w-full h-full px-[12px] py-[10px] rounded-[8px] border-none outline-none focus:outline-none placeholder:text-[#767676]"
-                      />
-                      <div aria-hidden="true" className="absolute border border-[#d0d0d0] border-solid inset-0 pointer-events-none rounded-[8px]" />
-                    </div>
-                    <p className="font-['Figtree',sans-serif] font-normal leading-[normal] text-[#8c8780] text-[12px] w-full">
-                      Private equity, venture, angel investments
-                    </p>
-                  </div>
+                  <OutlinedTextField
+                    id="onboarding-other-private"
+                    label="Private Investments"
+                    labelClassName={ONBOARDING_FIGTREE_LABEL_CLASS}
+                    type="text"
+                    value={otherAssets.privateInvestments}
+                    onChange={(e) => setOtherAssets({ privateInvestments: e.target.value })}
+                    placeholder="0"
+                    footer={
+                      <p className="font-['Figtree',sans-serif] font-normal leading-[normal] text-[#8c8780] text-[12px] w-full">
+                        Private equity, venture, angel investments
+                      </p>
+                    }
+                  />
 
-                  <div className="flex flex-col gap-[6px] items-start w-full">
-                    <p className="font-['Figtree',sans-serif] font-normal leading-[normal] text-[#333] text-[14px] w-full">
-                      Other Assets
-                    </p>
-                    <div className="bg-white h-[46px] relative rounded-[8px] w-full">
-                      <input
-                        type="text"
-                        value={otherAssets.otherAssets}
-                        onChange={(e) => setOtherAssets({ ...otherAssets, otherAssets: e.target.value })}
-                        placeholder="0"
-                        className="font-['Figtree',sans-serif] font-normal leading-[21px] text-[#767676] text-[14px] bg-transparent w-full h-full px-[12px] py-[10px] rounded-[8px] border-none outline-none focus:outline-none placeholder:text-[#767676]"
-                      />
-                      <div aria-hidden="true" className="absolute border border-[#d0d0d0] border-solid inset-0 pointer-events-none rounded-[8px]" />
-                    </div>
-                    <p className="font-['Figtree',sans-serif] font-normal leading-[normal] text-[#8c8780] text-[12px] w-full">
-                      Vehicles, art, collectibles, jewelry, etc.
-                    </p>
-                  </div>
+                  <OutlinedTextField
+                    id="onboarding-other-misc"
+                    label="Other Assets"
+                    labelClassName={ONBOARDING_FIGTREE_LABEL_CLASS}
+                    type="text"
+                    value={otherAssets.otherAssets}
+                    onChange={(e) => setOtherAssets({ otherAssets: e.target.value })}
+                    placeholder="0"
+                    footer={
+                      <p className="font-['Figtree',sans-serif] font-normal leading-[normal] text-[#8c8780] text-[12px] w-full">
+                        Vehicles, art, collectibles, jewelry, etc.
+                      </p>
+                    }
+                  />
 
                   <button className="bg-[#fffdf8] h-[50px] relative rounded-[8px] w-full hover:bg-[#faf7f0] transition-colors">
                     <div aria-hidden="true" className="absolute border-[#3e2d1d] border-[1.5px] border-dashed inset-0 pointer-events-none rounded-[8px]" />
@@ -1110,69 +1000,45 @@ export function OnboardingPage() {
               <div className="border border-[#d0d0d0] border-solid absolute inset-0 pointer-events-none rounded-[20px] shadow-[0px_10px_40px_0px_rgba(243,219,188,0.45)]" />
               <div className="flex flex-col items-start p-[24px] relative w-full">
                 <div className="flex flex-col gap-[24px] items-start w-full">
-                  <div className="flex flex-col gap-[6px] items-start w-full">
-                    <p className="font-['Figtree',sans-serif] font-normal leading-[normal] text-[#333] text-[14px] w-full">
-                      Credit Cards Total
-                    </p>
-                    <div className="bg-white h-[46px] relative rounded-[8px] w-full">
-                      <input
-                        type="text"
-                        value={liabilities.creditCards}
-                        onChange={(e) => setLiabilities({ ...liabilities, creditCards: e.target.value })}
-                        placeholder="0"
-                        className="font-['Figtree',sans-serif] font-normal leading-[21px] text-[#767676] text-[14px] bg-transparent w-full h-full px-[12px] py-[10px] rounded-[8px] border-none outline-none focus:outline-none placeholder:text-[#767676]"
-                      />
-                      <div aria-hidden="true" className="absolute border border-[#d0d0d0] border-solid inset-0 pointer-events-none rounded-[8px]" />
-                    </div>
-                  </div>
+                  <OutlinedTextField
+                    id="onboarding-liability-cards"
+                    label="Credit Cards Total"
+                    labelClassName={ONBOARDING_FIGTREE_LABEL_CLASS}
+                    type="text"
+                    value={liabilities.creditCards}
+                    onChange={(e) => setLiabilities({ creditCards: e.target.value })}
+                    placeholder="0"
+                  />
 
-                  <div className="flex flex-col gap-[6px] items-start w-full">
-                    <p className="font-['Figtree',sans-serif] font-normal leading-[normal] text-[#333] text-[14px] w-full">
-                      Personal Loans
-                    </p>
-                    <div className="bg-white h-[46px] relative rounded-[8px] w-full">
-                      <input
-                        type="text"
-                        value={liabilities.personalLoans}
-                        onChange={(e) => setLiabilities({ ...liabilities, personalLoans: e.target.value })}
-                        placeholder="0"
-                        className="font-['Figtree',sans-serif] font-normal leading-[21px] text-[#767676] text-[14px] bg-transparent w-full h-full px-[12px] py-[10px] rounded-[8px] border-none outline-none focus:outline-none placeholder:text-[#767676]"
-                      />
-                      <div aria-hidden="true" className="absolute border border-[#d0d0d0] border-solid inset-0 pointer-events-none rounded-[8px]" />
-                    </div>
-                  </div>
+                  <OutlinedTextField
+                    id="onboarding-liability-loans"
+                    label="Personal Loans"
+                    labelClassName={ONBOARDING_FIGTREE_LABEL_CLASS}
+                    type="text"
+                    value={liabilities.personalLoans}
+                    onChange={(e) => setLiabilities({ personalLoans: e.target.value })}
+                    placeholder="0"
+                  />
 
-                  <div className="flex flex-col gap-[6px] items-start w-full">
-                    <p className="font-['Figtree',sans-serif] font-normal leading-[normal] text-[#333] text-[14px] w-full">
-                      Other Debt
-                    </p>
-                    <div className="bg-white h-[46px] relative rounded-[8px] w-full">
-                      <input
-                        type="text"
-                        value={liabilities.otherDebt}
-                        onChange={(e) => setLiabilities({ ...liabilities, otherDebt: e.target.value })}
-                        placeholder="0"
-                        className="font-['Figtree',sans-serif] font-normal leading-[21px] text-[#767676] text-[14px] bg-transparent w-full h-full px-[12px] py-[10px] rounded-[8px] border-none outline-none focus:outline-none placeholder:text-[#767676]"
-                      />
-                      <div aria-hidden="true" className="absolute border border-[#d0d0d0] border-solid inset-0 pointer-events-none rounded-[8px]" />
-                    </div>
-                  </div>
+                  <OutlinedTextField
+                    id="onboarding-liability-other"
+                    label="Other Debt"
+                    labelClassName={ONBOARDING_FIGTREE_LABEL_CLASS}
+                    type="text"
+                    value={liabilities.otherDebt}
+                    onChange={(e) => setLiabilities({ otherDebt: e.target.value })}
+                    placeholder="0"
+                  />
 
-                  <div className="flex flex-col gap-[6px] items-start w-full">
-                    <p className="font-['Figtree',sans-serif] font-normal leading-[normal] text-[#333] text-[14px] w-full">
-                      Link Other Debt to Asset
-                    </p>
-                    <div className="bg-white h-[46px] relative rounded-[8px] w-full">
-                      <input
-                        type="text"
-                        value={liabilities.linkedDebt}
-                        onChange={(e) => setLiabilities({ ...liabilities, linkedDebt: e.target.value })}
-                        placeholder="None"
-                        className="font-['Figtree',sans-serif] font-normal leading-[21px] text-[#767676] text-[14px] bg-transparent w-full h-full px-[12px] py-[10px] rounded-[8px] border-none outline-none focus:outline-none placeholder:text-[#767676]"
-                      />
-                      <div aria-hidden="true" className="absolute border border-[#d0d0d0] border-solid inset-0 pointer-events-none rounded-[8px]" />
-                    </div>
-                  </div>
+                  <OutlinedTextField
+                    id="onboarding-liability-linked"
+                    label="Link Other Debt to Asset"
+                    labelClassName={ONBOARDING_FIGTREE_LABEL_CLASS}
+                    type="text"
+                    value={liabilities.linkedDebt}
+                    onChange={(e) => setLiabilities({ linkedDebt: e.target.value })}
+                    placeholder="None"
+                  />
 
                   <button className="bg-[#fffdf8] h-[50px] relative rounded-[8px] w-full hover:bg-[#faf7f0] transition-colors">
                     <div aria-hidden="true" className="absolute border-[#3e2d1d] border-[1.5px] border-dashed inset-0 pointer-events-none rounded-[8px]" />
@@ -1196,62 +1062,50 @@ export function OnboardingPage() {
               <div className="border border-[#d0d0d0] border-solid absolute inset-0 pointer-events-none rounded-[20px] shadow-[0px_10px_40px_0px_rgba(243,219,188,0.45)]" />
               <div className="flex flex-col items-start p-[24px] relative w-full">
                 <div className="flex flex-col gap-[24px] items-start w-full">
-                  <div className="flex flex-col gap-[6px] items-start w-full">
-                    <p className="font-['Figtree',sans-serif] font-normal leading-[normal] text-[#333] text-[14px] w-full">
-                      Primary Income
-                    </p>
-                    <div className="bg-white h-[46px] relative rounded-[8px] w-full">
-                      <input
-                        type="text"
-                        value={income.primaryIncome}
-                        onChange={(e) => setIncome({ ...income, primaryIncome: e.target.value })}
-                        placeholder="0"
-                        className="font-['Figtree',sans-serif] font-normal leading-[21px] text-[#767676] text-[14px] bg-transparent w-full h-full px-[12px] py-[10px] rounded-[8px] border-none outline-none focus:outline-none placeholder:text-[#767676]"
-                      />
-                      <div aria-hidden="true" className="absolute border border-[#d0d0d0] border-solid inset-0 pointer-events-none rounded-[8px]" />
-                    </div>
-                    <p className="font-['Figtree',sans-serif] font-normal leading-[normal] text-[#8c8780] text-[12px] w-full">
-                      W-2 salary or primary business income
-                    </p>
-                  </div>
+                  <OutlinedTextField
+                    id="onboarding-income-primary"
+                    label="Primary Income"
+                    labelClassName={ONBOARDING_FIGTREE_LABEL_CLASS}
+                    type="text"
+                    value={income.primaryIncome}
+                    onChange={(e) => setIncome({ primaryIncome: e.target.value })}
+                    placeholder="0"
+                    footer={
+                      <p className="font-['Figtree',sans-serif] font-normal leading-[normal] text-[#8c8780] text-[12px] w-full">
+                        W-2 salary or primary business income
+                      </p>
+                    }
+                  />
 
-                  <div className="flex flex-col gap-[6px] items-start w-full">
-                    <p className="font-['Figtree',sans-serif] font-normal leading-[normal] text-[#333] text-[14px] w-full">
-                      Rental Income
-                    </p>
-                    <div className="bg-white h-[46px] relative rounded-[8px] w-full">
-                      <input
-                        type="text"
-                        value={income.rentalIncome}
-                        onChange={(e) => setIncome({ ...income, rentalIncome: e.target.value })}
-                        placeholder="0"
-                        className="font-['Figtree',sans-serif] font-normal leading-[21px] text-[#767676] text-[14px] bg-transparent w-full h-full px-[12px] py-[10px] rounded-[8px] border-none outline-none focus:outline-none placeholder:text-[#767676]"
-                      />
-                      <div aria-hidden="true" className="absolute border border-[#d0d0d0] border-solid inset-0 pointer-events-none rounded-[8px]" />
-                    </div>
-                    <p className="font-['Figtree',sans-serif] font-normal leading-[normal] text-[#8c8780] text-[12px] w-full">
-                      Gross annual rental receipts
-                    </p>
-                  </div>
+                  <OutlinedTextField
+                    id="onboarding-income-rental"
+                    label="Rental Income"
+                    labelClassName={ONBOARDING_FIGTREE_LABEL_CLASS}
+                    type="text"
+                    value={income.rentalIncome}
+                    onChange={(e) => setIncome({ rentalIncome: e.target.value })}
+                    placeholder="0"
+                    footer={
+                      <p className="font-['Figtree',sans-serif] font-normal leading-[normal] text-[#8c8780] text-[12px] w-full">
+                        Gross annual rental receipts
+                      </p>
+                    }
+                  />
 
-                  <div className="flex flex-col gap-[6px] items-start w-full">
-                    <p className="font-['Figtree',sans-serif] font-normal leading-[normal] text-[#333] text-[14px] w-full">
-                      Other Income
-                    </p>
-                    <div className="bg-white h-[46px] relative rounded-[8px] w-full">
-                      <input
-                        type="text"
-                        value={income.otherIncome}
-                        onChange={(e) => setIncome({ ...income, otherIncome: e.target.value })}
-                        placeholder="0"
-                        className="font-['Figtree',sans-serif] font-normal leading-[21px] text-[#767676] text-[14px] bg-transparent w-full h-full px-[12px] py-[10px] rounded-[8px] border-none outline-none focus:outline-none placeholder:text-[#767676]"
-                      />
-                      <div aria-hidden="true" className="absolute border border-[#d0d0d0] border-solid inset-0 pointer-events-none rounded-[8px]" />
-                    </div>
-                    <p className="font-['Figtree',sans-serif] font-normal leading-[normal] text-[#8c8780] text-[12px] w-full">
-                      Dividends, capital gains, royalties, etc.
-                    </p>
-                  </div>
+                  <OutlinedTextField
+                    id="onboarding-income-other"
+                    label="Other Income"
+                    labelClassName={ONBOARDING_FIGTREE_LABEL_CLASS}
+                    type="text"
+                    value={income.otherIncome}
+                    onChange={(e) => setIncome({ otherIncome: e.target.value })}
+                    placeholder="0"
+                    footer={
+                      <p className="font-['Figtree',sans-serif] font-normal leading-[normal] text-[#8c8780] text-[12px] w-full">
+                        Dividends, capital gains, royalties, etc.
+                      </p>
+                    }
+                  />
 
                   <button className="bg-[#fffdf8] h-[50px] relative rounded-[8px] w-full hover:bg-[#faf7f0] transition-colors">
                     <div aria-hidden="true" className="absolute border-[#3e2d1d] border-[1.5px] border-dashed inset-0 pointer-events-none rounded-[8px]" />
@@ -1282,7 +1136,7 @@ export function OnboardingPage() {
                     </p>
                     <div className="flex gap-[12px] shrink-0">
                       <button
-                        onClick={() => setDisclosures({ ...disclosures, guarantor: true })}
+                        onClick={() => setDisclosures({guarantor: true })}
                         className={`h-[40px] px-[24px] rounded-[8px] transition-colors ${
                           disclosures.guarantor === true
                             ? 'bg-[#6f4c30]'
@@ -1297,7 +1151,7 @@ export function OnboardingPage() {
                         </p>
                       </button>
                       <button
-                        onClick={() => setDisclosures({ ...disclosures, guarantor: false })}
+                        onClick={() => setDisclosures({guarantor: false })}
                         className={`h-[40px] px-[24px] rounded-[8px] transition-colors relative ${
                           disclosures.guarantor === false
                             ? 'bg-white'
@@ -1315,9 +1169,9 @@ export function OnboardingPage() {
                     <div className="bg-white relative rounded-[8px] w-full">
                       <textarea
                         value={disclosures.guarantorDetails}
-                        onChange={(e) => setDisclosures({ ...disclosures, guarantorDetails: e.target.value })}
+                        onChange={(e) => setDisclosures({guarantorDetails: e.target.value })}
                         placeholder="Provide Details"
-                        className="font-['Figtree',sans-serif] font-normal leading-[21px] text-[#767676] text-[14px] bg-transparent w-full px-[12px] py-[10px] rounded-[8px] border-none outline-none focus:outline-none placeholder:text-[#767676] min-h-[80px] resize-none"
+                        className="font-['Figtree',sans-serif] font-normal leading-[21px] text-[#1a1a1a] text-[14px] bg-transparent w-full px-[12px] py-[10px] rounded-[8px] border-none outline-none focus:outline-none placeholder:text-[#767676] min-h-[80px] resize-none"
                       />
                       <div aria-hidden="true" className="absolute border border-[#d0d0d0] border-solid inset-0 pointer-events-none rounded-[8px]" />
                     </div>
@@ -1331,7 +1185,7 @@ export function OnboardingPage() {
                   </p>
                   <div className="flex gap-[12px] shrink-0">
                     <button
-                      onClick={() => setDisclosures({ ...disclosures, legalActions: true })}
+                      onClick={() => setDisclosures({legalActions: true })}
                       className={`h-[40px] px-[24px] rounded-[8px] transition-colors relative ${
                         disclosures.legalActions === true
                           ? 'bg-white'
@@ -1344,7 +1198,7 @@ export function OnboardingPage() {
                       </p>
                     </button>
                     <button
-                      onClick={() => setDisclosures({ ...disclosures, legalActions: false })}
+                      onClick={() => setDisclosures({legalActions: false })}
                       className={`h-[40px] px-[24px] rounded-[8px] transition-colors relative ${
                         disclosures.legalActions === false
                           ? 'bg-white'
@@ -1366,7 +1220,7 @@ export function OnboardingPage() {
                   </p>
                   <div className="flex gap-[12px] shrink-0">
                     <button
-                      onClick={() => setDisclosures({ ...disclosures, bankruptcy: true })}
+                      onClick={() => setDisclosures({bankruptcy: true })}
                       className={`h-[40px] px-[24px] rounded-[8px] transition-colors relative ${
                         disclosures.bankruptcy === true
                           ? 'bg-white'
@@ -1379,7 +1233,7 @@ export function OnboardingPage() {
                       </p>
                     </button>
                     <button
-                      onClick={() => setDisclosures({ ...disclosures, bankruptcy: false })}
+                      onClick={() => setDisclosures({bankruptcy: false })}
                       className={`h-[40px] px-[24px] rounded-[8px] transition-colors ${
                         disclosures.bankruptcy === false
                           ? 'bg-[#6f4c30]'
@@ -1403,7 +1257,7 @@ export function OnboardingPage() {
                   </p>
                   <div className="flex gap-[12px] shrink-0">
                     <button
-                      onClick={() => setDisclosures({ ...disclosures, alimony: true })}
+                      onClick={() => setDisclosures({alimony: true })}
                       className={`h-[40px] px-[24px] rounded-[8px] transition-colors relative ${
                         disclosures.alimony === true
                           ? 'bg-white'
@@ -1416,7 +1270,7 @@ export function OnboardingPage() {
                       </p>
                     </button>
                     <button
-                      onClick={() => setDisclosures({ ...disclosures, alimony: false })}
+                      onClick={() => setDisclosures({alimony: false })}
                       className={`h-[40px] px-[24px] rounded-[8px] transition-colors relative ${
                         disclosures.alimony === false
                           ? 'bg-white'
@@ -1438,7 +1292,7 @@ export function OnboardingPage() {
                   </p>
                   <div className="flex gap-[12px] shrink-0">
                     <button
-                      onClick={() => setDisclosures({ ...disclosures, pledgedAssets: true })}
+                      onClick={() => setDisclosures({pledgedAssets: true })}
                       className={`h-[40px] px-[24px] rounded-[8px] transition-colors relative ${
                         disclosures.pledgedAssets === true
                           ? 'bg-white'
@@ -1451,7 +1305,7 @@ export function OnboardingPage() {
                       </p>
                     </button>
                     <button
-                      onClick={() => setDisclosures({ ...disclosures, pledgedAssets: false })}
+                      onClick={() => setDisclosures({pledgedAssets: false })}
                       className={`h-[40px] px-[24px] rounded-[8px] transition-colors ${
                         disclosures.pledgedAssets === false
                           ? 'bg-[#6f4c30]'
@@ -1475,7 +1329,7 @@ export function OnboardingPage() {
                   </p>
                   <div className="flex gap-[12px] shrink-0">
                     <button
-                      onClick={() => setDisclosures({ ...disclosures, foreclosure: true })}
+                      onClick={() => setDisclosures({foreclosure: true })}
                       className={`h-[40px] px-[24px] rounded-[8px] transition-colors relative ${
                         disclosures.foreclosure === true
                           ? 'bg-white'
@@ -1488,7 +1342,7 @@ export function OnboardingPage() {
                       </p>
                     </button>
                     <button
-                      onClick={() => setDisclosures({ ...disclosures, foreclosure: false })}
+                      onClick={() => setDisclosures({foreclosure: false })}
                       className={`h-[40px] px-[24px] rounded-[8px] transition-colors ${
                         disclosures.foreclosure === false
                           ? 'bg-[#6f4c30]'
@@ -1512,7 +1366,7 @@ export function OnboardingPage() {
                   </p>
                   <div className="flex gap-[12px] shrink-0">
                     <button
-                      onClick={() => setDisclosures({ ...disclosures, lawsuits: true })}
+                      onClick={() => setDisclosures({lawsuits: true })}
                       className={`h-[40px] px-[24px] rounded-[8px] transition-colors relative ${
                         disclosures.lawsuits === true
                           ? 'bg-white'
@@ -1525,7 +1379,7 @@ export function OnboardingPage() {
                       </p>
                     </button>
                     <button
-                      onClick={() => setDisclosures({ ...disclosures, lawsuits: false })}
+                      onClick={() => setDisclosures({lawsuits: false })}
                       className={`h-[40px] px-[24px] rounded-[8px] transition-colors ${
                         disclosures.lawsuits === false
                           ? 'bg-[#6f4c30]'
@@ -1560,8 +1414,8 @@ export function OnboardingPage() {
                     <p className="font-['SF_Pro',sans-serif] font-[510] leading-[normal] text-[16px] mb-[16px]" style={{ fontVariationSettings: "'wdth' 100" }}>
                       Estimated Net Worth
                     </p>
-                    <p className="font-['SF_Pro',sans-serif] font-bold leading-[50px] text-[64px]" style={{ fontVariationSettings: "'wdth' 100" }}>
-                      $10M
+                    <p className="font-['SF_Pro',sans-serif] font-bold leading-[50px] text-[64px] max-w-full truncate px-[8px]" style={{ fontVariationSettings: "'wdth' 100" }}>
+                      {formatUsdCompact(summary.netWorth)}
                     </p>
                   </div>
                 </div>
@@ -1576,7 +1430,7 @@ export function OnboardingPage() {
                       Total Assets
                     </p>
                     <p className="font-['SF_Pro',sans-serif] font-bold text-[#764d2f] text-[36px]" style={{ fontVariationSettings: "'wdth' 100" }}>
-                      $10.8M
+                      {formatUsdCompact(summary.totalAssets)}
                     </p>
                   </div>
                 </div>
@@ -1588,7 +1442,7 @@ export function OnboardingPage() {
                       Total Liabilities
                     </p>
                     <p className="font-['SF_Pro',sans-serif] font-bold text-[#764d2f] text-[36px]" style={{ fontVariationSettings: "'wdth' 100" }}>
-                      $800k
+                      {formatUsdCompact(summary.totalLiabilities)}
                     </p>
                   </div>
                 </div>
@@ -1600,7 +1454,7 @@ export function OnboardingPage() {
                       Annual Income
                     </p>
                     <p className="font-['SF_Pro',sans-serif] font-bold text-[#764d2f] text-[36px]" style={{ fontVariationSettings: "'wdth' 100" }}>
-                      $1M
+                      {formatUsdCompact(summary.annualIncome)}
                     </p>
                   </div>
                 </div>
@@ -1619,7 +1473,7 @@ export function OnboardingPage() {
                       Liquid Assets
                     </p>
                     <p className="font-['SF_Pro',sans-serif] font-[590] text-[#764d2f] text-[18px] md:text-[22px]" style={{ fontVariationSettings: "'wdth' 100" }}>
-                      $1.2M
+                      {formatUsdCompact(summary.liquidAssets)}
                     </p>
                   </div>
 
@@ -1628,7 +1482,7 @@ export function OnboardingPage() {
                       Real Estate
                     </p>
                     <p className="font-['SF_Pro',sans-serif] font-[590] text-[#764d2f] text-[18px] md:text-[22px]" style={{ fontVariationSettings: "'wdth' 100" }}>
-                      $4.6M
+                      {formatUsdCompact(summary.realEstateValue)}
                     </p>
                   </div>
 
@@ -1637,7 +1491,7 @@ export function OnboardingPage() {
                       Businesses & Entities
                     </p>
                     <p className="font-['SF_Pro',sans-serif] font-[590] text-[#764d2f] text-[18px] md:text-[22px]" style={{ fontVariationSettings: "'wdth' 100" }}>
-                      $2.8M
+                      {formatUsdCompact(summary.businessValue)}
                     </p>
                   </div>
 
@@ -1646,31 +1500,57 @@ export function OnboardingPage() {
                       Other Assets
                     </p>
                     <p className="font-['SF_Pro',sans-serif] font-[590] text-[#764d2f] text-[18px] md:text-[22px]" style={{ fontVariationSettings: "'wdth' 100" }}>
-                      $2.2M
+                      {formatUsdCompact(summary.otherAssetsTotal)}
                     </p>
                   </div>
                 </div>
               </div>
 
               {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-[16px] sm:gap-[24px] w-full">
-                <button className="h-[50px] px-[48px] rounded-[8px] border-[#3e2d1d] border-[1.5px] bg-white relative hover:bg-[rgba(62,45,29,0.06)]">
-                  <div className="absolute border border-[#3e2d1d] border-solid inset-0 pointer-events-none rounded-[8px]" />
-                  <p className="font-['SF_Pro',sans-serif] font-[590] text-[#3e2d1d] text-[16px] whitespace-nowrap" style={{ fontVariationSettings: "'wdth' 100" }}>
-                    Edit Profile
+              <div className="flex flex-col gap-[12px] w-full">
+                {activateError ? (
+                  <p role="alert" className="font-['Figtree',sans-serif] text-[14px] text-[#b42318] w-full bg-[#fef3f2] border border-[#fecdca] rounded-[10px] px-[14px] py-[10px]">
+                    {activateError}
                   </p>
-                </button>
-                <button
-                  onClick={handleActivate}
-                  className="bg-[#764d2f] h-[50px] px-[48px] rounded-[8px] hover:bg-[#8c5d3a] transition-colors flex items-center justify-center gap-[10px]"
-                >
-                  <svg className="size-[16px] shrink-0" fill="none" viewBox="0 0 15.5 10.6426">
-                    <path d={summarySvgPaths.p3981cc70} fill="white" />
-                  </svg>
-                  <p className="font-['SF_Pro',sans-serif] font-[590] text-white text-[16px] whitespace-nowrap" style={{ fontVariationSettings: "'wdth' 100" }}>
-                    Activate Profile
-                  </p>
-                </button>
+                ) : null}
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-[16px] sm:gap-[24px] w-full">
+                  <button
+                    type="button"
+                    disabled={onboardMutation.isPending}
+                    onClick={() => {
+                      setActivateError('');
+                      setDirection(-1);
+                      setCurrentStep(1);
+                    }}
+                    className="h-[50px] px-[48px] rounded-[8px] border-[#3e2d1d] border-[1.5px] bg-white relative hover:bg-[rgba(62,45,29,0.06)] disabled:opacity-50"
+                  >
+                    <div className="absolute border border-[#3e2d1d] border-solid inset-0 pointer-events-none rounded-[8px]" />
+                    <p className="font-['SF_Pro',sans-serif] font-[590] text-[#3e2d1d] text-[16px] whitespace-nowrap" style={{ fontVariationSettings: "'wdth' 100" }}>
+                      Edit Profile
+                    </p>
+                  </button>
+                  <button
+                    type="button"
+                    disabled={onboardMutation.isPending}
+                    onClick={handleActivate}
+                    className="bg-[#764d2f] h-[50px] px-[48px] rounded-[8px] hover:bg-[#8c5d3a] transition-colors flex items-center justify-center gap-[10px] disabled:opacity-60 disabled:pointer-events-none"
+                  >
+                    {onboardMutation.isPending ? (
+                      <p className="font-['SF_Pro',sans-serif] font-[590] text-white text-[16px] whitespace-nowrap" style={{ fontVariationSettings: "'wdth' 100" }}>
+                        Activating…
+                      </p>
+                    ) : (
+                      <>
+                        <svg className="size-[16px] shrink-0" fill="none" viewBox="0 0 15.5 10.6426">
+                          <path d={summarySvgPaths.p3981cc70} fill="white" />
+                        </svg>
+                        <p className="font-['SF_Pro',sans-serif] font-[590] text-white text-[16px] whitespace-nowrap" style={{ fontVariationSettings: "'wdth' 100" }}>
+                          Activate Profile
+                        </p>
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
           )}

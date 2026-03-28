@@ -9,22 +9,13 @@ import { useSignupMutation } from '@/services/auth.service';
 import { getApiErrorMessage } from '@/shared/utils/axios';
 import { getPostAuthRedirectPath } from '@/features/auth/utils/post-auth-redirect';
 import type { ApiMessageData, AuthCredentialsPayload } from '@/features/auth/types/auth.types';
-
-const inputClassName =
-  "font-['Figtree',sans-serif] font-normal leading-[21px] text-[#333] text-[14px] bg-transparent w-full h-full px-[12px] py-[10px] rounded-[8px] border-none outline-none focus:outline-none placeholder:text-[#767676]";
-
-const labelClassName =
-  "font-['SF_Pro',sans-serif] font-[510] leading-[normal] text-[#333] text-[14px] w-full";
+import { OutlinedTextField } from '@/shared/components/form';
 
 export function SignupPage() {
   const navigate = useNavigate();
   const signupMutation = useSignupMutation();
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<SignupFormValues>({
+  const { control, handleSubmit } = useForm<SignupFormValues>({
     resolver: zodResolver(signupSchema),
     defaultValues: {
       firstName: '',
@@ -102,134 +93,59 @@ export function SignupPage() {
 
               <div className="flex flex-col gap-[24px] w-full">
                 <div className="flex flex-col sm:flex-row gap-[24px] w-full">
-                  <div className="flex flex-col gap-[6px] flex-1 w-full sm:w-auto">
-                    <label htmlFor="signup-first" className={labelClassName} style={{ fontVariationSettings: "'wdth' 100" }}>
-                      First Name
-                    </label>
-                    <div className="bg-white h-[46px] relative rounded-[8px] w-full">
-                      <input
-                        id="signup-first"
-                        type="text"
-                        autoComplete="given-name"
-                        aria-invalid={Boolean(errors.firstName)}
-                        placeholder="John"
-                        className={inputClassName}
-                        {...register('firstName')}
-                      />
-                      <div
-                        aria-hidden="true"
-                        className={`absolute border border-solid inset-0 pointer-events-none rounded-[8px] ${
-                          errors.firstName ? 'border-red-300' : 'border-[#d0d0d0]'
-                        }`}
-                      />
-                    </div>
-                    {errors.firstName && (
-                      <p className="text-red-600 text-[13px]">{errors.firstName.message}</p>
-                    )}
+                  <div className="flex-1 w-full sm:w-auto">
+                    <OutlinedTextField
+                      control={control}
+                      name="firstName"
+                      id="signup-first"
+                      label="First Name"
+                      type="text"
+                      autoComplete="given-name"
+                      placeholder="John"
+                    />
                   </div>
-
-                  <div className="flex flex-col gap-[6px] flex-1 w-full sm:w-auto">
-                    <label htmlFor="signup-last" className={labelClassName} style={{ fontVariationSettings: "'wdth' 100" }}>
-                      Last Name
-                    </label>
-                    <div className="bg-white h-[46px] relative rounded-[8px] w-full">
-                      <input
-                        id="signup-last"
-                        type="text"
-                        autoComplete="family-name"
-                        aria-invalid={Boolean(errors.lastName)}
-                        placeholder="Doe"
-                        className={inputClassName}
-                        {...register('lastName')}
-                      />
-                      <div
-                        aria-hidden="true"
-                        className={`absolute border border-solid inset-0 pointer-events-none rounded-[8px] ${
-                          errors.lastName ? 'border-red-300' : 'border-[#d0d0d0]'
-                        }`}
-                      />
-                    </div>
-                    {errors.lastName && (
-                      <p className="text-red-600 text-[13px]">{errors.lastName.message}</p>
-                    )}
+                  <div className="flex-1 w-full sm:w-auto">
+                    <OutlinedTextField
+                      control={control}
+                      name="lastName"
+                      id="signup-last"
+                      label="Last Name"
+                      type="text"
+                      autoComplete="family-name"
+                      placeholder="Doe"
+                    />
                   </div>
                 </div>
 
-                <div className="flex flex-col gap-[6px] w-full">
-                  <label htmlFor="signup-email" className={labelClassName} style={{ fontVariationSettings: "'wdth' 100" }}>
-                    Email Address
-                  </label>
-                  <div className="bg-white h-[46px] relative rounded-[8px] w-full">
-                    <input
-                      id="signup-email"
-                      type="email"
-                      autoComplete="email"
-                      aria-invalid={Boolean(errors.email)}
-                      placeholder="john@mail.com"
-                      className={inputClassName}
-                      {...register('email')}
-                    />
-                    <div
-                      aria-hidden="true"
-                      className={`absolute border border-solid inset-0 pointer-events-none rounded-[8px] ${
-                        errors.email ? 'border-red-300' : 'border-[#d0d0d0]'
-                      }`}
-                    />
-                  </div>
-                  {errors.email && <p className="text-red-600 text-[13px]">{errors.email.message}</p>}
-                </div>
+                <OutlinedTextField
+                  control={control}
+                  name="email"
+                  id="signup-email"
+                  label="Email Address"
+                  type="email"
+                  autoComplete="email"
+                  placeholder="john@mail.com"
+                />
 
-                <div className="flex flex-col gap-[6px] w-full">
-                  <label htmlFor="signup-password" className={labelClassName} style={{ fontVariationSettings: "'wdth' 100" }}>
-                    Password
-                  </label>
-                  <div className="bg-white h-[46px] relative rounded-[8px] w-full">
-                    <input
-                      id="signup-password"
-                      type="password"
-                      autoComplete="new-password"
-                      aria-invalid={Boolean(errors.password)}
-                      placeholder="*********"
-                      className={inputClassName}
-                      {...register('password')}
-                    />
-                    <div
-                      aria-hidden="true"
-                      className={`absolute border border-solid inset-0 pointer-events-none rounded-[8px] ${
-                        errors.password ? 'border-red-300' : 'border-[#d0d0d0]'
-                      }`}
-                    />
-                  </div>
-                  {errors.password && (
-                    <p className="text-red-600 text-[13px]">{errors.password.message}</p>
-                  )}
-                </div>
+                <OutlinedTextField
+                  control={control}
+                  name="password"
+                  id="signup-password"
+                  label="Password"
+                  type="password"
+                  autoComplete="new-password"
+                  placeholder="*********"
+                />
 
-                <div className="flex flex-col gap-[6px] w-full">
-                  <label htmlFor="signup-confirm" className={labelClassName} style={{ fontVariationSettings: "'wdth' 100" }}>
-                    Confirm Password
-                  </label>
-                  <div className="bg-white h-[46px] relative rounded-[8px] w-full">
-                    <input
-                      id="signup-confirm"
-                      type="password"
-                      autoComplete="new-password"
-                      aria-invalid={Boolean(errors.confirmPassword)}
-                      placeholder="*********"
-                      className={inputClassName}
-                      {...register('confirmPassword')}
-                    />
-                    <div
-                      aria-hidden="true"
-                      className={`absolute border border-solid inset-0 pointer-events-none rounded-[8px] ${
-                        errors.confirmPassword ? 'border-red-300' : 'border-[#d0d0d0]'
-                      }`}
-                    />
-                  </div>
-                  {errors.confirmPassword && (
-                    <p className="text-red-600 text-[13px]">{errors.confirmPassword.message}</p>
-                  )}
-                </div>
+                <OutlinedTextField
+                  control={control}
+                  name="confirmPassword"
+                  id="signup-confirm"
+                  label="Confirm Password"
+                  type="password"
+                  autoComplete="new-password"
+                  placeholder="*********"
+                />
               </div>
 
               <button

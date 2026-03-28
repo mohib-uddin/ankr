@@ -9,12 +9,7 @@ import { useLoginMutation } from '@/services/auth.service';
 import { getApiErrorMessage } from '@/shared/utils/axios';
 import { getPostAuthRedirectPath } from '@/features/auth/utils/post-auth-redirect';
 import type { ApiMessageData, AuthCredentialsPayload } from '@/features/auth/types/auth.types';
-
-const inputClassName =
-  "font-['Figtree',sans-serif] font-normal leading-[21px] text-[#333] text-[14px] bg-transparent w-full h-full px-[12px] py-[10px] rounded-[8px] border-none outline-none focus:outline-none placeholder:text-[#767676]";
-
-const labelClassName =
-  "font-['SF_Pro',sans-serif] font-[510] leading-[normal] text-[#333] text-[14px] w-full";
+import { OutlinedTextField } from '@/shared/components/form';
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -24,11 +19,7 @@ export function LoginPage() {
 
   const sessionExpired = searchParams.get('session') === 'expired';
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<LoginFormValues>({
+  const { control, handleSubmit } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: { email: '', password: '' },
   });
@@ -104,63 +95,24 @@ export function LoginPage() {
               )}
 
               <div className="flex flex-col gap-[24px] w-full">
-                <div className="flex flex-col gap-[6px] w-full">
-                  <label htmlFor="login-email" className={labelClassName} style={{ fontVariationSettings: "'wdth' 100" }}>
-                    Email Address
-                  </label>
-                  <div className="bg-white h-[46px] relative rounded-[8px] w-full">
-                    <input
-                      id="login-email"
-                      type="email"
-                      autoComplete="email"
-                      aria-invalid={Boolean(errors.email)}
-                      aria-describedby={errors.email ? 'login-email-error' : undefined}
-                      placeholder="john@mail.com"
-                      className={inputClassName}
-                      {...register('email')}
-                    />
-                    <div
-                      aria-hidden="true"
-                      className={`absolute border border-solid inset-0 pointer-events-none rounded-[8px] ${
-                        errors.email ? 'border-red-300' : 'border-[#d0d0d0]'
-                      }`}
-                    />
-                  </div>
-                  {errors.email && (
-                    <p id="login-email-error" className="text-red-600 text-[13px]">
-                      {errors.email.message}
-                    </p>
-                  )}
-                </div>
-
-                <div className="flex flex-col gap-[6px] w-full">
-                  <label htmlFor="login-password" className={labelClassName} style={{ fontVariationSettings: "'wdth' 100" }}>
-                    Password
-                  </label>
-                  <div className="bg-white h-[46px] relative rounded-[8px] w-full">
-                    <input
-                      id="login-password"
-                      type="password"
-                      autoComplete="current-password"
-                      aria-invalid={Boolean(errors.password)}
-                      aria-describedby={errors.password ? 'login-password-error' : undefined}
-                      placeholder="Password"
-                      className={inputClassName}
-                      {...register('password')}
-                    />
-                    <div
-                      aria-hidden="true"
-                      className={`absolute border border-solid inset-0 pointer-events-none rounded-[8px] ${
-                        errors.password ? 'border-red-300' : 'border-[#d0d0d0]'
-                      }`}
-                    />
-                  </div>
-                  {errors.password && (
-                    <p id="login-password-error" className="text-red-600 text-[13px]">
-                      {errors.password.message}
-                    </p>
-                  )}
-                </div>
+                <OutlinedTextField
+                  control={control}
+                  name="email"
+                  id="login-email"
+                  label="Email Address"
+                  type="email"
+                  autoComplete="email"
+                  placeholder="john@mail.com"
+                />
+                <OutlinedTextField
+                  control={control}
+                  name="password"
+                  id="login-password"
+                  label="Password"
+                  type="password"
+                  autoComplete="current-password"
+                  placeholder="Password"
+                />
               </div>
 
               <button

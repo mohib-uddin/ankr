@@ -213,16 +213,16 @@
 					}
 				},
 				{
-					"name": "Complete Onboarding Sync (Full Data)",
+					"name": "Investor onboard (single request — matches app)",
 					"request": {
 						"method": "POST",
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"userId\": \"{{USER_ID}}\",\n  \"investorProfile\": {\n    \"fullLegalName\": \"Jane Doe\",\n    \"isGuarantor\": false\n  },\n  \"accounts\": [{ \"institution\": \"Chase\", \"currentBalance\": 5000 }],\n  \"asset\": { \"publicInvestmentsTotal\": 100000 }\n}",
+							"raw": "{\n  \"userId\": \"{{USER_ID}}\",\n  \"fullLegalName\": \"Jane Investor\",\n  \"primaryAddress\": \"123 Oak Ave, Austin, TX\",\n  \"phone\": \"+15550109999\",\n  \"ssn\": \"***-**-1234\",\n  \"isGuarantor\": false,\n  \"hasLegalActions\": false,\n  \"hasFiledBankruptcy\": false,\n  \"isObligatedForSupport\": false,\n  \"hasPledgedAssets\": false,\n  \"hasForeclosures\": false,\n  \"isPartyToLawsuit\": false,\n  \"accounts\": [\n    {\n      \"institution\": \"Chase\",\n      \"accountType\": \"Saving Account\",\n      \"currentBalance\": 50000\n    }\n  ],\n  \"properties\": [\n    {\n      \"address\": \"456 Maple Rd, Austin, TX\",\n      \"propertyType\": \"Single Family\",\n      \"estimatedValue\": 450000,\n      \"loanBalance\": 320000,\n      \"monthlyRent\": 2500\n    }\n  ],\n  \"businessEntities\": [\n    {\n      \"entityName\": \"Example Holdings LLC\",\n      \"ownershipPercentage\": 100,\n      \"estimatedValue\": 250000\n    }\n  ],\n  \"asset\": {\n    \"publicInvestmentsTotal\": 100000,\n    \"privateInvestments\": 50000,\n    \"otherAssets\": 25000\n  },\n  \"liability\": {\n    \"creditCardsTotal\": 5000,\n    \"personalLoans\": 0,\n    \"otherDebt\": 0\n  },\n  \"income\": {\n    \"primaryIncome\": 180000,\n    \"rentalIncome\": 30000,\n    \"otherIncome\": 5000\n  }\n}",
 							"options": { "raw": { "language": "json" } }
 						},
-						"url": { "raw": "{{BASE_URL}}/profile/complete" }
+						"url": { "raw": "{{BASE_URL}}/profile/investor/onboard" }
 					}
 				}
 			]
