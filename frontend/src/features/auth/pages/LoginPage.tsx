@@ -7,6 +7,8 @@ import { AuthSideCarousel } from '../components/AuthSideCarousel';
 import { loginSchema, type LoginFormValues } from '../schemas/auth.schemas';
 import { useLoginMutation } from '@/services/auth.service';
 import { getApiErrorMessage } from '@/shared/utils/axios';
+import { getPostAuthRedirectPath } from '@/features/auth/utils/post-auth-redirect';
+import type { ApiMessageData, AuthCredentialsPayload } from '@/features/auth/types/auth.types';
 
 const inputClassName =
   "font-['Figtree',sans-serif] font-normal leading-[21px] text-[#333] text-[14px] bg-transparent w-full h-full px-[12px] py-[10px] rounded-[8px] border-none outline-none focus:outline-none placeholder:text-[#767676]";
@@ -36,11 +38,9 @@ export function LoginPage() {
   const onSubmit = handleSubmit((values) => {
     loginMutation.reset();
     loginMutation.mutate(values, {
-      onSuccess: () => {
+      onSuccess: (res: ApiMessageData<AuthCredentialsPayload>) => {
         const from = (location.state as { from?: string } | null)?.from;
-        const target =
-          from && from !== '/login' && from !== '/signup' ? from : '/dashboard';
-        navigate(target, { replace: true });
+        navigate(getPostAuthRedirectPath(res.data.user, from ?? null), { replace: true });
       },
     });
   });

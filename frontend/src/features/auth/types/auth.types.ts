@@ -13,7 +13,8 @@ export interface AuthUser {
     key?: string;
     name?: string;
   } | null;
-  profile?: unknown;
+  /** `null` until the user completes profile / onboarding on the backend. */
+  profile?: unknown | null;
 }
 
 export interface AuthCredentialsPayload {

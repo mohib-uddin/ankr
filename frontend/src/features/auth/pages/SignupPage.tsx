@@ -7,6 +7,8 @@ import { AuthSideCarousel } from '../components/AuthSideCarousel';
 import { signupSchema, type SignupFormValues } from '../schemas/auth.schemas';
 import { useSignupMutation } from '@/services/auth.service';
 import { getApiErrorMessage } from '@/shared/utils/axios';
+import { getPostAuthRedirectPath } from '@/features/auth/utils/post-auth-redirect';
+import type { ApiMessageData, AuthCredentialsPayload } from '@/features/auth/types/auth.types';
 
 const inputClassName =
   "font-['Figtree',sans-serif] font-normal leading-[21px] text-[#333] text-[14px] bg-transparent w-full h-full px-[12px] py-[10px] rounded-[8px] border-none outline-none focus:outline-none placeholder:text-[#767676]";
@@ -40,7 +42,9 @@ export function SignupPage() {
     signupMutation.reset();
     const { confirmPassword: _c, ...payload } = values;
     signupMutation.mutate(payload, {
-      onSuccess: () => navigate('/profile-setup', { replace: true }),
+      onSuccess: (res: ApiMessageData<AuthCredentialsPayload>) => {
+        navigate(getPostAuthRedirectPath(res.data.user), { replace: true });
+      },
     });
   });
 
