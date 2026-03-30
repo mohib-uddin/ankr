@@ -1,6 +1,6 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, HttpStatus, Req } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, HttpStatus, Req, Query } from '@nestjs/common';
 import { IncomeService } from './income.service';
-import { CreateIncomeDto, UpdateIncomeDto } from '@dtos';
+import { CreateIncomeDto, UpdateIncomeDto, PaginationQueryDto } from '@dtos';
 import { ApiTags } from '@nestjs/swagger';
 import { SwaggerApiResponse } from '@decorators';
 import { Income } from '@entities';
@@ -20,9 +20,9 @@ export class IncomeController {
 
   @Get()
   @HttpCode(HttpStatus.OK)
-  @SwaggerApiResponse({ description: 'Retrieve all income records for the current user', type: Income })
-  getIncomes(@Req() req: Request) {
-    return this.incomeService.getIncomes(req.user.id);
+  @SwaggerApiResponse({ description: 'Retrieve all income records for the current user', type: Income, isArray: true })
+  getIncomes(@Req() req: Request, @Query() query: PaginationQueryDto) {
+    return this.incomeService.getIncomes(req.user.id, query);
   }
 
   @Get(':id')

@@ -1,10 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { ApiMessage, ApiMessageData } from '@types';
+import { ApiMessage, ApiMessageData, ApiMessageDataPagination } from '@types';
 import { Repository } from 'typeorm';
 import { BusinessEntity, Profile } from '@entities';
 import { SuccessResponseMessages } from '@messages';
-import { CreateBusinessesEntityDto, UpdateBusinessesEntityDto } from '@dtos';
+import { CreateBusinessesEntityDto, UpdateBusinessesEntityDto, PaginationDto } from '@dtos';
 
 @Injectable()
 export class BusinessesEntitiesService {
@@ -26,15 +26,32 @@ export class BusinessesEntitiesService {
    * If userId is provided, filters by that user's profile.
    * If userId is undefined (admin), returns all.
    */
-  async getBusinessEntities(userId?: string): Promise<ApiMessageData<BusinessEntity[]>> {
+  async getBusinessEntities(userId?: string, paginationDto: PaginationDto = {}): Promise<ApiMessageDataPagination<BusinessEntity>> {
+    const { page = 1, limit = 10 } = paginationDto;
+    const skip = (page - 1) * limit;
+
+    const findOptions: any = {
+      skip,
+      take: limit,
+      order: { createdAt: 'DESC' }
+    };
+
     if (userId) {
       const profile = await this.profileRepository.findOne({ where: { userId } });
       if (!profile) throw new NotFoundException('Profile not found');
-      const entities = await this.businessEntityRepository.find({ where: { profileId: profile.id } });
-      return { message: SuccessResponseMessages.successGeneral, data: entities };
+      findOptions.where = { profileId: profile.id };
     }
-    const entities = await this.businessEntityRepository.find();
-    return { message: SuccessResponseMessages.successGeneral, data: entities };
+
+    const [entities, total] = await this.businessEntityRepository.findAndCount(findOptions);
+    const lastPage = Math.ceil(total / limit);
+
+    return { 
+      message: SuccessResponseMessages.successGeneral, 
+      data: entities,
+      page,
+      lastPage,
+      total
+    };
   }
 
   /**

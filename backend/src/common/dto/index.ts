@@ -11,3 +11,5 @@ export * from 'src/businesses-entities/dto';
 export * from 'src/assets/dto';
 export * from 'src/liabilities/dto';
 export * from 'src/income/dto';
+export * from 'src/documents/dto';
+

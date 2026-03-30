@@ -57,10 +57,10 @@ export class AppHelper {
   }
 
   // JWT Token Generator
-  async getTokens(userId: string, role: string = undefined) {
+  async getTokens(userId: string, profileId: string = undefined, role: string = undefined) {
     const atSecret = this.configService.get<string>('jwt.accessTokenKey');
     const atExpiry = this.configService.get<string>('jwt.accessExpiry');
-    const at = await this.jwtService.signAsync({ id: userId, role }, { secret: atSecret, expiresIn: atExpiry });
+    const at = await this.jwtService.signAsync({ id: userId, profileId, role }, { secret: atSecret, expiresIn: atExpiry });
     return {
       access_token: at,
     };

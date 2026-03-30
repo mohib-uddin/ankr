@@ -1,6 +1,6 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, HttpStatus, Req } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, HttpStatus, Req, Query } from '@nestjs/common';
 import { LiabilitiesService } from './liabilities.service';
-import { CreateLiabilityDto, UpdateLiabilityDto } from '@dtos';
+import { CreateLiabilityDto, UpdateLiabilityDto, PaginationQueryDto } from '@dtos';
 import { ApiTags } from '@nestjs/swagger';
 import { SwaggerApiResponse } from '@decorators';
 import { Liability } from '@entities';
@@ -20,9 +20,9 @@ export class LiabilitiesController {
 
   @Get()
   @HttpCode(HttpStatus.OK)
-  @SwaggerApiResponse({ description: 'Retrieve all liabilities for the current user', type: Liability })
-  getLiabilities(@Req() req: Request) {
-    return this.liabilitiesService.getLiabilities(req.user.id);
+  @SwaggerApiResponse({ description: 'Retrieve all liabilities for the current user', type: Liability, isArray: true })
+  getLiabilities(@Req() req: Request, @Query() query: PaginationQueryDto) {
+    return this.liabilitiesService.getLiabilities(req.user.id, query);
   }
 
   @Get(':id')

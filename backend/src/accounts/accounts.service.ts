@@ -1,10 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { ApiMessage, ApiMessageData } from '@types';
+import { ApiMessage, ApiMessageData, ApiMessageDataPagination } from '@types';
 import { Repository } from 'typeorm';
 import { Account, Profile } from '@entities';
 import { SuccessResponseMessages } from '@messages';
-import { CreateAccountDto, UpdateAccountDto } from '@dtos';
+import { CreateAccountDto, UpdateAccountDto, PaginationDto } from '@dtos';
 
 @Injectable()
 export class AccountsService {
@@ -26,15 +26,32 @@ export class AccountsService {
    * If userId is provided (user controller), filters by that user's profile.
    * If userId is undefined (admin controller), returns all accounts.
    */
-  async getAccounts(userId?: string): Promise<ApiMessageData<Account[]>> {
+  async getAccounts(userId?: string, paginationDto: PaginationDto = {}): Promise<ApiMessageDataPagination<Account>> {
+    const { page = 1, limit = 10 } = paginationDto;
+    const skip = (page - 1) * limit;
+
+    const findOptions: any = {
+      skip,
+      take: limit,
+      order: { createdAt: 'DESC' }
+    };
+
     if (userId) {
       const profile = await this.profileRepository.findOne({ where: { userId } });
       if (!profile) throw new NotFoundException('Profile not found');
-      const accounts = await this.accountRepository.find({ where: { profileId: profile.id } });
-      return { message: SuccessResponseMessages.successGeneral, data: accounts };
+      findOptions.where = { profileId: profile.id };
     }
-    const accounts = await this.accountRepository.find();
-    return { message: SuccessResponseMessages.successGeneral, data: accounts };
+
+    const [accounts, total] = await this.accountRepository.findAndCount(findOptions);
+    const lastPage = Math.ceil(total / limit);
+
+    return { 
+      message: SuccessResponseMessages.successGeneral, 
+      data: accounts,
+      page,
+      lastPage,
+      total
+    };
   }
 
   /**

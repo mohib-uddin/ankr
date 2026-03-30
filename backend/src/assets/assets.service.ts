@@ -1,10 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { ApiMessage, ApiMessageData } from '@types';
+import { ApiMessage, ApiMessageData, ApiMessageDataPagination } from '@types';
 import { Repository } from 'typeorm';
 import { Asset, Profile } from '@entities';
 import { SuccessResponseMessages } from '@messages';
-import { CreateAssetDto, UpdateAssetDto } from '@dtos';
+import { CreateAssetDto, UpdateAssetDto, PaginationDto } from '@dtos';
 
 @Injectable()
 export class AssetsService {
@@ -26,15 +26,32 @@ export class AssetsService {
    * If userId is provided (user controller), filters by that user's profile.
    * If userId is undefined (admin controller), returns all assets.
    */
-  async getAssets(userId?: string): Promise<ApiMessageData<Asset[]>> {
+  async getAssets(userId?: string, paginationDto: PaginationDto = {}): Promise<ApiMessageDataPagination<Asset>> {
+    const { page = 1, limit = 10 } = paginationDto;
+    const skip = (page - 1) * limit;
+
+    const findOptions: any = {
+      skip,
+      take: limit,
+      order: { createdAt: 'DESC' }
+    };
+
     if (userId) {
       const profile = await this.profileRepository.findOne({ where: { userId } });
       if (!profile) throw new NotFoundException('Profile not found');
-      const assets = await this.assetRepository.find({ where: { profileId: profile.id } });
-      return { message: SuccessResponseMessages.successGeneral, data: assets };
+      findOptions.where = { profileId: profile.id };
     }
-    const assets = await this.assetRepository.find();
-    return { message: SuccessResponseMessages.successGeneral, data: assets };
+
+    const [assets, total] = await this.assetRepository.findAndCount(findOptions);
+    const lastPage = Math.ceil(total / limit);
+
+    return { 
+      message: SuccessResponseMessages.successGeneral, 
+      data: assets,
+      page,
+      lastPage,
+      total
+    };
   }
 
   /**

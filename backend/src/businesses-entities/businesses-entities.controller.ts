@@ -1,6 +1,6 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, HttpStatus, Req } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, HttpStatus, Req, Query } from '@nestjs/common';
 import { BusinessesEntitiesService } from './businesses-entities.service';
-import { CreateBusinessesEntityDto, UpdateBusinessesEntityDto } from '@dtos';
+import { CreateBusinessesEntityDto, UpdateBusinessesEntityDto, PaginationQueryDto } from '@dtos';
 import { ApiTags } from '@nestjs/swagger';
 import { SwaggerApiResponse } from '@decorators';
 import { BusinessEntity } from '@entities';
@@ -20,9 +20,9 @@ export class BusinessesEntitiesController {
 
   @Get()
   @HttpCode(HttpStatus.OK)
-  @SwaggerApiResponse({ description: 'Retrieve all business entities for the current user', type: BusinessEntity })
-  getBusinessEntities(@Req() req: Request) {
-    return this.businessesEntitiesService.getBusinessEntities(req.user.id);
+  @SwaggerApiResponse({ description: 'Retrieve all business entities for the current user', type: BusinessEntity, isArray: true })
+  getBusinessEntities(@Req() req: Request, @Query() query: PaginationQueryDto) {
+    return this.businessesEntitiesService.getBusinessEntities(req.user.id, query);
   }
 
   @Get(':id')

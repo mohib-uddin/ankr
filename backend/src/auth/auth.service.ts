@@ -44,7 +44,7 @@ export class AuthService {
 
     await this.appHelper.sendMail(createdUser.email, mailSubject, replacements);
 
-    const { access_token } = await this.appHelper.getTokens(createdUser.id.toString());
+    const { access_token } = await this.appHelper.getTokens(createdUser.id.toString(), undefined, role.key);
 
     // Sanitize user object for response
     const { password: _, verificationCode: __, isPassCodeValid: ___, ...safeUser } = createdUser;
@@ -117,7 +117,11 @@ export class AuthService {
     const passwordMatches = await this.appHelper.compareData(password, user.password);
     if (!passwordMatches) throw new BadRequestException(AuthErrorMessages.invalidPassword);
 
-    const { access_token } = await this.appHelper.getTokens(user.id.toString());
+    const { access_token } = await this.appHelper.getTokens(
+      user.id.toString(), 
+      user.profile?.id.toString(), 
+      user.role?.key
+    );
 
     // Sanitize user object for response
     user.password = undefined;

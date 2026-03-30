@@ -19,6 +19,7 @@ import { ProfileModule } from './profile/profile.module';
 import { AssetsModule } from './assets/assets.module';
 import { LiabilitiesModule } from './liabilities/liabilities.module';
 import { IncomeModule } from './income/income.module';
+import { DocumentsModule } from './documents/documents.module';
 
 @Module({
   imports: [
@@ -45,6 +46,7 @@ import { IncomeModule } from './income/income.module';
     AssetsModule,
     LiabilitiesModule,
     IncomeModule,
+    DocumentsModule,
   ],
   controllers: [AppController],
   providers: [

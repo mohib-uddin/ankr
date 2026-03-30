@@ -1,5 +1,5 @@
-import { Entity, Column, ManyToOne, JoinColumn } from 'typeorm';
-import { BaseEntity, Profile } from '@entities';
+import { Entity, Column, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
+import { BaseEntity, Profile, Document } from '@entities';
 import { ApiProperty } from '@nestjs/swagger';
 import { PropertyTypeEnum } from '@types';
 import { Exclude } from 'class-transformer';
@@ -54,4 +54,7 @@ export class Property extends BaseEntity {
   @ApiProperty({ example: 'uuid-of-profile' })
   @Column()
   profileId: string;
+
+  @OneToMany(() => Document, (document) => document.property)
+  documents: Document[];
 }

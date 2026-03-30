@@ -1,10 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { ApiMessage, ApiMessageData } from '@types';
+import { ApiMessage, ApiMessageData, ApiMessageDataPagination } from '@types';
 import { Repository } from 'typeorm';
 import { Income, Profile } from '@entities';
 import { SuccessResponseMessages } from '@messages';
-import { CreateIncomeDto, UpdateIncomeDto } from '@dtos';
+import { CreateIncomeDto, UpdateIncomeDto, PaginationDto } from '@dtos';
 
 @Injectable()
 export class IncomeService {
@@ -26,15 +26,32 @@ export class IncomeService {
    * If userId is provided, filters by that user's profile.
    * If userId is undefined (admin), returns all.
    */
-  async getIncomes(userId?: string): Promise<ApiMessageData<Income[]>> {
+  async getIncomes(userId?: string, paginationDto: PaginationDto = {}): Promise<ApiMessageDataPagination<Income>> {
+    const { page = 1, limit = 10 } = paginationDto;
+    const skip = (page - 1) * limit;
+
+    const findOptions: any = {
+      skip,
+      take: limit,
+      order: { createdAt: 'DESC' }
+    };
+
     if (userId) {
       const profile = await this.profileRepository.findOne({ where: { userId } });
       if (!profile) throw new NotFoundException('Profile not found');
-      const incomes = await this.incomeRepository.find({ where: { profileId: profile.id } });
-      return { message: SuccessResponseMessages.successGeneral, data: incomes };
+      findOptions.where = { profileId: profile.id };
     }
-    const incomes = await this.incomeRepository.find();
-    return { message: SuccessResponseMessages.successGeneral, data: incomes };
+
+    const [incomes, total] = await this.incomeRepository.findAndCount(findOptions);
+    const lastPage = Math.ceil(total / limit);
+
+    return { 
+      message: SuccessResponseMessages.successGeneral, 
+      data: incomes,
+      page,
+      lastPage,
+      total
+    };
   }
 
   /**

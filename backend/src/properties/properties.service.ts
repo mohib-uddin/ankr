@@ -1,10 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { ApiMessage, ApiMessageData } from '@types';
+import { ApiMessage, ApiMessageData, ApiMessageDataPagination } from '@types';
 import { Repository } from 'typeorm';
 import { Property, Profile } from '@entities';
 import { SuccessResponseMessages } from '@messages';
-import { CreatePropertyDto, UpdatePropertyDto } from '@dtos';
+import { CreatePropertyDto, UpdatePropertyDto, PaginationDto } from '@dtos';
 
 @Injectable()
 export class PropertiesService {
@@ -26,15 +26,33 @@ export class PropertiesService {
    * If userId is provided, filters by that user's profile.
    * If userId is undefined (admin), returns all.
    */
-  async getProperties(userId?: string): Promise<ApiMessageData<Property[]>> {
+  async getProperties(userId?: string, paginationDto: PaginationDto = {}): Promise<ApiMessageDataPagination<Property>> {
+    const { page = 1, limit = 10 } = paginationDto;
+    const skip = (page - 1) * limit;
+
+    const findOptions: any = {
+      skip,
+      take: limit,
+      relations: ['documents'],
+      order: { createdAt: 'DESC' }
+    };
+
     if (userId) {
       const profile = await this.profileRepository.findOne({ where: { userId } });
       if (!profile) throw new NotFoundException('Profile not found');
-      const properties = await this.propertyRepository.find({ where: { profileId: profile.id } });
-      return { message: SuccessResponseMessages.successGeneral, data: properties };
+      findOptions.where = { profileId: profile.id };
     }
-    const properties = await this.propertyRepository.find();
-    return { message: SuccessResponseMessages.successGeneral, data: properties };
+
+    const [properties, total] = await this.propertyRepository.findAndCount(findOptions);
+    const lastPage = Math.ceil(total / limit);
+
+    return { 
+      message: SuccessResponseMessages.successGeneral, 
+      data: properties,
+      page,
+      lastPage,
+      total
+    };
   }
 
   /**
@@ -45,11 +63,14 @@ export class PropertiesService {
     if (userId) {
       const profile = await this.profileRepository.findOne({ where: { userId } });
       if (!profile) throw new NotFoundException('Profile not found');
-      const property = await this.propertyRepository.findOne({ where: { id, profileId: profile.id } });
+      const property = await this.propertyRepository.findOne({ 
+        where: { id, profileId: profile.id },
+        relations: ['documents']
+      });
       if (!property) throw new NotFoundException('Property not found');
       return { message: SuccessResponseMessages.successGeneral, data: property };
     }
-    const property = await this.propertyRepository.findOne({ where: { id } });
+    const property = await this.propertyRepository.findOne({ where: { id }, relations: ['documents'] });
     if (!property) throw new NotFoundException('Property not found');
     return { message: SuccessResponseMessages.successGeneral, data: property };
   }

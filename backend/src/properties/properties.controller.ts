@@ -1,6 +1,6 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, HttpStatus, Req } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, HttpStatus, Req, Query } from '@nestjs/common';
 import { PropertiesService } from './properties.service';
-import { CreatePropertyDto, UpdatePropertyDto } from '@dtos';
+import { CreatePropertyDto, UpdatePropertyDto, PaginationQueryDto } from '@dtos';
 import { ApiTags } from '@nestjs/swagger';
 import { SwaggerApiResponse } from '@decorators';
 import { Property } from '@entities';
@@ -20,9 +20,9 @@ export class PropertiesController {
 
   @Get()
   @HttpCode(HttpStatus.OK)
-  @SwaggerApiResponse({ description: 'Retrieve all properties for the current user', type: Property })
-  getProperties(@Req() req: Request) {
-    return this.propertiesService.getProperties(req.user.id);
+  @SwaggerApiResponse({ description: 'Retrieve all properties for the current user', type: Property, isArray: true })
+  getProperties(@Req() req: Request, @Query() query: PaginationQueryDto) {
+    return this.propertiesService.getProperties(req.user.id, query);
   }
 
   @Get(':id')

@@ -1,10 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { ApiMessage, ApiMessageData } from '@types';
+import { ApiMessage, ApiMessageData, ApiMessageDataPagination } from '@types';
 import { Repository } from 'typeorm';
 import { Liability, Profile } from '@entities';
 import { SuccessResponseMessages } from '@messages';
-import { CreateLiabilityDto, UpdateLiabilityDto } from '@dtos';
+import { CreateLiabilityDto, UpdateLiabilityDto, PaginationDto } from '@dtos';
 
 @Injectable()
 export class LiabilitiesService {
@@ -26,15 +26,32 @@ export class LiabilitiesService {
    * If userId is provided, filters by that user's profile.
    * If userId is undefined (admin), returns all.
    */
-  async getLiabilities(userId?: string): Promise<ApiMessageData<Liability[]>> {
+  async getLiabilities(userId?: string, paginationDto: PaginationDto = {}): Promise<ApiMessageDataPagination<Liability>> {
+    const { page = 1, limit = 10 } = paginationDto;
+    const skip = (page - 1) * limit;
+
+    const findOptions: any = {
+      skip,
+      take: limit,
+      order: { createdAt: 'DESC' }
+    };
+
     if (userId) {
       const profile = await this.profileRepository.findOne({ where: { userId } });
       if (!profile) throw new NotFoundException('Profile not found');
-      const liabilities = await this.liabilityRepository.find({ where: { profileId: profile.id } });
-      return { message: SuccessResponseMessages.successGeneral, data: liabilities };
+      findOptions.where = { profileId: profile.id };
     }
-    const liabilities = await this.liabilityRepository.find();
-    return { message: SuccessResponseMessages.successGeneral, data: liabilities };
+
+    const [liabilities, total] = await this.liabilityRepository.findAndCount(findOptions);
+    const lastPage = Math.ceil(total / limit);
+
+    return { 
+      message: SuccessResponseMessages.successGeneral, 
+      data: liabilities,
+      page,
+      lastPage,
+      total
+    };
   }
 
   /**

@@ -1,6 +1,6 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, HttpStatus, Req } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, HttpStatus, Req, Query } from '@nestjs/common';
 import { AssetsService } from './assets.service';
-import { CreateAssetDto, UpdateAssetDto } from '@dtos';
+import { CreateAssetDto, UpdateAssetDto, PaginationQueryDto } from '@dtos';
 import { ApiTags } from '@nestjs/swagger';
 import { SwaggerApiResponse } from '@decorators';
 import { Asset } from '@entities';
@@ -20,9 +20,9 @@ export class AssetsController {
 
   @Get()
   @HttpCode(HttpStatus.OK)
-  @SwaggerApiResponse({ description: 'Retrieve all assets for the current user', type: Asset })
-  getAssets(@Req() req: Request) {
-    return this.assetsService.getAssets(req.user.id);
+  @SwaggerApiResponse({ description: 'Retrieve all assets for the current user', type: Asset, isArray: true })
+  getAssets(@Req() req: Request, @Query() query: PaginationQueryDto) {
+    return this.assetsService.getAssets(req.user.id, query);
   }
 
   @Get(':id')

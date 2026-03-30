@@ -11,6 +11,9 @@ export class LocalStorageProvider implements StorageProviderInterface {
   constructor() {}
 
   uploadFile(file: Express.Multer.File): string {
+    if (!fs.existsSync(this.path)) {
+      fs.mkdirSync(this.path, { recursive: true });
+    }
     const mimeType = file.mimetype;
     const fileExtension = mimeType.split('/')[1];
     let extension = fileExtension;
@@ -18,11 +21,15 @@ export class LocalStorageProvider implements StorageProviderInterface {
       extension = 'xlsx';
     }
     const fileName = `${nanoid()}.${extension}`;
-    fs.writeFileSync(this.path + '/' + fileName, file.buffer, 'utf8');
+    fs.writeFileSync(this.path + '/' + fileName, file.buffer, 'binary');
     return fileName;
   }
 
+
   uploadFiles(files: Express.Multer.File[]): string[] {
+    if (!fs.existsSync(this.path)) {
+      fs.mkdirSync(this.path, { recursive: true });
+    }
     const uploadedFiles: string[] = [];
 
     files.forEach((file) => {
