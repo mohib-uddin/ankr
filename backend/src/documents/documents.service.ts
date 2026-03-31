@@ -4,7 +4,7 @@ import { ApiMessage, ApiMessageData, ApiMessageDataPagination, StorageProviderIn
 import { Repository } from 'typeorm';
 import { Document, Folder, Profile } from '@entities';
 import { SuccessResponseMessages } from '@messages';
-import { CreateDocumentWithoutProfileDto, UpdateDocumentDto, CreateFolderWithoutProfileDto, UpdateFolderDto, PaginationDto } from '@dtos';
+import { CreateDocumentWithoutProfileDto, UpdateDocumentDto, CreateFolderWithoutProfileDto, UpdateFolderDto, PaginationDto, GetDocumentsQueryDto } from '@dtos';
 
 
 @Injectable()
@@ -35,8 +35,8 @@ export class DocumentsService {
     return { message: SuccessResponseMessages.successGeneral, data: savedDocument };
   }
 
-  async getDocuments(userId?: string, paginationDto: PaginationDto = {}, folderId?: string, propertyId?: string): Promise<ApiMessageDataPagination<Document>> {
-    const { page = 1, limit = 10 } = paginationDto;
+  async getDocuments(userId?: string, getDocumentsQuery: GetDocumentsQueryDto = {}): Promise<ApiMessageDataPagination<Document>> {
+    const { page = 1, limit = 10, folderId, propertyId, category } = getDocumentsQuery;
     const skip = (page - 1) * limit;
 
     const query: any = {};
@@ -48,6 +48,7 @@ export class DocumentsService {
 
     if (folderId) query.folderId = folderId;
     if (propertyId) query.linkedPropertyId = propertyId;
+    if (category) query.category = category;
 
     const [documents, total] = await this.documentRepository.findAndCount({
       where: query,

@@ -1,6 +1,6 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Inject } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { ApiMessage, ApiMessageData, ApiMessageDataPagination } from '@types';
+import { ApiMessage, ApiMessageData, ApiMessageDataPagination, StorageProviderInterface } from '@types';
 import { Repository } from 'typeorm';
 import { Property, Profile } from '@entities';
 import { SuccessResponseMessages } from '@messages';
@@ -13,10 +13,22 @@ export class PropertiesService {
     private readonly propertyRepository: Repository<Property>,
     @InjectRepository(Profile)
     private readonly profileRepository: Repository<Profile>,
+    @Inject('StorageProvider')
+    private readonly storageProvider: StorageProviderInterface,
   ) {}
 
-  async createProperty(createPropertyDto: CreatePropertyDto): Promise<ApiMessageData<Property>> {
-    const property = this.propertyRepository.create(createPropertyDto);
+  async createProperty(createPropertyDto: CreatePropertyDto, files: Express.Multer.File[] = []): Promise<ApiMessageData<Property>> {
+    let imageUrls: string[] = [];
+    if (files && files.length > 0) {
+      imageUrls = await Promise.all(
+        files.map(file => this.storageProvider.uploadFile(file))
+      );
+    }
+
+    const property = this.propertyRepository.create({
+      ...createPropertyDto,
+      images: imageUrls
+    });
     const savedProperty = await this.propertyRepository.save(property);
     return { message: SuccessResponseMessages.successGeneral, data: savedProperty };
   }
@@ -82,6 +94,12 @@ export class PropertiesService {
   }
 
   async deleteProperty(id: string): Promise<ApiMessage> {
+    const property = await this.propertyRepository.findOne({ where: { id } });
+    if (property && property.images) {
+      for (const img of property.images) {
+        await this.storageProvider.deleteFile(img);
+      }
+    }
     await this.propertyRepository.delete(id);
     return { message: SuccessResponseMessages.successGeneral };
   }

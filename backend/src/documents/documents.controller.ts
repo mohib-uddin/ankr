@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, HttpStatus, Req, Query, UploadedFile, ParseUUIDPipe } from '@nestjs/common';
 import { DocumentsService } from './documents.service';
-import { CreateDocumentWithoutProfileDto, UpdateDocumentDto, CreateFolderWithoutProfileDto, UpdateFolderDto, PaginationQueryDto } from '@dtos';
+import { CreateDocumentWithoutProfileDto, UpdateDocumentDto, CreateFolderWithoutProfileDto, UpdateFolderDto, PaginationQueryDto, GetDocumentsQueryDto } from '@dtos';
 import { ApiTags, ApiQuery, ApiConsumes } from '@nestjs/swagger';
 import { SwaggerApiResponse, AttachmentUpload } from '@decorators';
 import { Document, Folder } from '@entities';
@@ -22,11 +22,9 @@ export class DocumentsController {
 
   @Get()
   @HttpCode(HttpStatus.OK)
-  @ApiQuery({ name: 'folderId', required: false })
-  @ApiQuery({ name: 'propertyId', required: false })
   @SwaggerApiResponse({ description: 'Retrieve all documents for the current user', type: Document, isArray: true })
-  getDocuments(@Req() req: Request, @Query() paginationQuery: PaginationQueryDto, @Query('folderId') folderId?: string, @Query('propertyId') propertyId?: string) {
-    return this.documentsService.getDocuments(req.user.id, paginationQuery, folderId, propertyId);
+  getDocuments(@Req() req: Request, @Query() getDocumentsQuery: GetDocumentsQueryDto) {
+    return this.documentsService.getDocuments(req.user.id, getDocumentsQuery);
   }
 
   // --- Folder Endpoints ---

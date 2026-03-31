@@ -1,8 +1,8 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, HttpStatus, Req, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, HttpStatus, Req, Query, UploadedFiles } from '@nestjs/common';
 import { PropertiesService } from './properties.service';
 import { CreatePropertyDto, UpdatePropertyDto, PaginationQueryDto } from '@dtos';
-import { ApiTags } from '@nestjs/swagger';
-import { SwaggerApiResponse } from '@decorators';
+import { ApiTags, ApiConsumes } from '@nestjs/swagger';
+import { SwaggerApiResponse, ImagesUpload } from '@decorators';
 import { Property } from '@entities';
 import { Request } from 'express';
 
@@ -13,9 +13,11 @@ export class PropertiesController {
 
   @Post()
   @HttpCode(HttpStatus.OK)
-  @SwaggerApiResponse({ description: 'Create a new property (linked to common profile)', type: Property })
-  createProperty(@Body() createPropertyDto: CreatePropertyDto) {
-    return this.propertiesService.createProperty(createPropertyDto);
+  @ApiConsumes('multipart/form-data')
+  @ImagesUpload('images', 5)
+  @SwaggerApiResponse({ description: 'Create a new property with images (multipart/form-data)', type: Property })
+  createProperty(@Body() createPropertyDto: CreatePropertyDto, @UploadedFiles() files: Express.Multer.File[]) {
+    return this.propertiesService.createProperty(createPropertyDto, files);
   }
 
   @Get()
