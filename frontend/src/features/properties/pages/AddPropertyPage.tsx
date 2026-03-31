@@ -86,6 +86,14 @@ export function AddPropertyPage() {
     yearBuilt: '',
     lotSize: '',
     zoning: '',
+    estimatedValue: '',
+    loanBalance: '',
+    monthlyRent: '',
+    interestRate: '',
+    monthlyPayment: '',
+    lender: '',
+    maturityDate: '',
+    ownershipPercent: '',
     coverImage: DEFAULT_IMAGES[0],
   });
 
@@ -104,6 +112,11 @@ export function AddPropertyPage() {
     setErrors(e);
     if (Object.keys(e).length > 0) return;
 
+    const estimatedValue = parseFloat(form.estimatedValue) || 0;
+    const loanBalance = parseFloat(form.loanBalance) || 0;
+    const monthlyRent = parseFloat(form.monthlyRent) || 0;
+    const interestRate = parseFloat(form.interestRate) || 0;
+
     const newProp = addProperty({
       name: form.name,
       address: form.address,
@@ -117,16 +130,16 @@ export function AddPropertyPage() {
       status: form.status,
       coverImage: form.coverImage,
       proforma: {
-        exitStrategy: 'Fix & Flip',
-        purchasePrice: 0,
+        exitStrategy: 'Hold & Rent',
+        purchasePrice: estimatedValue,
         rehabCost: 0,
         holdingCosts: 0,
         financingCosts: 0,
         softCosts: 0,
-        afterRepairValue: 0,
-        lenderName: '',
-        loanAmount: 0,
-        interestRate: 0,
+        afterRepairValue: estimatedValue,
+        lenderName: form.lender,
+        loanAmount: loanBalance,
+        interestRate,
         loanTermMonths: 12,
       },
       budget: {
@@ -256,7 +269,11 @@ export function AddPropertyPage() {
                     onChange={e => set('type', e.target.value)}
                     className={selectCls()}
                   >
-                    {PROPERTY_TYPES.map(t => <option key={t} value={t}>{t === 'Multi-Family' ? 'Multi Family' : t}</option>)}
+                    {PROPERTY_TYPES.map(t => (
+                      <option key={t} value={t}>
+                        {t === 'Multi-Family' ? 'Multi Family' : t}
+                      </option>
+                    ))}
                   </select>
                   <DropdownChevron />
                 </div>
@@ -268,7 +285,11 @@ export function AddPropertyPage() {
                     onChange={e => set('status', e.target.value)}
                     className={selectCls()}
                   >
-                    {PROPERTY_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+                    {PROPERTY_STATUSES.map(s => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))}
                   </select>
                   <DropdownChevron />
                 </div>
@@ -329,6 +350,91 @@ export function AddPropertyPage() {
                 className={inputCls()}
               />
             </FormField>
+          </div>
+
+          {/* ── Financing & Income Snapshot ── */}
+          <div className="flex flex-col gap-[24px]">
+            <p className={`${canela} text-[24px] text-[#3E2D1D]`}>Financing & Income Snapshot</p>
+
+            <div className="flex flex-col sm:flex-row gap-[16px] sm:gap-[24px]">
+              <FormField label="Estimated Value" className="flex-1">
+                <input
+                  type="text"
+                  value={form.estimatedValue}
+                  onChange={e => set('estimatedValue', e.target.value)}
+                  placeholder="0"
+                  className={inputCls()}
+                />
+              </FormField>
+              <FormField label="Loan Balance" className="flex-1">
+                <input
+                  type="text"
+                  value={form.loanBalance}
+                  onChange={e => set('loanBalance', e.target.value)}
+                  placeholder="0"
+                  className={inputCls()}
+                />
+              </FormField>
+              <FormField label="Monthly Rent" className="flex-1">
+                <input
+                  type="text"
+                  value={form.monthlyRent}
+                  onChange={e => set('monthlyRent', e.target.value)}
+                  placeholder="0"
+                  className={inputCls()}
+                />
+              </FormField>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-[16px] sm:gap-[24px]">
+              <FormField label="Interest Rate" className="flex-1">
+                <input
+                  type="text"
+                  value={form.interestRate}
+                  onChange={e => set('interestRate', e.target.value)}
+                  placeholder="6.5"
+                  className={inputCls()}
+                />
+              </FormField>
+              <FormField label="Monthly Payment" className="flex-1">
+                <input
+                  type="text"
+                  value={form.monthlyPayment}
+                  onChange={e => set('monthlyPayment', e.target.value)}
+                  placeholder="0"
+                  className={inputCls()}
+                />
+              </FormField>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-[16px] sm:gap-[24px]">
+              <FormField label="Lender" className="flex-1">
+                <input
+                  type="text"
+                  value={form.lender}
+                  onChange={e => set('lender', e.target.value)}
+                  placeholder="First National Bank"
+                  className={inputCls()}
+                />
+              </FormField>
+              <FormField label="Maturity Date" className="flex-1">
+                <input
+                  type="date"
+                  value={form.maturityDate}
+                  onChange={e => set('maturityDate', e.target.value)}
+                  className={inputCls()}
+                />
+              </FormField>
+              <FormField label="Ownership %" className="flex-1">
+                <input
+                  type="text"
+                  value={form.ownershipPercent}
+                  onChange={e => set('ownershipPercent', e.target.value)}
+                  placeholder="100"
+                  className={inputCls()}
+                />
+              </FormField>
+            </div>
           </div>
 
           {/* ── Upload Cover Photo ── */}
