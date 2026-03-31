@@ -4,6 +4,7 @@ export * from './validate-code.dto';
 export * from './login.dto';
 export * from './sign-up.dto';
 export * from './verify-email.dto';
+export * from './validate-package.dto';
 export * from './resend-code.dto';
 export * from './update-password.dto';
 export * from './login-response.dto';

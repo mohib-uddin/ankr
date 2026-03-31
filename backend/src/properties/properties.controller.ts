@@ -16,8 +16,8 @@ export class PropertiesController {
   @ApiConsumes('multipart/form-data')
   @ImagesUpload('images', 5)
   @SwaggerApiResponse({ description: 'Create a new property with images (multipart/form-data)', type: Property })
-  createProperty(@Body() createPropertyDto: CreatePropertyDto, @UploadedFiles() files: Express.Multer.File[]) {
-    return this.propertiesService.createProperty(createPropertyDto, files);
+  createProperty(@Req() req: Request, @Body() createPropertyDto: CreatePropertyDto, @UploadedFiles() files: Express.Multer.File[]) {
+    return this.propertiesService.createProperty(req.user.id, createPropertyDto, files);
   }
 
   @Get()

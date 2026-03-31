@@ -1,6 +1,8 @@
 import { BadRequestException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { Repository } from 'typeorm';
-import { SignupDto, ResendCodeDto, EmailVerificationDto, LoginDto, ForgotPasswordDto, ValidateCodeDto, ForgotPassChangeDto, UpdatePasswordDto } from './dto';
+import { SignupDto, ResendCodeDto, EmailVerificationDto, LoginDto, ForgotPasswordDto, ValidateCodeDto, ForgotPassChangeDto, UpdatePasswordDto, ValidatePackageDto } from './dto';
+import { UserPackagesService } from 'src/user-packages/user-packages.service';
+import { UserPackage } from '@entities';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Role, User } from '@entities';
 import { AppHelper } from '@helpers/app.helper';
@@ -16,6 +18,7 @@ export class AuthService {
     private readonly roleRepository: Repository<Role>,
 
     private appHelper: AppHelper,
+    private readonly userPackagesService: UserPackagesService,
   ) {}
 
   async signUp(signUpObj: SignupDto): Promise<ApiMessageData> {
@@ -220,5 +223,13 @@ export class AuthService {
     await this.appHelper.sendMail(user.email, mailSubject, replacements.text);
 
     return { message: SuccessResponseMessages.passChanged };
+  }
+
+  async validatePackage(dto: ValidatePackageDto): Promise<ApiMessageData<UserPackage>> {
+    const userPackage = await this.userPackagesService.getPackageByLink(dto.sharedLink);
+    if (userPackage.securityCode !== dto.securityCode) {
+      throw new UnauthorizedException('Invalid security code');
+    }
+    return { message: SuccessResponseMessages.successGeneral, data: userPackage };
   }
 }

@@ -20,6 +20,8 @@ import { AssetsModule } from './assets/assets.module';
 import { LiabilitiesModule } from './liabilities/liabilities.module';
 import { IncomeModule } from './income/income.module';
 import { DocumentsModule } from './documents/documents.module';
+import { PackageTemplatesModule } from './package-templates/package-templates.module';
+import { UserPackagesModule } from './user-packages/user-packages.module';
 
 @Module({
   imports: [
@@ -47,6 +49,8 @@ import { DocumentsModule } from './documents/documents.module';
     LiabilitiesModule,
     IncomeModule,
     DocumentsModule,
+    PackageTemplatesModule,
+    UserPackagesModule,
   ],
   controllers: [AppController],
   providers: [

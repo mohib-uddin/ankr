@@ -12,4 +12,6 @@ export * from 'src/assets/dto';
 export * from 'src/liabilities/dto';
 export * from 'src/income/dto';
 export * from 'src/documents/dto';
+export * from 'src/package-templates/dto';
+export * from 'src/user-packages/dto'
 

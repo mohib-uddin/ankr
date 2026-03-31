@@ -115,14 +115,6 @@ export class CreatePropertyDto {
   @IsNumber()
   @IsOptional()
   ownershipPercentage?: number;
-
-  @ApiProperty({ example: 'uuid-of-common-profile' })
-  @IsString()
-  @IsNotEmpty()
-  profileId: string;
 }
 
-export class CreatePropertyWithoutProfileDto extends OmitType(
-  CreatePropertyDto,
-  ['profileId'] as const,
-) {}
+export class CreatePropertyWithoutProfileDto extends CreatePropertyDto {}

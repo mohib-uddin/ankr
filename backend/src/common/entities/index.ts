@@ -10,4 +10,6 @@ export * from 'src/assets/entities';
 export * from 'src/liabilities/entities';
 export * from 'src/income/entities';
 export * from 'src/documents/entities';
+export * from 'src/package-templates/entities';
+export * from 'src/user-packages/entities';
 

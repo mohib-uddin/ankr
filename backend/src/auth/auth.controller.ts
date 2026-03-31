@@ -1,6 +1,7 @@
 import { Controller, Post, Body, HttpCode, HttpStatus, Req } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { LoginDto, SignupDto, EmailVerificationDto, ForgotPasswordDto, ForgotPassChangeDto, ValidateCodeDto, ResendCodeDto, UpdatePasswordDto, LoginResponseDto } from './dto';
+import { LoginDto, SignupDto, EmailVerificationDto, ForgotPasswordDto, ForgotPassChangeDto, ValidateCodeDto, ResendCodeDto, UpdatePasswordDto, LoginResponseDto, ValidatePackageDto } from './dto';
+import { UserPackage } from '@entities';
 import { ApiTags } from '@nestjs/swagger';
 import { Public, SwaggerApiResponse } from '@decorators';
 import { ApiMessageData } from '@types';
@@ -72,6 +73,14 @@ export class AuthController {
   @SwaggerApiResponse('Update Password')
   async updatePassword(@Req() req: Request, @Body() reqBody: UpdatePasswordDto) {
     return await this.authService.updatePassword(req.user.id, reqBody);
+  }
+
+  @Public()
+  @Post('validate-package')
+  @HttpCode(HttpStatus.OK)
+  @SwaggerApiResponse({ description: 'Validate a package link and security code', type: UserPackage })
+  async validatePackage(@Body() reqBody: ValidatePackageDto) {
+    return await this.authService.validatePackage(reqBody);
   }
 
 }

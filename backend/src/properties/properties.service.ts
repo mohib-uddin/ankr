@@ -17,7 +17,10 @@ export class PropertiesService {
     private readonly storageProvider: StorageProviderInterface,
   ) {}
 
-  async createProperty(createPropertyDto: CreatePropertyDto, files: Express.Multer.File[] = []): Promise<ApiMessageData<Property>> {
+  async createProperty(userId: string, createPropertyDto: CreatePropertyDto, files: Express.Multer.File[] = []): Promise<ApiMessageData<Property>> {
+    const profile = await this.profileRepository.findOne({ where: { userId } });
+    if (!profile) throw new NotFoundException('Profile not found');
+
     let imageUrls: string[] = [];
     if (files && files.length > 0) {
       imageUrls = await Promise.all(
@@ -27,7 +30,8 @@ export class PropertiesService {
 
     const property = this.propertyRepository.create({
       ...createPropertyDto,
-      images: imageUrls
+      images: imageUrls,
+      profileId: profile.id
     });
     const savedProperty = await this.propertyRepository.save(property);
     return { message: SuccessResponseMessages.successGeneral, data: savedProperty };
