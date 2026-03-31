@@ -15,8 +15,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/ui/select';
+import { useForm } from 'react-hook-form';
 import { useApp } from '@/app/context/AppContext';
 import type { VaultCategory, VaultDocument, VaultFolder, VaultShareLink } from '@/app/context/AppContext';
+import { getApiErrorMessage } from '@/shared/utils/axios';
+import { getFileUrl } from '@/shared/utils/file-url';
+import {
+  useCreateDocumentMutation,
+  useCreateFolderMutation,
+  useDeleteDocumentMutation,
+  useDeleteFolderMutation,
+  useDocumentsQuery,
+  useFoldersQuery,
+  useUpdateDocumentMutation,
+} from '@/services/documents.service';
 import svgPaths from '@/icons/dashboard-shared';
 import packageIconAsset from '../../../assets/figma/documents-package/package-icon.svg';
 import listRadioAsset from '../../../assets/figma/documents-package/list-radio.svg';
@@ -38,6 +50,17 @@ const invoiceSelectContentBase =
 const invoiceSelectItemBase =
   "!text-[14px] !text-[#3E2D1D] !rounded-[6px] !px-[10px] !py-[8px] data-[highlighted]:!bg-[#FCF6F0] data-[highlighted]:!text-[#3E2D1D] data-[state=checked]:!bg-[#F3EFE6] data-[state=checked]:!text-[#764D2F]";
 const POPULAR_TAGS = ['Urgent', 'Lender', '2026', 'Tax', 'ID', 'Loan'];
+
+function formatDate(dateIso: string): string {
+  const parsed = new Date(dateIso);
+  if (Number.isNaN(parsed.getTime())) return dateIso;
+  return parsed.toISOString().split('T')[0];
+}
+
+function getFileTypeFromPath(path: string): string {
+  const ext = path.split('.').pop()?.toUpperCase();
+  return ext && ext.length <= 5 ? ext : 'FILE';
+}
 
 function CategorySelectItemLabel({ category }: { category: string }) {
   return (
@@ -347,9 +370,49 @@ function DetailProgressBadge({ percent }: { percent: number }) {
 type Tab = 'documents' | 'packages' | 'shared';
 
 export function DocumentVault() {
-  const { state, addVaultDocument, updateVaultDocument, deleteVaultDocument, addVaultFolder, deleteVaultFolder, addVaultShareLink, revokeVaultShareLink } = useApp();
-  const docs = state.vaultDocuments;
-  const folders = state.vaultFolders;
+  const { state, addVaultShareLink, revokeVaultShareLink } = useApp();
+  const documentsQuery = useDocumentsQuery();
+  const foldersQuery = useFoldersQuery();
+  const createDocumentMutation = useCreateDocumentMutation();
+  const updateDocumentMutation = useUpdateDocumentMutation();
+  const deleteDocumentMutation = useDeleteDocumentMutation();
+  const createFolderMutation = useCreateFolderMutation();
+  const deleteFolderMutation = useDeleteFolderMutation();
+
+  const docs = useMemo<VaultDocument[]>(() => {
+    const raw = documentsQuery.data?.data ?? [];
+    return raw.map((doc) => ({
+      id: doc.id,
+      name: doc.name,
+      category: doc.category,
+      folderId: doc.folderId ?? undefined,
+      tags: doc.tags ?? [],
+      fileType: getFileTypeFromPath(doc.filePath),
+      fileSize: '--',
+      uploadedAt: formatDate(doc.createdAt),
+      notes: doc.notes ?? undefined,
+      propertyId: doc.linkedPropertyId ?? undefined,
+    }));
+  }, [documentsQuery.data]);
+
+  const documentUrlById = useMemo<Record<string, string>>(() => {
+    const raw = documentsQuery.data?.data ?? [];
+    return raw.reduce<Record<string, string>>((acc, doc) => {
+      acc[doc.id] = getFileUrl(doc.filePath);
+      return acc;
+    }, {});
+  }, [documentsQuery.data]);
+
+  const folders = useMemo<VaultFolder[]>(() => {
+    const raw = foldersQuery.data?.data ?? [];
+    return raw.map((folder) => ({
+      id: folder.id,
+      name: folder.name,
+      category: 'Custom',
+      createdAt: formatDate(folder.createdAt),
+    }));
+  }, [foldersQuery.data]);
+
   const shareLinks = state.vaultShareLinks;
 
   const [activeTab, setActiveTab] = useState<Tab>('documents');
@@ -360,7 +423,6 @@ export function DocumentVault() {
   const [showFolderModal, setShowFolderModal] = useState(false);
   const [selectedDocs, setSelectedDocs] = useState<string[]>([]);
   const [shareDocIds, setShareDocIds] = useState<string[]>([]);
-  const [expandedDoc, setExpandedDoc] = useState<string | null>(null);
   const [copiedLink, setCopiedLink] = useState<string | null>(null);
   const [uploadPreset, setUploadPreset] = useState<{ category?: VaultCategory; nameHint?: string } | null>(null);
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
@@ -423,7 +485,9 @@ export function DocumentVault() {
   };
 
   const handleDeleteSelected = () => {
-    selectedDocs.forEach(id => deleteVaultDocument(id));
+    selectedDocs.forEach((id) => {
+      deleteDocumentMutation.mutate(id);
+    });
     setSelectedDocs([]);
   };
 
@@ -539,13 +603,14 @@ export function DocumentVault() {
               handleSelectDoc={handleSelectDoc}
               handleShareSelected={handleShareSelected}
               handleDeleteSelected={handleDeleteSelected}
-              expandedDoc={expandedDoc}
-              setExpandedDoc={setExpandedDoc}
               onUpload={() => { setUploadPreset(null); setShowUploadModal(true); }}
-              onDelete={deleteVaultDocument}
-              onShare={(ids) => { setShareDocIds(ids); setShowShareModal(true); }}
-              updateDoc={updateVaultDocument}
-              deleteFolder={deleteVaultFolder}
+              onDelete={(id) => deleteDocumentMutation.mutate(id)}
+              onView={(id) => {
+                const url = documentUrlById[id];
+                if (!url) return;
+                window.open(url, '_blank', 'noopener,noreferrer');
+              }}
+              deleteFolder={(id) => deleteFolderMutation.mutate(id)}
             />
           </motion.div>
         )}
@@ -574,9 +639,34 @@ export function DocumentVault() {
 
       {/* ─── Modals ─── */}
       <AnimatePresence>
-        {showUploadModal && <UploadModal onClose={() => { setShowUploadModal(false); setUploadPreset(null); }} onUpload={addVaultDocument} folders={folders} properties={state.properties} preset={uploadPreset} />}
+        {showUploadModal && (
+          <UploadModal
+            onClose={() => { setShowUploadModal(false); setUploadPreset(null); }}
+            onUpload={async (payload) => {
+              const { tags, ...createPayload } = payload;
+              const created = await createDocumentMutation.mutateAsync(createPayload);
+              if (tags.length > 0) {
+                await updateDocumentMutation.mutateAsync({ id: created.data.id, tags });
+              }
+            }}
+            folders={folders}
+            properties={state.properties}
+            preset={uploadPreset}
+            isSubmitting={createDocumentMutation.isPending}
+            submitError={createDocumentMutation.isError ? getApiErrorMessage(createDocumentMutation.error) : null}
+          />
+        )}
         {showShareModal && <ShareModal onClose={() => { setShowShareModal(false); setShareDocIds([]); }} docIds={shareDocIds} docs={docs} onCreateLink={addVaultShareLink} />}
-        {showFolderModal && <FolderModal onClose={() => setShowFolderModal(false)} onCreateFolder={addVaultFolder} />}
+        {showFolderModal && (
+          <FolderModal
+            onClose={() => setShowFolderModal(false)}
+            onCreateFolder={async (payload) => {
+              await createFolderMutation.mutateAsync(payload);
+            }}
+            isSubmitting={createFolderMutation.isPending}
+            submitError={createFolderMutation.isError ? getApiErrorMessage(createFolderMutation.error) : null}
+          />
+        )}
       </AnimatePresence>
     </div>
   );
@@ -599,8 +689,7 @@ function StatCard({ label, value, icon }: { label: string; value: string; icon: 
 function DocumentsView({
   docs, allDocs, folders, activeCategory, setActiveCategory, categoryCounts,
   searchQuery, setSearchQuery, selectedDocs, handleSelectDoc, handleShareSelected,
-  handleDeleteSelected, expandedDoc, setExpandedDoc, onUpload, onDelete, onShare,
-  updateDoc, deleteFolder,
+  handleDeleteSelected, onUpload, onDelete, onView, deleteFolder,
 }: {
   docs: VaultDocument[];
   allDocs: VaultDocument[];
@@ -614,12 +703,9 @@ function DocumentsView({
   handleSelectDoc: (id: string) => void;
   handleShareSelected: () => void;
   handleDeleteSelected: () => void;
-  expandedDoc: string | null;
-  setExpandedDoc: (id: string | null) => void;
   onUpload: () => void;
   onDelete: (id: string) => void;
-  onShare: (ids: string[]) => void;
-  updateDoc: (id: string, updates: Partial<VaultDocument>) => void;
+  onView: (id: string) => void;
   deleteFolder: (id: string) => void;
 }) {
   return (
@@ -751,12 +837,9 @@ function DocumentsView({
                 key={doc.id}
                 doc={doc}
                 isSelected={selectedDocs.includes(doc.id)}
-                isExpanded={expandedDoc === doc.id}
                 onSelect={() => handleSelectDoc(doc.id)}
-                onExpand={() => setExpandedDoc(expandedDoc === doc.id ? null : doc.id)}
                 onDelete={() => onDelete(doc.id)}
-                onShare={() => onShare([doc.id])}
-                onUpdateTags={(tags) => updateDoc(doc.id, { tags })}
+                onView={() => onView(doc.id)}
               />
             ))}
           </div>
@@ -768,28 +851,15 @@ function DocumentsView({
 
 /* ─── Document Row ─── */
 function DocumentRow({
-  doc, isSelected, isExpanded, onSelect, onExpand, onDelete, onShare, onUpdateTags,
+  doc, isSelected, onSelect, onDelete, onView,
 }: {
   doc: VaultDocument;
   isSelected: boolean;
-  isExpanded: boolean;
   onSelect: () => void;
-  onExpand: () => void;
   onDelete: () => void;
-  onShare: () => void;
-  onUpdateTags: (tags: string[]) => void;
+  onView: () => void;
 }) {
-  const typeStyle = getFileTypeStyle(doc.fileType);
-  const meta = CATEGORY_META[doc.category];
-  const [newTag, setNewTag] = useState('');
   const [showMenu, setShowMenu] = useState(false);
-
-  const addTag = () => {
-    if (newTag.trim() && !doc.tags.includes(newTag.trim())) {
-      onUpdateTags([...doc.tags, newTag.trim()]);
-      setNewTag('');
-    }
-  };
 
   return (
     <motion.div
@@ -813,8 +883,14 @@ function DocumentRow({
         </div>
 
         {/* Info */}
-        <button onClick={onExpand} className="flex-1 min-w-0 text-left cursor-pointer">
-          <p className="text-[16px] text-[#764D2F] truncate" style={{ fontWeight: 510 }}>{doc.name}</p>
+        <div className="flex-1 min-w-0 text-left overflow-hidden">
+          <p
+            title={doc.name}
+            className="block w-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-[16px] text-[#764D2F]"
+            style={{ fontWeight: 510 }}
+          >
+            {doc.name}
+          </p>
           <div className="flex items-center gap-[8px] mt-[2px]">
             <span className="text-[12px] text-[#8C8780]" style={{ fontWeight: 510 }}>{doc.fileSize}</span>
             <span className="text-[12px] text-[#D0D0D0]">|</span>
@@ -822,7 +898,7 @@ function DocumentRow({
             <span className="text-[12px] text-[#D0D0D0] hidden sm:inline">|</span>
             <span className="text-[12px] text-[#8C8780] hidden sm:inline" style={{ fontWeight: 510 }}>{doc.uploadedAt}</span>
           </div>
-        </button>
+        </div>
 
         {/* Tags preview */}
         <div className="hidden lg:flex items-center gap-[4px]">
@@ -836,9 +912,6 @@ function DocumentRow({
 
         {/* Actions */}
         <div className="flex items-center gap-[4px] shrink-0">
-          <button onClick={onShare} className="p-[6px] rounded-[6px] border border-[#D0D0D0] text-[#8C8780] hover:bg-[#F3EFE6] hover:text-[#764D2F] transition-colors cursor-pointer" title="Share">
-            <Link2 className="w-[14px] h-[14px]" />
-          </button>
           <div className="relative">
             <button onClick={() => setShowMenu(!showMenu)} className="p-[6px] rounded-[6px] border border-[#D0D0D0] text-[#8C8780] hover:bg-[#F3EFE6] hover:text-[#764D2F] transition-colors cursor-pointer">
               <MoreHorizontal className="w-[14px] h-[14px]" />
@@ -847,10 +920,10 @@ function DocumentRow({
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
                 <div className="absolute right-0 top-full mt-[4px] z-20 bg-white rounded-[10px] border border-[#D0D0D0] shadow-lg py-[4px] w-[160px]">
-                  <button onClick={() => { onExpand(); setShowMenu(false); }} className="w-full text-left px-[14px] py-[8px] text-[13px] text-[#3E2D1D] hover:bg-[#F3EFE6] cursor-pointer flex items-center gap-[8px]" style={{ fontWeight: 510 }}>
-                    <Eye className="w-[14px] h-[14px]" /> View Details
+                  <button onClick={() => { onView(); setShowMenu(false); }} className="w-full text-left px-[14px] py-[8px] text-[13px] text-[#3E2D1D] hover:bg-[#F3EFE6] cursor-pointer flex items-center gap-[8px]" style={{ fontWeight: 510 }}>
+                    <Eye className="w-[14px] h-[14px]" /> View Document
                   </button>
-                  <button onClick={() => { setShowMenu(false); }} className="w-full text-left px-[14px] py-[8px] text-[13px] text-[#3E2D1D] hover:bg-[#F3EFE6] cursor-pointer flex items-center gap-[8px]" style={{ fontWeight: 510 }}>
+                  <button onClick={() => { onView(); setShowMenu(false); }} className="w-full text-left px-[14px] py-[8px] text-[13px] text-[#3E2D1D] hover:bg-[#F3EFE6] cursor-pointer flex items-center gap-[8px]" style={{ fontWeight: 510 }}>
                     <Download className="w-[14px] h-[14px]" /> Download
                   </button>
                   <div className="h-px bg-[#E8E4DD] my-[2px]" />
@@ -863,51 +936,6 @@ function DocumentRow({
           </div>
         </div>
       </div>
-
-      {/* Expanded detail */}
-      <AnimatePresence>
-        {isExpanded && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="overflow-hidden"
-          >
-            <div className="px-[16px] pb-[16px] pt-[4px] border-t border-[#F0ECE6]">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-[12px] mb-[12px]">
-                <div>
-                  <p className="text-[11px] text-[#8C8780] mb-[4px]" style={{ fontWeight: 590, letterSpacing: '0.5px' }}>FILE DETAILS</p>
-                  <p className="text-[13px] text-[#3E2D1D]" style={{ fontWeight: 510 }}>Type: {doc.fileType} | Size: {doc.fileSize}</p>
-                  <p className="text-[13px] text-[#3E2D1D]" style={{ fontWeight: 510 }}>Uploaded: {doc.uploadedAt}</p>
-                  {doc.notes && <p className="text-[13px] text-[#8C8780] mt-[4px]" style={{ fontWeight: 510 }}>Note: {doc.notes}</p>}
-                </div>
-                <div>
-                  <p className="text-[11px] text-[#8C8780] mb-[6px]" style={{ fontWeight: 590, letterSpacing: '0.5px' }}>TAGS</p>
-                  <div className="flex flex-wrap gap-[4px] mb-[8px]">
-                    {doc.tags.map(t => (
-                      <span key={t} className="flex items-center gap-[4px] text-[11px] px-[8px] py-[2px] rounded-full bg-[#F3EFE6] text-[#764D2F]" style={{ fontWeight: 510 }}>
-                        {t}
-                        <button onClick={() => onUpdateTags(doc.tags.filter(tag => tag !== t))} className="hover:text-red-400 cursor-pointer"><X className="w-[10px] h-[10px]" /></button>
-                      </span>
-                    ))}
-                  </div>
-                  <div className="flex gap-[6px]">
-                    <input
-                      value={newTag}
-                      onChange={e => setNewTag(e.target.value)}
-                      onKeyDown={e => e.key === 'Enter' && addTag()}
-                      placeholder="Add tag..."
-                      className={`${figtree} flex-1 h-[28px] px-[8px] rounded-[6px] border border-[#D0D0D0] text-[12px] text-[#3E2D1D] placeholder:text-[#B5B0A8] outline-none`}
-                    />
-                    <button onClick={addTag} className="h-[28px] px-[10px] rounded-[6px] bg-[#F3EFE6] text-[#764D2F] text-[12px] cursor-pointer hover:bg-[#E8DDD0] transition-colors" style={{ fontWeight: 590 }}>Add</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </motion.div>
   );
 }
@@ -1477,61 +1505,84 @@ function SharedLinksView({
 }
 
 /* ─── Upload Modal ─── */
-function UploadModal({ onClose, onUpload, folders, properties, preset }: {
+function UploadModal({ onClose, onUpload, folders, properties, preset, isSubmitting, submitError }: {
   onClose: () => void;
-  onUpload: (doc: Omit<VaultDocument, 'id'>) => VaultDocument;
+  onUpload: (payload: {
+    name: string;
+    category: Exclude<VaultCategory, 'Custom'>;
+    linkedPropertyId?: string;
+    notes?: string;
+    folderId?: string;
+    file: File;
+    tags: string[];
+  }) => Promise<void>;
   folders: VaultFolder[];
   properties: { id: string; name: string }[];
   preset?: { category?: VaultCategory; nameHint?: string } | null;
+  isSubmitting: boolean;
+  submitError: string | null;
 }) {
-  const [name, setName] = useState(preset?.nameHint || '');
-  const [category, setCategory] = useState<VaultCategory>(preset?.category || 'Identity');
-  const [fileType, setFileType] = useState('PDF');
+  const form = useForm<{
+    name: string;
+    category: Exclude<VaultCategory, 'Custom'>;
+    propertyId: string;
+    folderId: string;
+    notes: string;
+  }>({
+    defaultValues: {
+      name: preset?.nameHint || '',
+      category: preset?.category && preset.category !== 'Custom' ? preset.category : 'Identity',
+      propertyId: '',
+      folderId: '',
+      notes: '',
+    },
+  });
+
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState('');
-  const [notes, setNotes] = useState('');
-  const [propertyId, setPropertyId] = useState('');
   const [dragOver, setDragOver] = useState(false);
-  const [uploadedFile, setUploadedFile] = useState<string | null>(null);
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const nameValue = form.watch('name');
+  const folderId = form.watch('folderId');
+  const propertyId = form.watch('propertyId');
+  const categoryValue = form.watch('category');
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setDragOver(false);
     const file = e.dataTransfer.files[0];
     if (file) {
-      setUploadedFile(file.name);
-      if (!name) setName(file.name.replace(/\.[^/.]+$/, ''));
-      const ext = file.name.split('.').pop()?.toUpperCase() || 'PDF';
-      setFileType(ext);
+      setUploadedFile(file);
+      if (!form.getValues('name').trim()) {
+        form.setValue('name', file.name.replace(/\.[^/.]+$/, ''), { shouldValidate: true });
+      }
     }
-  }, [name]);
+  }, [form]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setUploadedFile(file.name);
-      if (!name) setName(file.name.replace(/\.[^/.]+$/, ''));
-      const ext = file.name.split('.').pop()?.toUpperCase() || 'PDF';
-      setFileType(ext);
+      setUploadedFile(file);
+      if (!form.getValues('name').trim()) {
+        form.setValue('name', file.name.replace(/\.[^/.]+$/, ''), { shouldValidate: true });
+      }
     }
   };
 
-  const handleSubmit = () => {
-    if (!name.trim()) return;
-    const sizes = ['0.8 MB', '1.2 MB', '2.4 MB', '3.1 MB', '0.5 MB', '4.7 MB', '1.8 MB'];
-    onUpload({
-      name: name.trim() + (fileType ? `.${fileType.toLowerCase()}` : ''),
-      category,
+  const handleSubmit = form.handleSubmit(async (values) => {
+    if (!uploadedFile) return;
+    await onUpload({
+      name: values.name.trim(),
+      category: values.category,
+      linkedPropertyId: values.propertyId || undefined,
+      folderId: values.folderId || undefined,
+      notes: values.notes || undefined,
+      file: uploadedFile,
       tags,
-      fileType,
-      fileSize: sizes[Math.floor(Math.random() * sizes.length)],
-      uploadedAt: new Date().toISOString().split('T')[0],
-      notes: notes || undefined,
-      propertyId: propertyId || undefined,
     });
     onClose();
-  };
+  });
   const addTag = (raw: string) => {
     const next = raw.trim();
     if (!next) return;
@@ -1578,7 +1629,7 @@ function UploadModal({ onClose, onUpload, folders, properties, preset }: {
             {uploadedFile ? (
               <div className="flex items-center justify-center gap-[10px]">
                 <Check className="w-[20px] h-[20px] text-[#3E6B3E]" />
-                <span className="text-[14px] text-[#3E2D1D]" style={{ fontWeight: 510 }}>{uploadedFile}</span>
+                <span className="text-[14px] text-[#3E2D1D]" style={{ fontWeight: 510 }}>{uploadedFile.name}</span>
               </div>
             ) : (
               <>
@@ -1593,8 +1644,8 @@ function UploadModal({ onClose, onUpload, folders, properties, preset }: {
           <div className="flex flex-col gap-[20px]">
             <ModalField label="Document Name" labelClassName={invoiceModalLabelClass} labelStyle={invoiceModalLabelStyle}>
               <input
-                value={name}
-                onChange={e => setName(e.target.value)}
+                value={nameValue}
+                onChange={(e) => form.setValue('name', e.target.value, { shouldValidate: true })}
                 placeholder="e.g. 2025_Tax_Return"
                 className={invoiceModalInputClass}
                 style={{ fontFamily: "'Figtree', sans-serif" }}
@@ -1602,7 +1653,7 @@ function UploadModal({ onClose, onUpload, folders, properties, preset }: {
             </ModalField>
 
             <ModalField label="Category" labelClassName={invoiceModalLabelClass} labelStyle={invoiceModalLabelStyle}>
-              <Select value={category} onValueChange={(val) => setCategory(val as VaultCategory)}>
+              <Select value={categoryValue} onValueChange={(val) => form.setValue('category', val as Exclude<VaultCategory, 'Custom'>)}>
                 <SelectTrigger className={`w-full !text-[#333] ${invoiceSelectTriggerBase}`} style={{ fontFamily: "'Figtree', sans-serif" }}>
                   <SelectValue />
                 </SelectTrigger>
@@ -1616,8 +1667,26 @@ function UploadModal({ onClose, onUpload, folders, properties, preset }: {
               </Select>
             </ModalField>
 
+            <ModalField label="Folder (optional)" labelClassName={invoiceModalLabelClass} labelStyle={invoiceModalLabelStyle}>
+              <Select value={folderId || '__none'} onValueChange={(val) => form.setValue('folderId', val === '__none' ? '' : val)}>
+                <SelectTrigger className={`w-full !text-[#333] ${invoiceSelectTriggerBase}`} style={{ fontFamily: "'Figtree', sans-serif" }}>
+                  <SelectValue placeholder="None" />
+                </SelectTrigger>
+                <SelectContent className={invoiceSelectContentBase}>
+                  <SelectItem value="__none" className={invoiceSelectItemBase} style={{ fontFamily: "'SF Pro', -apple-system, sans-serif", fontWeight: 510 }}>
+                    None
+                  </SelectItem>
+                  {folders.map((folder) => (
+                    <SelectItem key={folder.id} value={folder.id} className={invoiceSelectItemBase} style={{ fontFamily: "'SF Pro', -apple-system, sans-serif", fontWeight: 510 }}>
+                      {folder.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </ModalField>
+
             <ModalField label="Link to Property (optional)" labelClassName={invoiceModalLabelClass} labelStyle={invoiceModalLabelStyle}>
-              <Select value={propertyId || '__none'} onValueChange={(val) => setPropertyId(val === '__none' ? '' : val)}>
+              <Select value={propertyId || '__none'} onValueChange={(val) => form.setValue('propertyId', val === '__none' ? '' : val)}>
                 <SelectTrigger className={`w-full !text-[#333] ${invoiceSelectTriggerBase}`} style={{ fontFamily: "'Figtree', sans-serif" }}>
                   <SelectValue placeholder="None" />
                 </SelectTrigger>
@@ -1682,8 +1751,8 @@ function UploadModal({ onClose, onUpload, folders, properties, preset }: {
 
             <ModalField label="Notes (optional)" labelClassName={invoiceModalLabelClass} labelStyle={invoiceModalLabelStyle}>
               <textarea
-                value={notes}
-                onChange={e => setNotes(e.target.value)}
+                value={form.watch('notes')}
+                onChange={e => form.setValue('notes', e.target.value)}
                 placeholder="Additional notes about this document..."
                 rows={2}
                 className="w-full bg-white border border-[#D0D0D0] rounded-[8px] px-[12px] py-[10px] text-[14px] text-[#333] placeholder:text-[#767676] outline-none focus:border-[#764D2F] resize-none transition-colors"
@@ -1692,16 +1761,22 @@ function UploadModal({ onClose, onUpload, folders, properties, preset }: {
             </ModalField>
           </div>
 
+          {submitError && (
+            <p className="text-[12px] text-red-500 mt-[12px]" style={{ fontWeight: 510 }}>
+              {submitError}
+            </p>
+          )}
+
           {/* Actions */}
           <div className="flex justify-end gap-[10px] mt-[24px]">
             <button onClick={onClose} className="h-[40px] px-[20px] rounded-[8px] border-[1.5px] border-[#D0D0D0] text-[14px] text-[#3E2D1D] hover:bg-[#F3EFE6] transition-colors cursor-pointer" style={{ fontWeight: 590 }}>Cancel</button>
             <button
               onClick={handleSubmit}
-              disabled={!name.trim()}
-              className={`h-[40px] px-[24px] rounded-[8px] text-[14px] text-white transition-colors cursor-pointer ${name.trim() ? 'bg-[#3E2D1D] hover:bg-[#764D2F]' : 'bg-[#C5C0B9] cursor-not-allowed'}`}
+              disabled={!nameValue.trim() || !uploadedFile || isSubmitting}
+              className={`h-[40px] px-[24px] rounded-[8px] text-[14px] text-white transition-colors cursor-pointer ${nameValue.trim() && uploadedFile && !isSubmitting ? 'bg-[#3E2D1D] hover:bg-[#764D2F]' : 'bg-[#C5C0B9] cursor-not-allowed'}`}
               style={{ fontWeight: 590 }}
             >
-              Upload Document
+              {isSubmitting ? 'Uploading...' : 'Upload Document'}
             </button>
           </div>
         </div>
@@ -1897,19 +1972,28 @@ function ShareModal({ onClose, docIds, docs, onCreateLink }: {
 }
 
 /* ─── Folder Modal ─── */
-function FolderModal({ onClose, onCreateFolder }: {
+function FolderModal({ onClose, onCreateFolder, isSubmitting, submitError }: {
   onClose: () => void;
-  onCreateFolder: (f: Omit<VaultFolder, 'id' | 'createdAt'>) => VaultFolder;
+  onCreateFolder: (f: { name: string; parentFolderId?: string }) => Promise<void>;
+  isSubmitting: boolean;
+  submitError: string | null;
 }) {
-  const [name, setName] = useState('');
-  const [category, setCategory] = useState<VaultCategory>('Custom');
-  const [description, setDescription] = useState('');
+  const form = useForm<{ name: string; category: VaultCategory; description: string }>({
+    defaultValues: {
+      name: '',
+      category: 'Custom',
+      description: '',
+    },
+  });
+  const name = form.watch('name');
+  const category = form.watch('category');
+  const description = form.watch('description');
 
-  const handleCreate = () => {
+  const handleCreate = form.handleSubmit(async () => {
     if (!name.trim()) return;
-    onCreateFolder({ name: name.trim(), category, description: description || undefined });
+    await onCreateFolder({ name: name.trim() });
     onClose();
-  };
+  });
 
   return (
     <motion.div
@@ -1934,7 +2018,7 @@ function FolderModal({ onClose, onCreateFolder }: {
             <ModalField label="Folder Name" labelClassName={invoiceModalLabelClass} labelStyle={invoiceModalLabelStyle}>
               <input
                 value={name}
-                onChange={e => setName(e.target.value)}
+                onChange={e => form.setValue('name', e.target.value, { shouldValidate: true })}
                 placeholder="e.g. Texas Properties"
                 className={invoiceModalInputClass}
                 style={{ fontFamily: "'Figtree', sans-serif" }}
@@ -1943,7 +2027,7 @@ function FolderModal({ onClose, onCreateFolder }: {
             </ModalField>
 
             <ModalField label="Category" labelClassName={invoiceModalLabelClass} labelStyle={invoiceModalLabelStyle}>
-              <Select value={category} onValueChange={(val) => setCategory(val as VaultCategory)}>
+              <Select value={category} onValueChange={(val) => form.setValue('category', val as VaultCategory)}>
                 <SelectTrigger className={`w-full !text-[#333] ${invoiceSelectTriggerBase}`} style={{ fontFamily: "'Figtree', sans-serif" }}>
                   <SelectValue />
                 </SelectTrigger>
@@ -1960,7 +2044,7 @@ function FolderModal({ onClose, onCreateFolder }: {
             <ModalField label="Description (optional)" labelClassName={invoiceModalLabelClass} labelStyle={invoiceModalLabelStyle}>
               <input
                 value={description}
-                onChange={e => setDescription(e.target.value)}
+                onChange={e => form.setValue('description', e.target.value)}
                 placeholder="What goes in this folder?"
                 className={invoiceModalInputClass}
                 style={{ fontFamily: "'Figtree', sans-serif" }}
@@ -1968,15 +2052,21 @@ function FolderModal({ onClose, onCreateFolder }: {
             </ModalField>
           </div>
 
+          {submitError && (
+            <p className="text-[12px] text-red-500 mt-[12px]" style={{ fontWeight: 510 }}>
+              {submitError}
+            </p>
+          )}
+
           <div className="flex justify-end gap-[10px] mt-[24px]">
             <button onClick={onClose} className="h-[40px] px-[20px] rounded-[8px] border-[1.5px] border-[#D0D0D0] text-[14px] text-[#3E2D1D] hover:bg-[#F3EFE6] transition-colors cursor-pointer" style={{ fontWeight: 590 }}>Cancel</button>
             <button
               onClick={handleCreate}
-              disabled={!name.trim()}
-              className={`h-[40px] px-[24px] rounded-[8px] text-[14px] text-white transition-colors cursor-pointer ${name.trim() ? 'bg-[#3E2D1D] hover:bg-[#764D2F]' : 'bg-[#C5C0B9] cursor-not-allowed'}`}
+              disabled={!name.trim() || isSubmitting}
+              className={`h-[40px] px-[24px] rounded-[8px] text-[14px] text-white transition-colors cursor-pointer ${name.trim() && !isSubmitting ? 'bg-[#3E2D1D] hover:bg-[#764D2F]' : 'bg-[#C5C0B9] cursor-not-allowed'}`}
               style={{ fontWeight: 590 }}
             >
-              Create Folder
+              {isSubmitting ? 'Creating...' : 'Create Folder'}
             </button>
           </div>
         </div>
