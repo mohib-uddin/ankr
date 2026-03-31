@@ -1,7 +1,8 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
-import { UserPackage, UserPackageStatus } from './entities/user-package.entity';
+import { UserPackage } from './entities/user-package.entity';
+import { UserPackageStatus } from './types';
 import { CreateUserPackageDto } from './dto';
 import { Profile, PackageTemplate, Document } from '@entities';
 import { ApiMessageData } from '@types';
