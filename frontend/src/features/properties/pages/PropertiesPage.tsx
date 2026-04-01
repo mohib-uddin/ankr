@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { motion } from 'motion/react';
 import { Plus } from 'lucide-react';
@@ -170,6 +170,7 @@ function PropertyCard({ property, index, onClick }: { property: DashboardPropert
   const totals = getBudgetTotals(property.budget, property.draws);
   const drawPct = totals.totalBudget > 0 ? Math.round((totals.totalDrawn / totals.totalBudget) * 100) : 0;
   const activeDraw = property.draws.filter(d => d.status !== 'Draft' && d.status !== 'Funded').length;
+  const [imageLoaded, setImageLoaded] = useState(false);
 
   function formatCompact(n: number): string {
     if (n >= 1000000) return '$' + (n / 1000000).toFixed(1) + 'M';
@@ -179,19 +180,27 @@ function PropertyCard({ property, index, onClick }: { property: DashboardPropert
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
+      initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.25, delay: index * 0.06 }}
+      transition={{ duration: 0.18, ease: 'easeOut' }}
       onClick={onClick}
-      className="bg-white rounded-[20px] border border-[#D0D0D0] overflow-hidden cursor-pointer hover:shadow-md transition-all group"
+      className="bg-white rounded-[20px] border border-[#D0D0D0] overflow-hidden cursor-pointer hover:shadow-md transition-all group will-change-transform will-change-opacity"
     >
       {/* Image */}
-      <div className="relative h-[200px] overflow-hidden">
+      <div className="relative h-[200px] overflow-hidden bg-[#E8DFD4]">
         <img
           src={property.coverImage}
           alt={property.name}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          loading="lazy"
+          decoding="async"
+          onLoad={() => setImageLoaded(true)}
+          className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 transition-opacity ${
+            imageLoaded ? 'opacity-100' : 'opacity-0'
+          }`}
         />
+        {!imageLoaded && (
+          <div className="absolute inset-0 bg-[#E8DFD4] animate-pulse" />
+        )}
         <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0) 60%)' }} />
         {/* Status badge */}
         <div className="absolute top-[16px] left-[16px]">
