@@ -1,9 +1,32 @@
 {
   "moduleFileExtensions": ["js", "json", "ts"],
-  "rootDir": ".",
+  "rootDir": "..",
   "testEnvironment": "node",
   "testRegex": ".e2e-spec.ts$",
   "transform": {
     "^.+\\.(t|j)s$": "ts-jest"
+  },
+  "moduleNameMapper": {
+    "^src/(.*)$": "<rootDir>/src/$1",
+    "@types": "<rootDir>/src/common/types",
+    "@entities": "<rootDir>/src/common/entities",
+    "@dtos": "<rootDir>/src/common/dto",
+    "@messages": "<rootDir>/src/common/messages",
+    "@constants": "<rootDir>/src/common/constants",
+    "@decorators": "<rootDir>/src/common/decorators",
+    "@filters": "<rootDir>/src/common/filters",
+    "@middlewares/(.*)": "<rootDir>/src/common/middlewares/$1",
+    "@guards/(.*)": "<rootDir>/src/common/guards/$1",
+    "@helpers/(.*)": "<rootDir>/src/common/helpers/$1",
+    "@pipes/(.*)": "<rootDir>/src/common/pipes/$1",
+    "@provider/(.*)": "<rootDir>/src/common/provider/$1",
+    "@strategies/(.*)": "<rootDir>/src/common/strategies/$1",
+    "@config/(.*)": "<rootDir>/src/config/$1",
+    "@mail/(.*)": "<rootDir>/src/mail/$1",
+    "@models/(.*)": "<rootDir>/src/models/$1",
+    "@plugins/(.*)": "<rootDir>/src/plugins/$1",
+    "@routes/(.*)": "<rootDir>/src/routes/$1",
+    "@swagger/(.*)": "<rootDir>/src/swagger/$1",
+    "resolvers/(.*)": "<rootDir>/src/resolvers/$1"
   }
 }

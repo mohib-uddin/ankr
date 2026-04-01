@@ -27,6 +27,13 @@ export class DocumentsController {
     return this.documentsService.getDocuments(req.user.id, getDocumentsQuery);
   }
 
+  @Get('counts')
+  @HttpCode(HttpStatus.OK)
+  @SwaggerApiResponse({ description: 'Get category and folder-wise document counts' })
+  getDocumentCounts(@Req() req: Request) {
+    return this.documentsService.getDocumentCounts(req.user.id);
+  }
+
   // --- Folder Endpoints ---
 
   @Post('folders')

@@ -200,4 +200,45 @@ export class DocumentsService {
     await this.folderRepository.delete(id);
     return { message: SuccessResponseMessages.successGeneral };
   }
+
+  async getDocumentCounts(userId: string): Promise<ApiMessageData<{ categories: any[], folders: any[] }>> {
+    const profile = await this.profileRepository.findOne({ where: { userId } });
+    if (!profile) throw new NotFoundException('Profile not found');
+
+    // 1. Category-wise counts
+    const categories = await this.documentRepository
+      .createQueryBuilder('document')
+      .select('document.category', 'category')
+      .addSelect('COUNT(document.id)', 'count')
+      .where('document.profileId = :profileId', { profileId: profile.id })
+      .groupBy('document.category')
+      .getRawMany();
+
+    // 2. Folder-wise counts
+    const folders = await this.folderRepository
+      .createQueryBuilder('folder')
+      .leftJoin('folder.documents', 'document')
+      .leftJoin('folder.children', 'childFolder')
+      .select('folder.id', 'id')
+      .addSelect('folder.name', 'name')
+      .addSelect('COUNT(DISTINCT document.id)', 'fileCount')
+      .addSelect('COUNT(DISTINCT childFolder.id)', 'folderCount')
+      .where('folder.profileId = :profileId', { profileId: profile.id })
+      .groupBy('folder.id')
+      .addGroupBy('folder.name')
+      .getRawMany();
+
+    return {
+      message: SuccessResponseMessages.successGeneral,
+      data: {
+        categories: categories.map(c => ({ category: c.category, count: parseInt(c.count) })),
+        folders: folders.map(f => ({
+          id: f.id,
+          name: f.name,
+          fileCount: parseInt(f.fileCount),
+          folderCount: parseInt(f.folderCount)
+        }))
+      }
+    };
+  }
 }

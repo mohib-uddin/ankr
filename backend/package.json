@@ -18,6 +18,7 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
+    "test:e2e:m": "jest --config ./test/jest-e2e.json --testPathPattern",
     "migration:generate": "cross-env ENVIRONMENT=production ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:generate ./src/database/migrations/%npm_config_name% --dataSource ./src/database/db-config.ts",
     "migration:run": "cross-env ENVIRONMENT=production ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:run -d ./src/database/db-config.ts",
     "migration:revert": "cross-env ENVIRONMENT=production ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:revert -d ./src/database/db-config.ts",
@@ -101,7 +102,28 @@
     "collectCoverageFrom": [
       "**/*.(t|j)s"
     ],
-    "coverageDirectory": "../coverage",
-    "testEnvironment": "node"
+    "moduleNameMapper": {
+      "^src/(.*)$": "<rootDir>/$1",
+      "@types": "<rootDir>/common/types",
+      "@entities": "<rootDir>/common/entities",
+      "@dtos": "<rootDir>/common/dto",
+      "@messages": "<rootDir>/common/messages",
+      "@constants": "<rootDir>/common/constants",
+      "@decorators": "<rootDir>/common/decorators",
+      "@filters": "<rootDir>/common/filters",
+      "@middlewares/(.*)": "<rootDir>/common/middlewares/$1",
+      "@guards/(.*)": "<rootDir>/common/guards/$1",
+      "@helpers/(.*)": "<rootDir>/common/helpers/$1",
+      "@pipes/(.*)": "<rootDir>/common/pipes/$1",
+      "@provider/(.*)": "<rootDir>/common/provider/$1",
+      "@strategies/(.*)": "<rootDir>/common/strategies/$1",
+      "@config/(.*)": "<rootDir>/config/$1",
+      "@mail/(.*)": "<rootDir>/mail/$1",
+      "@models/(.*)": "<rootDir>/models/$1",
+      "@plugins/(.*)": "<rootDir>/plugins/$1",
+      "@routes/(.*)": "<rootDir>/routes/$1",
+      "@swagger/(.*)": "<rootDir>/swagger/$1",
+      "resolvers/(.*)": "<rootDir>/resolvers/$1"
+    }
   }
 }
