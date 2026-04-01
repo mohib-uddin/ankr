@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as documentsApi from '@/features/dashboard/api/documents.api';
 import type {
   CreateDocumentPayload,
@@ -9,10 +9,45 @@ import type {
 const documentsQueryKey = ['documents'] as const;
 const foldersQueryKey = ['document-folders'] as const;
 
-export function useDocumentsQuery() {
+type DocumentsFilterParams = {
+  category?: string;
+  folderId?: string;
+  propertyId?: string;
+};
+
+export function useDocumentsQuery(filters?: DocumentsFilterParams) {
+  const hasFilters = Boolean(filters?.category || filters?.folderId || filters?.propertyId);
   return useQuery({
-    queryKey: documentsQueryKey,
-    queryFn: () => documentsApi.getDocuments(),
+    queryKey: hasFilters ? [...documentsQueryKey, filters] : documentsQueryKey,
+    queryFn: () =>
+      documentsApi.getDocuments({
+        page: 1,
+        limit: 200,
+        category: filters?.category,
+        folderId: filters?.folderId,
+        propertyId: filters?.propertyId,
+      }),
+  });
+}
+
+export function useInfiniteDocumentsQuery(filters?: DocumentsFilterParams) {
+  const hasFilters = Boolean(filters?.category || filters?.folderId || filters?.propertyId);
+  return useInfiniteQuery({
+    queryKey: hasFilters ? [...documentsQueryKey, 'infinite', filters] : [...documentsQueryKey, 'infinite'],
+    queryFn: ({ pageParam = 1 }) =>
+      documentsApi.getDocuments({
+        page: pageParam,
+        limit: 50,
+        category: filters?.category,
+        folderId: filters?.folderId,
+        propertyId: filters?.propertyId,
+      }),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) => {
+      if (!lastPage) return undefined;
+      if (lastPage.page < lastPage.lastPage) return lastPage.page + 1;
+      return undefined;
+    },
   });
 }
 

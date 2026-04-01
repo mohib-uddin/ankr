@@ -26,6 +26,7 @@ import {
   useDeleteDocumentMutation,
   useDeleteFolderMutation,
   useDocumentsQuery,
+  useInfiniteDocumentsQuery,
   useFoldersQuery,
   useUpdateDocumentMutation,
 } from '@/services/documents.service';
@@ -371,7 +372,30 @@ type Tab = 'documents' | 'packages' | 'shared';
 
 export function DocumentVault() {
   const { state, addVaultShareLink, revokeVaultShareLink } = useApp();
-  const documentsQuery = useDocumentsQuery();
+  const [activeTab, setActiveTab] = useState<Tab>('documents');
+  const [activeCategory, setActiveCategory] = useState<VaultCategory | 'all'>('all');
+  const [activeFolderId, setActiveFolderId] = useState<string | null>(null);
+  const intersectionRef = useRef<HTMLDivElement | null>(null);
+
+  const isFiltered = activeCategory !== 'all' || activeFolderId !== null;
+
+  const documentsQuery = useInfiniteDocumentsQuery(
+    isFiltered && activeFolderId
+      ? { folderId: activeFolderId }
+      : isFiltered && activeCategory !== 'all'
+        ? { category: activeCategory === 'Custom' ? undefined : (activeCategory as VaultCategory) }
+        : undefined,
+  );
+
+  const {
+    data: documentsPages,
+    isLoading: documentsLoading,
+    isError: documentsError,
+    error: documentsErrorObj,
+    hasNextPage: documentsHasNextPage,
+    isFetchingNextPage: documentsFetchingNextPage,
+    fetchNextPage: documentsFetchNextPage,
+  } = documentsQuery;
   const foldersQuery = useFoldersQuery();
   const createDocumentMutation = useCreateDocumentMutation();
   const updateDocumentMutation = useUpdateDocumentMutation();
@@ -379,8 +403,27 @@ export function DocumentVault() {
   const createFolderMutation = useCreateFolderMutation();
   const deleteFolderMutation = useDeleteFolderMutation();
 
+  useEffect(() => {
+    const target = intersectionRef.current;
+    if (!target || !documentsHasNextPage) return;
+
+    const observer = new IntersectionObserver(
+      entries => {
+        const first = entries[0];
+        if (first.isIntersecting && documentsHasNextPage && !documentsFetchingNextPage) {
+          documentsFetchNextPage();
+        }
+      },
+      { root: null, rootMargin: '200px', threshold: 0 },
+    );
+
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [documentsHasNextPage, documentsFetchingNextPage, documentsFetchNextPage]);
+
   const docs = useMemo<VaultDocument[]>(() => {
-    const raw = documentsQuery.data?.data ?? [];
+    const pages = documentsPages?.pages ?? [];
+    const raw = pages.flatMap(page => page.data ?? []);
     return raw.map((doc) => ({
       id: doc.id,
       name: doc.name,
@@ -396,12 +439,13 @@ export function DocumentVault() {
   }, [documentsQuery.data]);
 
   const documentUrlById = useMemo<Record<string, string>>(() => {
-    const raw = documentsQuery.data?.data ?? [];
+    const pages = documentsPages?.pages ?? [];
+    const raw = pages.flatMap(page => page.data ?? []);
     return raw.reduce<Record<string, string>>((acc, doc) => {
       acc[doc.id] = getFileUrl(doc.filePath);
       return acc;
     }, {});
-  }, [documentsQuery.data]);
+  }, [documentsPages]);
 
   const folders = useMemo<VaultFolder[]>(() => {
     const raw = foldersQuery.data?.data ?? [];
@@ -414,9 +458,6 @@ export function DocumentVault() {
   }, [foldersQuery.data]);
 
   const shareLinks = state.vaultShareLinks;
-
-  const [activeTab, setActiveTab] = useState<Tab>('documents');
-  const [activeCategory, setActiveCategory] = useState<VaultCategory | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
@@ -431,9 +472,6 @@ export function DocumentVault() {
   // Filter documents
   const filteredDocs = useMemo(() => {
     let result = docs;
-    if (activeCategory !== 'all') {
-      result = result.filter(d => d.category === activeCategory);
-    }
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       result = result.filter(d =>
@@ -443,7 +481,7 @@ export function DocumentVault() {
       );
     }
     return result;
-  }, [docs, activeCategory, searchQuery]);
+  }, [docs, searchQuery]);
 
   // Count per category
   const categoryCounts = useMemo(() => {
@@ -611,6 +649,14 @@ export function DocumentVault() {
                 window.open(url, '_blank', 'noopener,noreferrer');
               }}
               deleteFolder={(id) => deleteFolderMutation.mutate(id)}
+              activeFolderId={activeFolderId}
+              setActiveFolderId={setActiveFolderId}
+              isLoading={documentsLoading}
+              isError={documentsError}
+              error={documentsErrorObj}
+              hasNextPage={documentsHasNextPage}
+              isFetchingNextPage={documentsFetchingNextPage}
+              intersectionRef={intersectionRef}
             />
           </motion.div>
         )}
@@ -690,6 +736,8 @@ function DocumentsView({
   docs, allDocs, folders, activeCategory, setActiveCategory, categoryCounts,
   searchQuery, setSearchQuery, selectedDocs, handleSelectDoc, handleShareSelected,
   handleDeleteSelected, onUpload, onDelete, onView, deleteFolder,
+  activeFolderId, setActiveFolderId,
+  isLoading, isError, error, hasNextPage, isFetchingNextPage, intersectionRef,
 }: {
   docs: VaultDocument[];
   allDocs: VaultDocument[];
@@ -707,17 +755,91 @@ function DocumentsView({
   onDelete: (id: string) => void;
   onView: (id: string) => void;
   deleteFolder: (id: string) => void;
+  activeFolderId: string | null;
+  setActiveFolderId: (id: string | null) => void;
+  isLoading: boolean;
+  isError: boolean;
+  error: unknown;
+  hasNextPage: boolean | undefined;
+  isFetchingNextPage: boolean;
+  intersectionRef: React.RefObject<HTMLDivElement | null>;
 }) {
+  const renderContent = () => {
+    if (isLoading) {
+      return (
+        <div className="flex flex-col gap-[8px]">
+          {Array.from({ length: 6 }).map((_, idx) => (
+            <SkeletonDocumentRow key={idx} index={idx} />
+          ))}
+        </div>
+      );
+    }
+
+    if (isError) {
+      return (
+        <div className="bg-white rounded-[20px] border border-[#F97373] p-[32px] text-center shadow-[0px_10px_40px_0px_rgba(243,219,188,0.45)]">
+          <p className="text-[18px] text-[#3E2D1D] mb-[8px]" style={{ fontWeight: 600 }}>
+            Unable to load documents
+          </p>
+          <p className="text-[14px] text-[#8C8780]" style={{ fontWeight: 510 }}>
+            {getApiErrorMessage(error)}
+          </p>
+        </div>
+      );
+    }
+
+    if (docs.length === 0) {
+      return (
+        <EmptyState
+          title={activeCategory !== 'all' ? `No ${activeCategory} documents` : 'No documents yet'}
+          description={activeCategory !== 'all'
+            ? `Upload ${activeCategory.toLowerCase()} documents to get started.`
+            : 'Upload your first document to start building your secure vault.'
+          }
+          onAction={onUpload}
+          actionLabel="Upload Document"
+        />
+      );
+    }
+
+    return (
+      <>
+        <div className="flex flex-col gap-[8px]">
+          {docs.map(doc => (
+            <DocumentRow
+              key={doc.id}
+              doc={doc}
+              isSelected={selectedDocs.includes(doc.id)}
+              onSelect={() => handleSelectDoc(doc.id)}
+              onDelete={() => onDelete(doc.id)}
+              onView={() => onView(doc.id)}
+            />
+          ))}
+          {isFetchingNextPage &&
+            Array.from({ length: 3 }).map((_, idx) => (
+              <SkeletonDocumentRow key={`skeleton-${idx}`} index={docs.length + idx} />
+            ))}
+        </div>
+        {hasNextPage && (
+          <div ref={intersectionRef} className="h-[1px] w-full mt-[8px]" />
+        )}
+      </>
+    );
+  };
+
   return (
-    <div className="flex flex-col xl:flex-row gap-[24px]">
+    <div className="flex flex-col xl:flex-row gap-[24px] items-stretch">
       {/* ─ Category Sidebar ─ */}
-      <div className="w-full xl:w-[280px] shrink-0">
+      <div className="w-full xl:w-[280px] shrink-0 xl:sticky xl:top-[136px] self-start">
         <div className="bg-white rounded-[20px] border border-[#D0D0D0] p-[21px] shadow-[0px_10px_40px_0px_rgba(243,219,188,0.45)]">
           <p className={`${canela} text-[20px] text-[#3E2D1D] mb-[16px]`}>Categories</p>
 
           {/* All Documents button */}
           <button
-            onClick={() => setActiveCategory('all')}
+            onClick={() => {
+              setActiveFolderId(null);
+              setActiveCategory('all');
+            }}
             className={`w-full h-[41px] flex items-center justify-between px-[14px] rounded-[10px] mb-[4px] transition-colors cursor-pointer ${
               activeCategory === 'all' ? 'bg-[#3E2D1D] text-white' : 'text-[#3E2D1D] hover:bg-[#F3EFE6]'
             }`}
@@ -744,7 +866,10 @@ function DocumentsView({
             return (
               <button
                 key={cat}
-                onClick={() => setActiveCategory(cat)}
+                onClick={() => {
+                  setActiveFolderId(null);
+                  setActiveCategory(cat);
+                }}
                 className={`w-full h-[41px] flex items-center justify-between px-[14px] rounded-[10px] mb-[2px] transition-colors cursor-pointer ${
                   isActive ? 'bg-[#3E2D1D] text-white' : 'text-[#3E2D1D] hover:bg-[#F3EFE6]'
                 }`}
@@ -769,8 +894,16 @@ function DocumentsView({
             <>
               <div className="h-px bg-[#E8E4DD] my-[12px]" />
               <p className="text-[11px] text-[#8C8780] px-[14px] mb-[8px]" style={{ fontWeight: 590, letterSpacing: '0.5px' }}>CUSTOM FOLDERS</p>
-              {folders.map(f => (
-                <div key={f.id} className="flex items-center justify-between px-[14px] py-[8px] rounded-[10px] hover:bg-[#F3EFE6] group">
+              {folders.map(f => {
+                const isActiveFolder = activeFolderId === f.id;
+                return (
+                  <div
+                    key={f.id}
+                    className={`flex items-center justify-between px-[14px] py-[8px] rounded-[10px] group cursor-pointer ${
+                      isActiveFolder ? 'bg-[#F3EFE6]' : 'hover:bg-[#F3EFE6]'
+                    }`}
+                    onClick={() => setActiveFolderId(f.id)}
+                  >
                   <span className="flex items-center gap-[10px] text-[14px] text-[#3E2D1D]" style={{ fontWeight: 510 }}>
                     <FolderIcon size={16} />
                     {f.name}
@@ -781,8 +914,9 @@ function DocumentsView({
                   >
                     <X className="w-[12px] h-[12px]" />
                   </button>
-                </div>
-              ))}
+                  </div>
+                );
+              })}
             </>
           )}
         </div>
@@ -820,30 +954,7 @@ function DocumentsView({
         </div>
 
         {/* Document cards */}
-        {docs.length === 0 ? (
-          <EmptyState
-            title={activeCategory !== 'all' ? `No ${activeCategory} documents` : 'No documents yet'}
-            description={activeCategory !== 'all'
-              ? `Upload ${activeCategory.toLowerCase()} documents to get started.`
-              : 'Upload your first document to start building your secure vault.'
-            }
-            onAction={onUpload}
-            actionLabel="Upload Document"
-          />
-        ) : (
-          <div className="flex flex-col gap-[8px]">
-            {docs.map(doc => (
-              <DocumentRow
-                key={doc.id}
-                doc={doc}
-                isSelected={selectedDocs.includes(doc.id)}
-                onSelect={() => handleSelectDoc(doc.id)}
-                onDelete={() => onDelete(doc.id)}
-                onView={() => onView(doc.id)}
-              />
-            ))}
-          </div>
-        )}
+        {renderContent()}
       </div>
     </div>
   );
@@ -864,12 +975,24 @@ function DocumentRow({
   return (
     <motion.div
       layout
-      className={`bg-white rounded-[16px] border transition-colors shadow-[0px_10px_40px_0px_rgba(243,219,188,0.45)] ${isSelected ? 'border-[#764D2F] bg-[#FDFBF8]' : 'border-[#EAEAEA]'}`}
+      initial={{ opacity: 0, y: 4 }}
+      animate={{ opacity: 1, y: 0 }}
+      whileHover={{ y: -4, scale: 1.005 }}
+      transition={{
+        type: 'spring',
+        stiffness: 260,
+        damping: 26,
+        mass: 0.7,
+      }}
+      onClick={onView}
+      className={`bg-white rounded-[16px] border transition-all shadow-[0px_10px_40px_0px_rgba(243,219,188,0.45)] ${
+        isSelected ? 'border-[#764D2F] bg-[#FDFBF8]' : 'border-[#EAEAEA] hover:border-[#C5A68A]'
+      }`}
     >
       <div className="flex items-center gap-[16px] px-[28px] py-[20px]">
         {/* Checkbox */}
         <button
-          onClick={onSelect}
+          onClick={(e) => { e.stopPropagation(); onSelect(); }}
           className={`w-[18px] h-[18px] rounded-[4px] border-[1.5px] flex items-center justify-center cursor-pointer shrink-0 transition-colors ${
             isSelected ? 'bg-[#3E2D1D] border-[#3E2D1D]' : 'border-[#C5C0B9] hover:border-[#764D2F]'
           }`}
@@ -913,7 +1036,10 @@ function DocumentRow({
         {/* Actions */}
         <div className="flex items-center gap-[4px] shrink-0">
           <div className="relative">
-            <button onClick={() => setShowMenu(!showMenu)} className="p-[6px] rounded-[6px] border border-[#D0D0D0] text-[#8C8780] hover:bg-[#F3EFE6] hover:text-[#764D2F] transition-colors cursor-pointer">
+            <button
+              onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu); }}
+              className="p-[6px] rounded-[6px] border border-[#D0D0D0] text-[#8C8780] hover:bg-[#F3EFE6] hover:text-[#764D2F] transition-colors cursor-pointer"
+            >
               <MoreHorizontal className="w-[14px] h-[14px]" />
             </button>
             {showMenu && (
@@ -935,6 +1061,35 @@ function DocumentRow({
             )}
           </div>
         </div>
+      </div>
+    </motion.div>
+  );
+}
+
+function SkeletonDocumentRow({ index }: { index: number }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.18, delay: index * 0.04 }}
+      className="bg-white rounded-[16px] border border-[#EAEAEA] shadow-[0px_10px_40px_0px_rgba(243,219,188,0.45)]"
+    >
+      <div className="flex items-center gap-[16px] px-[28px] py-[20px] animate-pulse">
+        <div className="w-[18px] h-[18px] rounded-[4px] border-[1.5px] border-[#E3DED5]" />
+        <div className="w-[36px] h-[40px] rounded-[8px] bg-[#F3EFE6]" />
+        <div className="flex-1 min-w-0 space-y-[6px]">
+          <div className="h-[12px] w-2/3 rounded-full bg-[#F0EBE2]" />
+          <div className="flex items-center gap-[8px]">
+            <div className="h-[10px] w-[60px] rounded-full bg-[#F0EBE2]" />
+            <div className="h-[10px] w-[70px] rounded-full bg-[#F5EFE5]" />
+            <div className="h-[10px] w-[80px] rounded-full bg-[#F0EBE2] hidden sm:block" />
+          </div>
+        </div>
+        <div className="hidden lg:flex items-center gap-[4px]">
+          <div className="h-[18px] w-[60px] rounded-full bg-[#F5EFE5]" />
+          <div className="h-[18px] w-[40px] rounded-full bg-[#F5EFE5]" />
+        </div>
+        <div className="w-[28px] h-[28px] rounded-[6px] border border-[#E3DED5] bg-[#F8F4EE]" />
       </div>
     </motion.div>
   );
