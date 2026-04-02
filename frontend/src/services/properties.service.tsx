@@ -1,4 +1,4 @@
-import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as propertiesApi from '@/features/properties/api/properties.api';
 import type { BackendProperty } from '@/features/properties/types/properties.types';
 
@@ -21,11 +21,31 @@ export function usePropertiesInfiniteQuery() {
   });
 }
 
+export function usePropertyQuery(id?: string) {
+  return useQuery({
+    queryKey: [...propertiesQueryKey, id],
+    enabled: Boolean(id),
+    queryFn: () => propertiesApi.getProperty(id as string),
+  });
+}
+
 export function useCreatePropertyMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: (formData: FormData) => propertiesApi.createProperty(formData),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: propertiesQueryKey });
+    },
+  });
+}
+
+export function useUpdatePropertyMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (params: { id: string; payload: propertiesApi.UpdatePropertyPayload }) =>
+      propertiesApi.updateProperty(params.id, params.payload),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: propertiesQueryKey });
     },

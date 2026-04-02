@@ -37,10 +37,22 @@ export async function getProperties(params: GetPropertiesParams) {
   return data;
 }
 
+export async function getProperty(id: string) {
+  const { data } = await api.get<ApiMessageData<BackendProperty>>(`/properties/${id}`);
+  return data;
+}
+
 export async function createProperty(formData: FormData) {
   const { data } = await api.post<ApiMessageData<BackendProperty>>('/properties', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });
+  return data;
+}
+
+export type UpdatePropertyPayload = Partial<CreatePropertyPayload>;
+
+export async function updateProperty(id: string, payload: UpdatePropertyPayload) {
+  const { data } = await api.patch<ApiMessageData<BackendProperty>>(`/properties/${id}`, payload);
   return data;
 }
 
