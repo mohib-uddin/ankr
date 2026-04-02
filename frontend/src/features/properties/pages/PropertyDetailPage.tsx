@@ -186,18 +186,27 @@ export function PropertyDetailPage() {
   return (
     <div className="min-h-full px-4 sm:px-6 lg:px-[58px]">
       {/* ── Breadcrumb ── */}
-      <div className="content-stretch flex items-center pt-[24px] sm:pt-[32px] pb-[20px]">
+      <div className="content-stretch flex items-center justify-between pt-[24px] sm:pt-[32px] pb-[20px] gap-3">
+        <div className="flex items-center min-w-0">
+          <button
+            onClick={() => navigate('/dashboard/properties')}
+            className="cursor-pointer leading-[normal] relative shrink-0 text-[#8c8780] text-[16px] whitespace-nowrap hover:text-[#3E2D1D] transition-colors"
+            style={{ fontWeight: 510 }}
+          >
+            Properties
+          </button>
+          <BreadcrumbChevron />
+          <span className="leading-[normal] relative shrink-0 text-[#764d2f] text-[16px] whitespace-nowrap" style={{ fontWeight: 510 }}>
+            {property.name}
+          </span>
+        </div>
         <button
-          onClick={() => navigate('/dashboard/properties')}
-          className="cursor-pointer leading-[normal] relative shrink-0 text-[#8c8780] text-[16px] whitespace-nowrap hover:text-[#3E2D1D] transition-colors"
+          onClick={() => navigate(`/dashboard/properties/${id}/edit`)}
+          className="hidden sm:inline-flex items-center gap-[6px] h-[36px] px-[16px] rounded-[8px] bg-[#3E2D1D] text-white text-[13px] hover:bg-[#2C1F14] transition-colors cursor-pointer"
           style={{ fontWeight: 510 }}
         >
-          Properties
+          Edit Property
         </button>
-        <BreadcrumbChevron />
-        <span className="leading-[normal] relative shrink-0 text-[#764d2f] text-[16px] whitespace-nowrap" style={{ fontWeight: 510 }}>
-          {property.name}
-        </span>
       </div>
 
       {/* ── Hero Section (Figma-exact) ── */}

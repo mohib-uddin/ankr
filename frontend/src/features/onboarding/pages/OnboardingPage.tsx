@@ -268,6 +268,7 @@ export function OnboardingPage() {
       ...rows,
       {
         id: String(rows.length + 1),
+        name: '',
         address: '',
         propertyType: 'Single Family',
         estimatedValue: '',
@@ -649,6 +650,16 @@ export function OnboardingPage() {
 
                     <div className="flex flex-col gap-[36px] w-full">
                       <div className="flex flex-col gap-[24px] w-full">
+                        <OutlinedTextField
+                          id={`property-name-${property.id}`}
+                          label="Property Name"
+                          labelClassName={ONBOARDING_FIGTREE_LABEL_CLASS}
+                          type="text"
+                          value={property.name}
+                          onChange={(e) => updateProperty(property.id, 'name', e.target.value)}
+                          placeholder="Westlake Commons"
+                        />
+
                         <OutlinedTextField
                           id={`property-address-${property.id}`}
                           label="Property Address"

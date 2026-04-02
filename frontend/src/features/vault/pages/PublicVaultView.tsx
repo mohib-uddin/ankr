@@ -2,15 +2,36 @@ import React, { useState, useEffect, type CSSProperties } from 'react';
 import { useParams } from 'react-router';
 import { motion } from 'motion/react';
 import { Lock } from 'lucide-react';
-import type { VaultDocument, VaultShareLink, AppState } from '@/app/context/AppContext';
+import axios from 'axios';
+import type { VaultCategory } from '@/app/context/AppContext';
+import { OutlinedOtpField } from '@/shared/components/form';
+import { getApiErrorMessage } from '@/shared/utils/axios';
+import { useValidateSharedPackageMutation } from '@/features/vault/services/packages.service';
+import type { BackendUserPackage } from '@/features/vault/types/packages.types';
 import svgPaths from '@/icons/public-vault';
-
-const STORAGE_KEY = 'ankr_v2_state';
 
 const canela = "font-['Canela_Text_Trial',sans-serif] font-medium not-italic";
 const sfMed = "font-['SF_Pro',sans-serif] font-[510]";
 const sfSemi = "font-['SF_Pro',sans-serif] font-[590]";
 const wdth: CSSProperties = { fontVariationSettings: "'wdth' 100" };
+
+type PublicDocumentItem = {
+  id: string;
+  name: string;
+  category: VaultCategory;
+  fileType: string;
+  fileSize: string;
+  uploadedAt: string;
+  isSubmitted: boolean;
+};
+
+function toVaultCategory(category: string): VaultCategory {
+  const categories: VaultCategory[] = ['Identity', 'Income', 'Banking', 'Real Estate', 'Debt', 'Tax', 'Entity', 'Custom'];
+  if (categories.includes(category as VaultCategory)) {
+    return category as VaultCategory;
+  }
+  return 'Custom';
+}
 
 /* ─── SVG Icon Components (from Figma) ─── */
 function DocumentIcon({ color = '#FCF6F0' }: { color?: string }) {
@@ -144,42 +165,148 @@ function EyeIconMicro({ color = '#8C8780' }: { color?: string }) {
 /* ─── Main Component ─── */
 export function PublicVaultView() {
   const { token } = useParams<{ token: string }>();
-  const [shareLink, setShareLink] = useState<VaultShareLink | null>(null);
-  const [documents, setDocuments] = useState<VaultDocument[]>([]);
-  const [userName, setUserName] = useState('');
+  const validatePackageMutation = useValidateSharedPackageMutation();
+  const [validatedPackage, setValidatedPackage] = useState<BackendUserPackage | null>(null);
+  const [otp, setOtp] = useState('');
+  const [lastAttemptedOtp, setLastAttemptedOtp] = useState<string | null>(null);
+  const [userName, setUserName] = useState('Document Owner');
   const [error, setError] = useState<string | null>(null);
+  const [isLinkUnavailable, setIsLinkUnavailable] = useState(false);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    if (!token) { setError('Invalid link'); return; }
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) { setError('Package not found'); return; }
-      const state: AppState = JSON.parse(raw);
-      const link = (state.vaultShareLinks || []).find(l => l.token === token);
-      if (!link) { setError('This link is invalid or has been revoked'); return; }
-      if (!link.isActive) { setError('This link has been revoked by the sender'); return; }
-      if (new Date(link.expiresAt) < new Date()) { setError('This link has expired'); return; }
-      if (link.accessCount >= link.maxAccess) { setError('This link has reached its maximum number of views'); return; }
-
-      const docs = (state.vaultDocuments || []).filter(d => link.documentIds.includes(d.id));
-      setShareLink(link);
-      setDocuments(docs);
-      setUserName(state.userName || 'Demo Investor');
-      // Expand all categories by default
-      const cats = new Set(docs.map(d => d.category));
-      setExpandedCategories(cats);
-
-      const updatedLinks = state.vaultShareLinks.map(l =>
-        l.id === link.id ? { ...l, accessCount: l.accessCount + 1 } : l
-      );
-      setTimeout(() => {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...state, vaultShareLinks: updatedLinks }));
-      }, 200);
-    } catch {
-      setError('Unable to load package data');
+    if (!token) {
+      setError('Invalid link');
     }
   }, [token]);
+
+  const handleValidateOtp = async () => {
+    if (!token) {
+      setError('Invalid link');
+      return;
+    }
+
+    if (otp.length !== 5 || validatePackageMutation.isPending) {
+      return;
+    }
+
+    try {
+      setLastAttemptedOtp(otp);
+      const response = await validatePackageMutation.mutateAsync({
+        sharedLink: token,
+        securityCode: otp,
+      });
+      const pkg = response.data;
+      setValidatedPackage(pkg);
+      setUserName('Document Owner');
+      const cats = new Set((pkg.template?.items || []).map((item) => item.category));
+      setExpandedCategories(cats);
+      setError(null);
+      setIsLinkUnavailable(false);
+    } catch (err) {
+      if (axios.isAxiosError(err) && err.response?.status === 404) {
+        setIsLinkUnavailable(true);
+        setError('This package link has expired or is no longer available.');
+        return;
+      }
+      setOtp('');
+      setError(getApiErrorMessage(err));
+    }
+  };
+
+  useEffect(() => {
+    if (validatedPackage || isLinkUnavailable || otp.length !== 5 || validatePackageMutation.isPending) {
+      return;
+    }
+
+    if (lastAttemptedOtp === otp) {
+      return;
+    }
+
+    void handleValidateOtp();
+  }, [otp, validatedPackage, isLinkUnavailable, validatePackageMutation.isPending, lastAttemptedOtp]);
+
+  const shareLink = {
+    packageName: validatedPackage?.name || 'Document Package',
+    expiresAt: validatedPackage?.expiresAt ? new Date(validatedPackage.expiresAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+    maxAccess: 25,
+    accessCount: 0,
+    createdAt: validatedPackage?.createdAt ? new Date(validatedPackage.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+  };
+
+  const documents: PublicDocumentItem[] = React.useMemo(() => {
+    if (!validatedPackage?.template) return [];
+    const submittedTemplateItems = new Set((validatedPackage.documents || []).map((item) => item.templateItemId));
+    return (validatedPackage.template.items || []).map((item) => ({
+      id: item.id,
+      name: item.name,
+      category: toVaultCategory(item.category),
+      fileType: 'DOC',
+      fileSize: '--',
+      uploadedAt: '--',
+      isSubmitted: submittedTemplateItems.has(item.id),
+    }));
+  }, [validatedPackage]);
+
+  if (isLinkUnavailable) {
+    return (
+      <div className="min-h-screen bg-[#FCF6F0] flex items-center justify-center p-6">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="bg-white rounded-[20px] border border-[#D0D0D0] p-[32px] sm:p-[40px] max-w-[520px] w-full text-center"
+          style={{ boxShadow: '0px 10px 40px 0px rgba(243,219,188,0.45)' }}
+        >
+          <div className="w-[56px] h-[56px] rounded-full bg-[#FFF8E6] flex items-center justify-center mx-auto mb-[16px]">
+            <Lock className="w-[24px] h-[24px] text-[#8B7A3C]" />
+          </div>
+          <p className={`${canela} text-[24px] text-[#3E2D1D] mb-[6px]`}>Link Unavailable</p>
+          <p className={`${sfMed} text-[14px] text-[#8C8780]`} style={wdth}>
+            This package link has expired or is no longer valid.
+          </p>
+        </motion.div>
+      </div>
+    );
+  }
+
+  if (!validatedPackage) {
+    return (
+      <div className="min-h-screen bg-[#FCF6F0] flex items-center justify-center p-6">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="bg-white rounded-[20px] border border-[#D0D0D0] p-[32px] sm:p-[40px] max-w-[520px] w-full"
+          style={{ boxShadow: '0px 10px 40px 0px rgba(243,219,188,0.45)' }}
+        >
+          <div className="w-[56px] h-[56px] rounded-full bg-[#FFF8E6] flex items-center justify-center mx-auto mb-[16px]">
+            <Lock className="w-[24px] h-[24px] text-[#8B7A3C]" />
+          </div>
+          <p className={`${canela} text-[24px] text-[#3E2D1D] text-center mb-[6px]`}>Enter Access Code</p>
+          <p className={`${sfMed} text-[14px] text-[#8C8780] text-center mb-[20px]`} style={wdth}>
+            Verify this package link using the 5-digit code shared by the sender.
+          </p>
+
+          <OutlinedOtpField
+            id="public-vault-otp"
+            value={otp}
+            onChange={(next) => {
+              setOtp(next);
+              setLastAttemptedOtp(null);
+              if (error) {
+                setError(null);
+              }
+            }}
+            error={error || undefined}
+            ariaLabel="Package access code"
+          />
+
+          <p className={`${sfMed} text-[12px] text-[#8C8780] text-center mt-[12px]`} style={wdth}>
+            {validatePackageMutation.isPending ? 'Verifying code...' : 'Code validates automatically when all 5 digits are entered.'}
+          </p>
+        </motion.div>
+      </div>
+    );
+  }
 
   // Error state
   if (error) {
@@ -201,20 +328,8 @@ export function PublicVaultView() {
     );
   }
 
-  // Loading
-  if (!shareLink) {
-    return (
-      <div className="min-h-screen bg-[#FCF6F0] flex items-center justify-center">
-        <div className="animate-pulse flex flex-col items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-[#E8E5E0]" />
-          <div className="h-3 w-32 bg-[#E8E5E0] rounded" />
-        </div>
-      </div>
-    );
-  }
-
   // Group docs by category
-  const grouped: Record<string, VaultDocument[]> = {};
+  const grouped: Record<string, PublicDocumentItem[]> = {};
   documents.forEach(doc => {
     if (!grouped[doc.category]) grouped[doc.category] = [];
     grouped[doc.category].push(doc);
@@ -413,18 +528,24 @@ export function PublicVaultView() {
                           <div className="flex flex-col gap-[6px] min-w-0">
                             <p className={`${sfMed} text-[16px] text-[#764D2F]`} style={wdth}>{doc.name}</p>
                             <p className={`${sfMed} text-[14px] text-[#8C8780]`} style={wdth}>
-                              {doc.fileType} · {doc.fileSize} · Uploaded {doc.uploadedAt}
+                              {doc.isSubmitted ? `${doc.fileType} · ${doc.fileSize} · Uploaded ${doc.uploadedAt}` : 'Required item'}
                             </p>
                           </div>
                         </div>
                         {/* Right: action buttons */}
                         <div className="flex gap-[8px] shrink-0">
-                          <button className="flex gap-[6px] items-center justify-center px-[20px] py-[6px] rounded-[6px] bg-white relative cursor-pointer hover:bg-[#FDFBF8] transition-colors">
+                          <button
+                            disabled={!doc.isSubmitted}
+                            className="flex gap-[6px] items-center justify-center px-[20px] py-[6px] rounded-[6px] bg-white relative cursor-pointer hover:bg-[#FDFBF8] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
                             <div aria-hidden className="absolute border border-[#D0D0D0] inset-0 rounded-[6px] pointer-events-none" />
                             <EyeIconSmall />
                             <span className={`${sfMed} text-[14px] text-[#764D2F]`} style={wdth}>View</span>
                           </button>
-                          <button className="flex gap-[6px] items-center justify-center px-[20px] py-[6px] rounded-[6px] bg-white relative cursor-pointer hover:bg-[#FDFBF8] transition-colors">
+                          <button
+                            disabled={!doc.isSubmitted}
+                            className="flex gap-[6px] items-center justify-center px-[20px] py-[6px] rounded-[6px] bg-white relative cursor-pointer hover:bg-[#FDFBF8] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
                             <div aria-hidden className="absolute border border-[#D0D0D0] inset-0 rounded-[6px] pointer-events-none" />
                             <DownloadIconSmall />
                             <span className={`${sfMed} text-[14px] text-[#764D2F]`} style={wdth}>Download</span>

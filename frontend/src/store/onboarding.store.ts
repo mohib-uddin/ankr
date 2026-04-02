@@ -22,6 +22,7 @@ export function createDefaultProperties(): OnboardingProperty[] {
   return [
     {
       id: '1',
+      name: '',
       address: '',
       propertyType: 'Single Family',
       estimatedValue: '',
@@ -151,6 +152,7 @@ function prefillToState(prefill: OnboardingRoutePrefill | undefined): Omit<Onboa
       prefill.properties?.length ?
         prefill.properties.map((property, idx) => ({
           id: String(idx + 1),
+          name: property.name ?? '',
           address: property.address ?? '',
           propertyType: property.propertyType ?? 'Single Family',
           estimatedValue: property.estimatedValue ?? '',

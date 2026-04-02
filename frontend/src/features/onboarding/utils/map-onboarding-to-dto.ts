@@ -27,6 +27,7 @@ function isPropertyType(v: string): v is PropertyTypeEnum {
 
 function rowHasAnyPropertyText(row: OnboardingDraftState['properties'][number]): boolean {
   return (
+    row.name.trim() !== '' ||
     row.address.trim() !== '' ||
     row.estimatedValue.trim() !== '' ||
     row.loanBalance.trim() !== '' ||

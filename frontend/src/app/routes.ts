@@ -5,6 +5,7 @@ import { DashboardHome } from '@/features/dashboard/pages/DashboardHome';
 import { PropertiesPage } from '@/features/properties/pages/PropertiesPage';
 import { PropertyDetailPage } from '@/features/properties/pages/PropertyDetailPage';
 import { AddPropertyPage } from '@/features/properties/pages/AddPropertyPage';
+import { EditPropertyPage } from '@/features/properties/pages/EditPropertyPage';
 import { PFSStub } from '@/features/dashboard/pages/PFSStub';
 import { PublicDrawView } from '@/features/draws/pages/PublicDrawView';
 import { ProjectFinancialStatement } from '@/features/properties/pages/ProjectFinancialStatement';
@@ -12,7 +13,7 @@ import { DashboardRedirect } from '@/features/dashboard/pages/DashboardRedirect'
 import { NewDrawRequestPage } from '@/features/draws/pages/NewDrawRequestPage';
 import { DrawDetailPage } from '@/features/draws/pages/DrawDetailPage';
 import { EditProFormaPage } from '@/features/properties/pages/EditProFormaPage';
-import { DocumentVault } from '@/features/dashboard/pages/DocumentVault';
+import { DocumentVault } from '@/features/vault/pages/DocumentVault';
 import { InvoicesPage } from '@/features/invoices/pages/InvoicesPage';
 import { InvoiceDetailPage } from '@/features/invoices/pages/InvoiceDetailPage';
 import { InvoicePaidPage } from '@/features/invoices/pages/InvoicePaidPage';
@@ -76,6 +77,7 @@ export const router = createBrowserRouter([
                       { path: 'properties', Component: PropertiesPage },
                       { path: 'properties/new', Component: AddPropertyPage },
                       { path: 'properties/:id', Component: PropertyDetailPage },
+                      { path: 'properties/:id/edit', Component: EditPropertyPage },
                       { path: 'properties/:id/proforma/edit', Component: EditProFormaPage },
                       { path: 'properties/:id/draws/new', Component: NewDrawRequestPage },
                       { path: 'properties/:id/draws/:drawId', Component: DrawDetailPage },

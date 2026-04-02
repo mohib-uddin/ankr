@@ -6,6 +6,7 @@ export type OnboardingRoutePrefill = {
   ssn?: string;
   accounts?: Array<{ institution: string; accountType: string; currentBalance: string }>;
   properties?: Array<{
+    name?: string;
     address: string;
     propertyType: string;
     estimatedValue: string;
@@ -45,6 +46,7 @@ export type LiquidityAccount = {
 
 export type OnboardingProperty = {
   id: string;
+  name: string;
   address: string;
   propertyType: string;
   estimatedValue: string;
