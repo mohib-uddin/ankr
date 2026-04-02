@@ -7,7 +7,7 @@ import type {
   CreateDocumentPayload,
   CreateFolderPayload,
   UpdateDocumentPayload,
-} from '@/features/dashboard/types/documents.types';
+} from '@/features/vault/types/documents.types';
 import type { ApiMessageData } from '@/features/auth/types/auth.types';
 
 type GetDocumentsParams = {

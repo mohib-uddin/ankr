@@ -13,7 +13,7 @@ import { DashboardRedirect } from '@/features/dashboard/pages/DashboardRedirect'
 import { NewDrawRequestPage } from '@/features/draws/pages/NewDrawRequestPage';
 import { DrawDetailPage } from '@/features/draws/pages/DrawDetailPage';
 import { EditProFormaPage } from '@/features/properties/pages/EditProFormaPage';
-import { DocumentVault } from '@/features/dashboard/pages/DocumentVault';
+import { DocumentVault } from '@/features/vault/pages/DocumentVault';
 import { InvoicesPage } from '@/features/invoices/pages/InvoicesPage';
 import { InvoiceDetailPage } from '@/features/invoices/pages/InvoiceDetailPage';
 import { InvoicePaidPage } from '@/features/invoices/pages/InvoicePaidPage';

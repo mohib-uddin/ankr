@@ -1,10 +1,10 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import * as documentsApi from '@/features/dashboard/api/documents.api';
+import * as documentsApi from '@/features/vault/api/documents.api';
 import type {
   CreateDocumentPayload,
   CreateFolderPayload,
   UpdateDocumentPayload,
-} from '@/features/dashboard/types/documents.types';
+} from '@/features/vault/types/documents.types';
 
 const documentsQueryKey = ['documents'] as const;
 const foldersQueryKey = ['document-folders'] as const;

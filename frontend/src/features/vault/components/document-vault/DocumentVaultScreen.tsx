@@ -25,15 +25,22 @@ import {
   useCreateFolderMutation,
   useDeleteDocumentMutation,
   useDeleteFolderMutation,
-  useDocumentsQuery,
   useInfiniteDocumentsQuery,
   useFoldersQuery,
   useUpdateDocumentMutation,
-} from '@/services/documents.service';
+} from '@/features/vault/services/documents.service';
+import {
+  useDeleteUserPackageMutation,
+  useDocumentCountsQuery,
+  usePackageTemplatesQuery,
+  useUpsertUserPackageMutation,
+  useUserPackagesQuery,
+} from '@/features/vault/services/packages.service';
+import type { BackendPackageTemplate, BackendUserPackage } from '@/features/vault/types/packages.types';
 import svgPaths from '@/icons/dashboard-shared';
-import packageIconAsset from '../../../assets/figma/documents-package/package-icon.svg';
-import listRadioAsset from '../../../assets/figma/documents-package/list-radio.svg';
-import closeIconAsset from '../../../assets/figma/documents-package/close-icon.svg';
+import packageIconAsset from '@/assets/figma/documents-package/package-icon.svg';
+import listRadioAsset from '@/assets/figma/documents-package/list-radio.svg';
+import closeIconAsset from '@/assets/figma/documents-package/close-icon.svg';
 
 /* ─── Font tokens (matching Budget/Draw tabs exactly) ─── */
 const canela  = "font-['Canela_Text_Trial',sans-serif] font-medium not-italic";
@@ -95,6 +102,8 @@ interface PackageRequiredDoc {
   category: VaultCategory;
   keywords: string[]; // keywords to match against doc name/tags
   description: string;
+  minCount?: number;
+  maxCount?: number;
 }
 
 interface PackageTemplate {
@@ -107,68 +116,44 @@ interface PackageTemplate {
   requiredDocs: PackageRequiredDoc[];
 }
 
-const PACKAGE_TEMPLATES: PackageTemplate[] = [
-  {
-    id: 'loan_app',
-    name: 'Loan Application',
-    description: 'Standard package for new loan applications including identity, income, banking, and tax documentation.',
-    icon: 'loan',
-    color: '#764D2F',
-    bg: '#F3EFE6',
-    requiredDocs: [
-      { id: 'la-1', name: 'Government-Issued ID', category: 'Identity', keywords: ['id', 'passport', 'license', 'driver', 'government', 'identification'], description: 'Valid photo ID (passport, driver\'s license)' },
-      { id: 'la-2', name: 'W-2 or 1099 Forms', category: 'Income', keywords: ['w-2', 'w2', '1099', 'wage', 'income'], description: 'Most recent tax year W-2s or 1099s' },
-      { id: 'la-3', name: 'Bank Statements (3 months)', category: 'Banking', keywords: ['bank', 'statement', 'account', 'checking', 'savings'], description: 'Last 3 months of all bank account statements' },
-      { id: 'la-4', name: 'Tax Returns (2 years)', category: 'Tax', keywords: ['tax', 'return', '1040', 'federal', 'irs'], description: 'Federal tax returns for the past 2 years' },
-      { id: 'la-5', name: 'Personal Financial Statement', category: 'Banking', keywords: ['pfs', 'personal', 'financial', 'statement', 'net worth', 'balance sheet'], description: 'Current personal financial statement (PFS)' },
-    ],
-  },
-  {
-    id: 'refinance',
-    name: 'Refinance Package',
-    description: 'Required documents for refinancing an existing property loan with updated valuations.',
-    icon: 'refi',
-    color: '#2D5A8E',
-    bg: '#EDF2F8',
-    requiredDocs: [
-      { id: 'rf-1', name: 'Current Loan Note', category: 'Debt', keywords: ['note', 'loan', 'mortgage', 'current', 'existing'], description: 'Copy of existing loan note and terms' },
-      { id: 'rf-2', name: 'Property Appraisal', category: 'Real Estate', keywords: ['appraisal', 'valuation', 'arv', 'value', 'appraised'], description: 'Recent property appraisal report' },
-      { id: 'rf-3', name: 'Title Report', category: 'Real Estate', keywords: ['title', 'report', 'deed', 'lien', 'search'], description: 'Current title search and report' },
-      { id: 'rf-4', name: 'Income Verification', category: 'Income', keywords: ['income', 'verification', 'employment', 'salary', 'pay', 'stub'], description: 'Proof of income (pay stubs, employment letter)' },
-      { id: 'rf-5', name: 'Existing Loan Documents', category: 'Debt', keywords: ['loan', 'document', 'agreement', 'closing', 'hud'], description: 'Original closing docs and loan agreement' },
-    ],
-  },
-  {
-    id: 'tax_pkg',
-    name: 'Tax Returns Package',
-    description: 'Complete tax return package for comprehensive lender financial review.',
-    icon: 'tax',
-    color: '#5A5A2D',
-    bg: '#F2F2E8',
-    requiredDocs: [
-      { id: 'tx-1', name: 'Personal Tax Returns (2 years)', category: 'Tax', keywords: ['personal', 'tax', 'return', '1040', 'individual'], description: 'IRS Form 1040 with all schedules for 2 years' },
-      { id: 'tx-2', name: 'Entity Tax Returns (2 years)', category: 'Tax', keywords: ['entity', 'corporate', 'business', 'llc', '1065', '1120'], description: 'Business/entity returns (1065, 1120S, etc.)' },
-      { id: 'tx-3', name: 'K-1 Schedules', category: 'Tax', keywords: ['k-1', 'k1', 'schedule', 'partnership', 'distribution'], description: 'All K-1 schedules from partnerships/S-corps' },
-      { id: 'tx-4', name: 'Extension Letters', category: 'Tax', keywords: ['extension', 'irs', 'form', '4868', '7004'], description: 'IRS extension confirmations (if applicable)' },
-    ],
-  },
-  {
-    id: 'audit_pkg',
-    name: 'Audit / Compliance',
-    description: 'Full documentation for compliance audits, due diligence, and regulatory review.',
-    icon: 'audit',
-    color: '#5A3D8E',
-    bg: '#F0ECF5',
-    requiredDocs: [
-      { id: 'au-1', name: 'Financial Statements', category: 'Banking', keywords: ['financial', 'statement', 'balance', 'profit', 'loss', 'income', 'p&l'], description: 'Audited or prepared financial statements' },
-      { id: 'au-2', name: 'Corporate Documents', category: 'Entity', keywords: ['corporate', 'operating', 'agreement', 'articles', 'bylaws', 'incorporation'], description: 'Operating agreement, articles of org/inc' },
-      { id: 'au-3', name: 'Bank Records', category: 'Banking', keywords: ['bank', 'record', 'statement', 'transaction', 'ledger'], description: '12 months of complete bank records' },
-      { id: 'au-4', name: 'Tax Filings', category: 'Tax', keywords: ['tax', 'filing', 'return', 'irs', 'state'], description: 'All federal and state tax filings' },
-      { id: 'au-5', name: 'Insurance Certificates', category: 'Entity', keywords: ['insurance', 'certificate', 'coverage', 'policy', 'liability'], description: 'Current insurance certificates of coverage' },
-      { id: 'au-6', name: 'Government ID', category: 'Identity', keywords: ['id', 'passport', 'license', 'government', 'identification'], description: 'Photo identification for all principals' },
-    ],
-  },
-];
+function toVaultCategory(category: string): VaultCategory {
+  if (DEFAULT_CATEGORIES.includes(category as VaultCategory)) {
+    return category as VaultCategory;
+  }
+  return 'Custom';
+}
+
+function mapBackendTemplateToUi(template: BackendPackageTemplate, index: number): PackageTemplate {
+  const palette = [
+    { icon: 'loan', color: '#764D2F', bg: '#F3EFE6' },
+    { icon: 'refi', color: '#2D5A8E', bg: '#EDF2F8' },
+    { icon: 'tax', color: '#5A5A2D', bg: '#F2F2E8' },
+    { icon: 'audit', color: '#5A3D8E', bg: '#F0ECF5' },
+  ];
+  const tone = palette[index % palette.length];
+
+  return {
+    id: template.id,
+    name: template.name,
+    description: template.description || '',
+    icon: tone.icon,
+    color: tone.color,
+    bg: tone.bg,
+    requiredDocs: (template.items || []).map((item) => ({
+      id: item.id,
+      name: item.name,
+      category: toVaultCategory(item.category),
+      keywords: [item.name, item.description, item.category].filter(Boolean),
+      description: item.description || item.name,
+      minCount: item.minCount,
+      maxCount: item.maxCount,
+    })),
+  };
+}
+
+function generatePackageOtpCode(): string {
+  return Math.floor(10000 + Math.random() * 90000).toString();
+}
 
 /* ─── Smart Document Matching Engine ─── */
 function matchDocToRequirement(docs: VaultDocument[], req: PackageRequiredDoc): VaultDocument | null {
@@ -371,7 +356,7 @@ function DetailProgressBadge({ percent }: { percent: number }) {
 type Tab = 'documents' | 'packages' | 'shared';
 
 export function DocumentVault() {
-  const { state, addVaultShareLink, revokeVaultShareLink } = useApp();
+  const { state, addVaultShareLink } = useApp();
   const [activeTab, setActiveTab] = useState<Tab>('documents');
   const [activeCategory, setActiveCategory] = useState<VaultCategory | 'all'>('all');
   const [activeFolderId, setActiveFolderId] = useState<string | null>(null);
@@ -402,6 +387,11 @@ export function DocumentVault() {
   const deleteDocumentMutation = useDeleteDocumentMutation();
   const createFolderMutation = useCreateFolderMutation();
   const deleteFolderMutation = useDeleteFolderMutation();
+  const packageTemplatesQuery = usePackageTemplatesQuery();
+  const userPackagesQuery = useUserPackagesQuery();
+  const upsertUserPackageMutation = useUpsertUserPackageMutation();
+  const deleteUserPackageMutation = useDeleteUserPackageMutation();
+  const documentCountsQuery = useDocumentCountsQuery();
 
   useEffect(() => {
     const target = intersectionRef.current;
@@ -457,7 +447,14 @@ export function DocumentVault() {
     }));
   }, [foldersQuery.data]);
 
-  const shareLinks = state.vaultShareLinks;
+  const backendPackages = useMemo(() => userPackagesQuery.data?.data ?? [], [userPackagesQuery.data]);
+
+  const packageTemplates = useMemo(() => {
+    const backendTemplates = packageTemplatesQuery.data?.data ?? [];
+    return backendTemplates.map(mapBackendTemplateToUi);
+  }, [packageTemplatesQuery.data]);
+  const packageTemplatesError = packageTemplatesQuery.isError ? getApiErrorMessage(packageTemplatesQuery.error) : null;
+  const sharedLinksError = userPackagesQuery.isError ? getApiErrorMessage(userPackagesQuery.error) : null;
   const [searchQuery, setSearchQuery] = useState('');
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
@@ -486,10 +483,24 @@ export function DocumentVault() {
   // Count per category
   const categoryCounts = useMemo(() => {
     const counts: Record<string, number> = {};
-    DEFAULT_CATEGORIES.forEach(c => { counts[c] = 0; });
-    docs.forEach(d => { counts[d.category] = (counts[d.category] || 0) + 1; });
+    DEFAULT_CATEGORIES.forEach((category) => {
+      counts[category] = 0;
+    });
+
+    const backendCounts = documentCountsQuery.data?.data.categories ?? [];
+    backendCounts.forEach((item) => {
+      const category = toVaultCategory(item.category);
+      if (category === 'Custom') return;
+      counts[category] = item.count;
+    });
+
     return counts;
-  }, [docs]);
+  }, [documentCountsQuery.data]);
+
+  const totalDocumentCount = useMemo(() => {
+    const backendCounts = documentCountsQuery.data?.data.categories ?? [];
+    return backendCounts.reduce((sum, item) => sum + item.count, 0);
+  }, [documentCountsQuery.data]);
 
   const totalStorage = useMemo(() => {
     let bytes = 0;
@@ -508,8 +519,6 @@ export function DocumentVault() {
     if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
     return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
   }, [docs]);
-
-  const activeShareLinks = shareLinks.filter(l => l.isActive);
 
   const handleSelectDoc = (id: string) => {
     setSelectedDocs(prev =>
@@ -631,6 +640,7 @@ export function DocumentVault() {
             <DocumentsView
               docs={filteredDocs}
               allDocs={docs}
+              totalDocumentCount={totalDocumentCount}
               folders={folders}
               activeCategory={activeCategory}
               setActiveCategory={setActiveCategory}
@@ -664,18 +674,42 @@ export function DocumentVault() {
           <motion.div key="pkgs" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
             <PackagesView
               docs={docs}
+              templates={packageTemplates}
+              isTemplatesLoading={packageTemplatesQuery.isLoading}
+              templatesError={packageTemplatesError}
               onUploadForPackage={openUploadForPackage}
-              onShare={(ids, pkgName) => { setShareDocIds(ids); setShowShareModal(true); }}
-              onCreateShareLink={addVaultShareLink}
+              isSubmitting={upsertUserPackageMutation.isPending}
+              onGeneratePackage={async ({ template, docsByTemplateItemId, pkgName, securityCode }) => {
+                const documents = Object.entries(docsByTemplateItemId).map(([templateItemId, documentId]) => ({
+                  templateItemId,
+                  documentId,
+                }));
+
+                const resolvedSecurityCode = securityCode || generatePackageOtpCode();
+
+                const response = await upsertUserPackageMutation.mutateAsync({
+                  name: pkgName,
+                  templateId: template.id,
+                  documents,
+                  regenerateLink: true,
+                  regenerateSecurityCode: false,
+                  securityCode: resolvedSecurityCode,
+                  expiresInDays: 30,
+                });
+
+                return response.data;
+              }}
             />
           </motion.div>
         )}
         {activeTab === 'shared' && (
           <motion.div key="shared" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
             <SharedLinksView
-              shareLinks={shareLinks}
+              packages={backendPackages}
               docs={docs}
-              onRevoke={revokeVaultShareLink}
+              isLoading={userPackagesQuery.isLoading}
+              error={sharedLinksError}
+              onRevoke={(id) => deleteUserPackageMutation.mutate(id)}
               onCopyLink={handleCopyLink}
               copiedLink={copiedLink}
             />
@@ -734,6 +768,7 @@ function StatCard({ label, value, icon }: { label: string; value: string; icon: 
 /* ─── Documents View (main tab) ─── */
 function DocumentsView({
   docs, allDocs, folders, activeCategory, setActiveCategory, categoryCounts,
+  totalDocumentCount,
   searchQuery, setSearchQuery, selectedDocs, handleSelectDoc, handleShareSelected,
   handleDeleteSelected, onUpload, onDelete, onView, deleteFolder,
   activeFolderId, setActiveFolderId,
@@ -741,6 +776,7 @@ function DocumentsView({
 }: {
   docs: VaultDocument[];
   allDocs: VaultDocument[];
+  totalDocumentCount: number;
   folders: VaultFolder[];
   activeCategory: VaultCategory | 'all';
   setActiveCategory: (c: VaultCategory | 'all') => void;
@@ -854,7 +890,7 @@ function DocumentsView({
               fontWeight: 590,
               backgroundColor: activeCategory === 'all' ? 'rgba(255,255,255,0.2)' : '#F3EFE6',
               color: activeCategory === 'all' ? 'white' : '#764D2F',
-            }}>{allDocs.length}</span>
+            }}>{totalDocumentCount}</span>
           </button>
 
           <div className="h-px bg-[#E8E4DD] my-[12px]" />
@@ -1119,23 +1155,30 @@ function EmptyState({ title, description, onAction, actionLabel }: { title: stri
    PACKAGES VIEW — Complete End-to-End Flow
    ═════════════════════════════════════════════════════════════���═════════════════ */
 
-function PackagesView({ docs, onUploadForPackage, onShare, onCreateShareLink }: {
+function PackagesView({ docs, templates, isTemplatesLoading, templatesError, onUploadForPackage, onGeneratePackage, isSubmitting }: {
   docs: VaultDocument[];
+  templates: PackageTemplate[];
+  isTemplatesLoading: boolean;
+  templatesError: string | null;
   onUploadForPackage: (category: VaultCategory, nameHint: string) => void;
-  onShare: (ids: string[], pkgName: string) => void;
-  onCreateShareLink: (link: Omit<VaultShareLink, 'id' | 'token' | 'accessCount' | 'createdAt'>) => VaultShareLink;
+  onGeneratePackage: (payload: {
+    template: PackageTemplate;
+    docsByTemplateItemId: Record<string, string>;
+    pkgName: string;
+    securityCode?: string;
+  }) => Promise<BackendUserPackage>;
+  isSubmitting: boolean;
 }) {
   const [selectedPkg, setSelectedPkg] = useState<string | null>(null);
-  const [generatedLink, setGeneratedLink] = useState<{ link: VaultShareLink; pkgName: string } | null>(null);
+  const [generatedPackage, setGeneratedPackage] = useState<BackendUserPackage | null>(null);
 
-  const selectedTemplate = PACKAGE_TEMPLATES.find(p => p.id === selectedPkg);
+  const selectedTemplate = templates.find(p => p.id === selectedPkg);
 
-  if (generatedLink) {
+  if (generatedPackage) {
     return (
       <PackageShareSuccess
-        link={generatedLink.link}
-        pkgName={generatedLink.pkgName}
-        onBack={() => setGeneratedLink(null)}
+        userPackage={generatedPackage}
+        onBack={() => setGeneratedPackage(null)}
       />
     );
   }
@@ -1147,20 +1190,45 @@ function PackagesView({ docs, onUploadForPackage, onShare, onCreateShareLink }: 
         docs={docs}
         onBack={() => setSelectedPkg(null)}
         onUploadForPackage={onUploadForPackage}
-        onGeneratePackage={(docIds, pkgName, email) => {
-          const expiresAt = new Date();
-          expiresAt.setDate(expiresAt.getDate() + 30);
-          const link = onCreateShareLink({
-            documentIds: docIds,
-            packageName: pkgName,
-            expiresAt: expiresAt.toISOString().split('T')[0],
-            maxAccess: 25,
-            recipientEmail: email || undefined,
-            isActive: true,
+        isSubmitting={isSubmitting}
+        onGeneratePackage={async ({ template, docsByTemplateItemId, pkgName, securityCode }) => {
+          const createdPackage = await onGeneratePackage({
+            template,
+            docsByTemplateItemId,
+            pkgName,
+            securityCode,
           });
-          setGeneratedLink({ link, pkgName });
+          if (!createdPackage.sharedLink) return;
+          setGeneratedPackage(createdPackage);
         }}
       />
+    );
+  }
+
+  if (isTemplatesLoading) {
+    return (
+      <div className="bg-white rounded-[20px] border border-[#D0D0D0] p-[48px] text-center">
+        <p className={`${canela} text-[20px] text-[#3E2D1D] mb-[8px]`}>Loading package templates</p>
+        <p className={`${sfMed} text-[14px] text-[#8C8780]`} style={wdth}>Fetching available lender package templates...</p>
+      </div>
+    );
+  }
+
+  if (templatesError) {
+    return (
+      <div className="bg-white rounded-[20px] border border-[#F97373] p-[48px] text-center">
+        <p className={`${canela} text-[20px] text-[#3E2D1D] mb-[8px]`}>Unable to load package templates</p>
+        <p className={`${sfMed} text-[14px] text-[#8C8780]`} style={wdth}>{templatesError}</p>
+      </div>
+    );
+  }
+
+  if (templates.length === 0) {
+    return (
+      <div className="bg-white rounded-[20px] border border-[#D0D0D0] p-[48px] text-center">
+        <p className={`${canela} text-[20px] text-[#3E2D1D] mb-[8px]`}>No package templates available</p>
+        <p className={`${sfMed} text-[14px] text-[#8C8780]`} style={wdth}>Ask your admin to configure package templates in the backend.</p>
+      </div>
     );
   }
 
@@ -1175,7 +1243,7 @@ function PackagesView({ docs, onUploadForPackage, onShare, onCreateShareLink }: 
       </p>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-[16px]">
-        {PACKAGE_TEMPLATES.map((pkg, i) => {
+        {templates.map((pkg, i) => {
           const matches = getPackageMatches(docs, pkg);
           const fulfilled = matches.filter(m => m.matched).length;
           const total = matches.length;
@@ -1239,18 +1307,32 @@ function PackagesView({ docs, onUploadForPackage, onShare, onCreateShareLink }: 
 }
 
 /* ─── Package Detail View (full review + upload flow) ─── */
-function PackageDetailView({ template, docs, onBack, onUploadForPackage, onGeneratePackage }: {
+function PackageDetailView({ template, docs, onBack, onUploadForPackage, onGeneratePackage, isSubmitting }: {
   template: PackageTemplate;
   docs: VaultDocument[];
   onBack: () => void;
   onUploadForPackage: (category: VaultCategory, nameHint: string) => void;
-  onGeneratePackage: (docIds: string[], pkgName: string, email?: string) => void;
+  onGeneratePackage: (payload: {
+    template: PackageTemplate;
+    docsByTemplateItemId: Record<string, string>;
+    pkgName: string;
+    securityCode?: string;
+  }) => Promise<void>;
+  isSubmitting: boolean;
 }) {
   const matches = getPackageMatches(docs, template);
   const fulfilled = matches.filter(m => m.matched).length;
   const total = matches.length;
   const completeness = total > 0 ? Math.round((fulfilled / total) * 100) : 0;
-  const matchedDocIds = matches.filter(m => m.matched).map(m => m.matched!.id);
+  const docsByTemplateItemId = useMemo(() => {
+    return matches.reduce<Record<string, string>>((acc, item) => {
+      if (item.matched) {
+        acc[item.req.id] = item.matched.id;
+      }
+      return acc;
+    }, {});
+  }, [matches]);
+  const matchedDocIds = Object.values(docsByTemplateItemId);
   const [recipientEmail, setRecipientEmail] = useState('');
   const [showShareSetup, setShowShareSetup] = useState(false);
   const displayPercent = total > 0 ? Math.max(10, completeness) : 0;
@@ -1334,11 +1416,11 @@ function PackageDetailView({ template, docs, onBack, onUploadForPackage, onGener
               </button>
             ) : (
               <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}>
-                <p className="text-[11px] text-[#8C8780] mb-[8px]" style={{ fontWeight: 590, letterSpacing: '0.5px' }}>RECIPIENT (OPTIONAL)</p>
+                <p className="text-[11px] text-[#8C8780] mb-[8px]" style={{ fontWeight: 590, letterSpacing: '0.5px' }}>ACCESS CODE (OPTIONAL)</p>
                 <input
                   value={recipientEmail}
                   onChange={e => setRecipientEmail(e.target.value)}
-                  placeholder="lender@example.com"
+                  placeholder="Access code (optional)"
                   className={`${figtree} w-full h-[40px] px-[12px] rounded-[8px] border border-[#D0D0D0] text-[14px] text-[#3E2D1D] placeholder:text-[#B5B0A8] outline-none focus:border-[#764D2F] transition-colors mb-[12px]`}
                 />
                 <div className="flex gap-[8px]">
@@ -1350,7 +1432,13 @@ function PackageDetailView({ template, docs, onBack, onUploadForPackage, onGener
                     Cancel
                   </button>
                   <button
-                    onClick={() => onGeneratePackage(matchedDocIds, template.name, recipientEmail)}
+                    disabled={isSubmitting}
+                    onClick={() => onGeneratePackage({
+                      template,
+                      docsByTemplateItemId,
+                      pkgName: template.name,
+                      securityCode: recipientEmail || undefined,
+                    })}
                     className="flex-1 h-[40px] rounded-[8px] bg-[#3E2D1D] text-white text-[14px] cursor-pointer hover:bg-[#764D2F] transition-colors flex items-center justify-center gap-[6px]"
                     style={{ fontWeight: 590 }}
                   >
@@ -1362,7 +1450,7 @@ function PackageDetailView({ template, docs, onBack, onUploadForPackage, onGener
                 <div className="flex items-start gap-[8px] mt-[12px] p-[10px] rounded-[8px] bg-[#F3EFE6]">
                   <Shield className="w-[14px] h-[14px] text-[#764D2F] mt-[1px] shrink-0" />
                   <p className="text-[11px] text-[#764D2F]" style={{ fontWeight: 510 }}>
-                    Link expires in 30 days with 25 max views. Revocable anytime.
+                    Link expires in 30 days with 25 max views. Lender must enter access code to view.
                   </p>
                 </div>
               </motion.div>
@@ -1446,13 +1534,15 @@ function PackageDetailView({ template, docs, onBack, onUploadForPackage, onGener
 }
 
 /* ─── Package Share Success ─── */
-function PackageShareSuccess({ link, pkgName, onBack }: {
-  link: VaultShareLink;
-  pkgName: string;
+function PackageShareSuccess({ userPackage, onBack }: {
+  userPackage: BackendUserPackage;
   onBack: () => void;
 }) {
   const [copied, setCopied] = useState(false);
-  const shareUrl = `${window.location.origin}/share/vault/${link.token}`;
+  const shareToken = userPackage.sharedLink || '';
+  const shareUrl = `${window.location.origin}/share/vault/${shareToken}`;
+  const shareUrlDisplay = shareUrl.length > 64 ? `${shareUrl.slice(0, 61)}...` : shareUrl;
+  const expiresAt = userPackage.expiresAt ? formatDate(userPackage.expiresAt) : 'N/A';
 
   const handleCopy = () => {
     navigator.clipboard.writeText(shareUrl).catch(() => {});
@@ -1479,7 +1569,7 @@ function PackageShareSuccess({ link, pkgName, onBack }: {
 
           <p className={`${canela} text-[28px] text-white text-center mb-[4px]`}>Package Link Created</p>
           <p className={`${sfMed} text-[16px] text-[#D3B597] text-center mb-[52px]`} style={wdth}>
-            Your <strong className="text-white">{pkgName}</strong> is ready to share with your lender.
+            Your <strong className="text-white">{userPackage.name}</strong> is ready to share with your lender.
           </p>
 
           {/* Shareable link panel */}
@@ -1488,8 +1578,8 @@ function PackageShareSuccess({ link, pkgName, onBack }: {
               Shareable Link
             </p>
             <div className="flex items-center gap-[10px]">
-              <div className="flex-1 bg-white/10 rounded-[8px] border border-[#C4B29A]/30 px-[12px] py-[10px]">
-                <p className="text-[13px] text-white truncate text-left" style={{ fontWeight: 510 }}>{shareUrl}</p>
+              <div className="flex-1 min-w-0 overflow-hidden bg-white/10 rounded-[8px] border border-[#C4B29A]/30 px-[12px] py-[10px]">
+                <p title={shareUrl} className="text-[13px] text-white truncate text-left" style={{ fontWeight: 510 }}>{shareUrlDisplay}</p>
               </div>
               <button
                 onClick={handleCopy}
@@ -1504,24 +1594,30 @@ function PackageShareSuccess({ link, pkgName, onBack }: {
 
           {/* Details */}
           <div className="w-full space-y-[24px] mb-[24px]">
+            {userPackage.securityCode && (
+              <div className="flex items-center justify-between">
+                <span className="text-[14px] text-[#D3B597]" style={{ ...wdth, fontWeight: 590 }}>Access Code</span>
+                <span className="text-[16px] text-white" style={{ ...wdth, fontWeight: 510 }}>{userPackage.securityCode}</span>
+              </div>
+            )}
             <div className="flex items-center justify-between">
               <span className="text-[14px] text-[#D3B597]" style={{ ...wdth, fontWeight: 590 }}>Expires</span>
-              <span className="text-[16px] text-white" style={{ ...wdth, fontWeight: 510 }}>{link.expiresAt}</span>
+              <span className="text-[16px] text-white" style={{ ...wdth, fontWeight: 510 }}>{expiresAt}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-[14px] text-[#D3B597]" style={{ ...wdth, fontWeight: 590 }}>Max Views</span>
-              <span className="text-[16px] text-white" style={{ ...wdth, fontWeight: 510 }}>{link.maxAccess}</span>
+              <span className="text-[14px] text-[#D3B597]" style={{ ...wdth, fontWeight: 590 }}>Status</span>
+              <span className="text-[16px] text-white" style={{ ...wdth, fontWeight: 510 }}>{userPackage.status}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-[14px] text-[#D3B597]" style={{ ...wdth, fontWeight: 590 }}>Documents</span>
-              <span className="text-[16px] text-white" style={{ ...wdth, fontWeight: 510 }}>{link.documentIds.length}</span>
+              <span className="text-[16px] text-white" style={{ ...wdth, fontWeight: 510 }}>{userPackage.documents.length}</span>
             </div>
           </div>
 
           {/* Actions */}
           <div className="w-full flex flex-col sm:flex-row gap-[10px]">
             <Link
-              to={`/share/vault/${link.token}`}
+              to={`/share/vault/${shareToken}`}
               className="flex-1 inline-flex items-center justify-center gap-[8px] h-[50px] rounded-[8px] border-[1.5px] border-white text-[16px] text-white hover:bg-white/10 transition-colors cursor-pointer no-underline"
               style={{ ...wdth, fontWeight: 590 }}
             >
@@ -1543,15 +1639,35 @@ function PackageShareSuccess({ link, pkgName, onBack }: {
 
 /* ─── Shared Links View ─── */
 function SharedLinksView({
-  shareLinks, docs, onRevoke, onCopyLink, copiedLink,
+  packages, docs, isLoading, error, onRevoke, onCopyLink, copiedLink,
 }: {
-  shareLinks: VaultShareLink[];
+  packages: BackendUserPackage[];
   docs: VaultDocument[];
+  isLoading: boolean;
+  error: string | null;
   onRevoke: (id: string) => void;
   onCopyLink: (token: string) => void;
   copiedLink: string | null;
 }) {
-  if (shareLinks.length === 0) {
+  if (isLoading) {
+    return (
+      <div className="bg-white rounded-[20px] border border-[#D0D0D0] p-[48px] sm:p-[60px] text-center">
+        <p className={`${canela} text-[20px] text-[#3E2D1D] mb-[8px]`}>Loading shared links</p>
+        <p className={`${sfMed} text-[14px] text-[#8C8780] max-w-[360px] mx-auto`} style={wdth}>Fetching package links from backend...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-white rounded-[20px] border border-[#F97373] p-[48px] sm:p-[60px] text-center">
+        <p className={`${canela} text-[20px] text-[#3E2D1D] mb-[8px]`}>Unable to load shared links</p>
+        <p className={`${sfMed} text-[14px] text-[#8C8780] max-w-[360px] mx-auto`} style={wdth}>{error}</p>
+      </div>
+    );
+  }
+
+  if (packages.length === 0) {
     return (
       <div className="bg-white rounded-[20px] border border-[#D0D0D0] p-[48px] sm:p-[60px] text-center">
         <div className="w-[56px] h-[56px] rounded-[14px] bg-[#F3EFE6] flex items-center justify-center mx-auto mb-[20px]">
@@ -1567,14 +1683,17 @@ function SharedLinksView({
 
   return (
     <div className="flex flex-col gap-[12px]">
-      {shareLinks.map(link => {
-        const linkDocs = link.documentIds.map(id => docs.find(d => d.id === id)).filter(Boolean) as VaultDocument[];
-        const isExpired = new Date(link.expiresAt) < new Date();
-        const isRevoked = !link.isActive;
+      {packages.map(link => {
+        if (!link.sharedLink) return null;
+
+        const linkDocs = link.documents.map(item => docs.find(d => d.id === item.documentId)).filter(Boolean) as VaultDocument[];
+        const expiresAt = link.expiresAt ? formatDate(link.expiresAt) : 'N/A';
+        const isExpired = link.expiresAt ? new Date(link.expiresAt) < new Date() : false;
+        const isRevoked = link.status.toLowerCase() !== 'finalized';
         const statusColor = isRevoked ? '#8E3B3B' : isExpired ? '#8B7A3C' : '#3E6B3E';
         const statusBg = isRevoked ? '#F8EDED' : isExpired ? '#FFF8E6' : '#EEF5EE';
         const statusText = isRevoked ? 'Revoked' : isExpired ? 'Expired' : 'Active';
-        const title = link.packageName || `${linkDocs.length} Document${linkDocs.length !== 1 ? 's' : ''}`;
+        const title = link.name || `${linkDocs.length} Document${linkDocs.length !== 1 ? 's' : ''}`;
 
         return (
           <motion.div
@@ -1587,17 +1706,12 @@ function SharedLinksView({
               <div className="flex items-start justify-between gap-[12px]">
                 <div className="flex items-center gap-[16px] min-w-0">
                   <div className="w-[35.722px] h-[40.222px] rounded-[8px] bg-[#F3EFE6] flex items-center justify-center shrink-0">
-                    {link.packageName ? (
-                      <Package className="w-[18px] h-[18px] text-[#764D2F]" />
-                    ) : (
-                      <Link2 className="w-[18px] h-[18px] text-[#764D2F]" />
-                    )}
+                    <Package className="w-[18px] h-[18px] text-[#764D2F]" />
                   </div>
                   <div className="min-w-0">
                     <p className="text-[16px] text-[#764D2F] truncate" style={{ fontWeight: 510 }}>{title}</p>
                     <p className="text-[12px] text-[#8C8780]" style={{ fontWeight: 510 }}>
-                      {link.recipientEmail && <span>{link.recipientEmail} | </span>}
-                      Created {link.createdAt}
+                      Created {formatDate(link.createdAt)}
                     </p>
                   </div>
                 </div>
@@ -1607,26 +1721,26 @@ function SharedLinksView({
               </div>
 
               <div className="flex flex-wrap items-center gap-[10px] text-[12px] text-[#8C8780]" style={{ fontWeight: 510 }}>
-                <span className="inline-flex items-center gap-[4px]"><Clock className="w-[12px] h-[12px]" /> Expires {link.expiresAt}</span>
-                <span className="inline-flex items-center gap-[4px]"><Eye className="w-[12px] h-[12px]" /> {link.accessCount} / {link.maxAccess} views</span>
+                <span className="inline-flex items-center gap-[4px]"><Clock className="w-[12px] h-[12px]" /> Expires {expiresAt}</span>
+                <span className="inline-flex items-center gap-[4px]"><Eye className="w-[12px] h-[12px]" /> View tracking unavailable</span>
                 <span className="inline-flex items-center gap-[4px]"><FileText className="w-[12px] h-[12px]" /> {linkDocs.length} documents</span>
               </div>
 
-              {link.isActive && !isExpired && (
+              {!isRevoked && !isExpired && (
                 <div className="flex items-center gap-[8px]">
                   <Link
-                    to={`/share/vault/${link.token}`}
+                    to={`/share/vault/${link.sharedLink}`}
                     className="bg-white content-stretch flex items-center justify-center px-[8px] py-[6px] relative rounded-[6px] shrink-0 cursor-pointer hover:bg-[#F8F6F1] transition-colors border border-[#D0D0D0] no-underline"
                     title="Open link"
                   >
                     <ExternalLink className="w-[18px] h-[18px] text-[#764D2F]" />
                   </Link>
                   <button
-                    onClick={() => onCopyLink(link.token)}
+                    onClick={() => onCopyLink(link.sharedLink as string)}
                     className="bg-white content-stretch flex items-center justify-center px-[8px] py-[6px] relative rounded-[6px] shrink-0 cursor-pointer hover:bg-[#F8F6F1] transition-colors border border-[#D0D0D0]"
                     title="Copy link"
                   >
-                    {copiedLink === link.token ? (
+                    {copiedLink === link.sharedLink ? (
                       <Check className="w-[18px] h-[18px] text-[#3E6B3E]" />
                     ) : (
                       <Copy className="w-[18px] h-[18px] text-[#764D2F]" />
