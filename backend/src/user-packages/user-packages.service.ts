@@ -161,6 +161,23 @@ export class UserPackagesService {
       throw new BadRequestException('This package link has expired');
     }
 
+    // Attach full document objects to the items
+    const docIds = userPackage.documents.map(d => d.documentId);
+    if (docIds.length > 0) {
+      const dbDocs = await this.documentRepository.find({ 
+        where: { id: In(docIds) } 
+      });
+
+      // Map back to the documents array (treat as "items")
+      (userPackage.documents as any) = userPackage.documents.map(pkgDoc => {
+        const fullDoc = dbDocs.find(d => d.id === pkgDoc.documentId);
+        return {
+          ...pkgDoc,
+          document: fullDoc
+        };
+      });
+    }
+
     return userPackage;
   }
 

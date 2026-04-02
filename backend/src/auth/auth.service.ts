@@ -225,11 +225,18 @@ export class AuthService {
     return { message: SuccessResponseMessages.passChanged };
   }
 
-  async validatePackage(dto: ValidatePackageDto): Promise<ApiMessageData<UserPackage>> {
+  async validatePackage(dto: ValidatePackageDto): Promise<ApiMessageData<any>> {
     const userPackage = await this.userPackagesService.getPackageByLink(dto.sharedLink);
     if (userPackage.securityCode !== dto.securityCode) {
       throw new UnauthorizedException('Invalid security code');
     }
-    return { message: SuccessResponseMessages.successGeneral, data: userPackage };
+
+    // Add virtual "items" array which is the documents with full objects
+    const responseData = {
+      ...userPackage,
+      items: userPackage.documents
+    };
+
+    return { message: SuccessResponseMessages.successGeneral, data: responseData };
   }
 }
