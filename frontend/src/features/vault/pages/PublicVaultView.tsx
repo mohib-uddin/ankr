@@ -168,6 +168,7 @@ export function PublicVaultView() {
   const validatePackageMutation = useValidateSharedPackageMutation();
   const [validatedPackage, setValidatedPackage] = useState<BackendUserPackage | null>(null);
   const [otp, setOtp] = useState('');
+  const [lastAttemptedOtp, setLastAttemptedOtp] = useState<string | null>(null);
   const [userName, setUserName] = useState('Document Owner');
   const [error, setError] = useState<string | null>(null);
   const [isLinkUnavailable, setIsLinkUnavailable] = useState(false);
@@ -185,7 +186,12 @@ export function PublicVaultView() {
       return;
     }
 
+    if (otp.length !== 5 || validatePackageMutation.isPending) {
+      return;
+    }
+
     try {
+      setLastAttemptedOtp(otp);
       const response = await validatePackageMutation.mutateAsync({
         sharedLink: token,
         securityCode: otp,
@@ -203,9 +209,22 @@ export function PublicVaultView() {
         setError('This package link has expired or is no longer available.');
         return;
       }
+      setOtp('');
       setError(getApiErrorMessage(err));
     }
   };
+
+  useEffect(() => {
+    if (validatedPackage || isLinkUnavailable || otp.length !== 5 || validatePackageMutation.isPending) {
+      return;
+    }
+
+    if (lastAttemptedOtp === otp) {
+      return;
+    }
+
+    void handleValidateOtp();
+  }, [otp, validatedPackage, isLinkUnavailable, validatePackageMutation.isPending, lastAttemptedOtp]);
 
   const shareLink = {
     packageName: validatedPackage?.name || 'Document Package',
@@ -270,19 +289,20 @@ export function PublicVaultView() {
           <OutlinedOtpField
             id="public-vault-otp"
             value={otp}
-            onChange={setOtp}
+            onChange={(next) => {
+              setOtp(next);
+              setLastAttemptedOtp(null);
+              if (error) {
+                setError(null);
+              }
+            }}
             error={error || undefined}
             ariaLabel="Package access code"
           />
 
-          <button
-            disabled={otp.length !== 5 || validatePackageMutation.isPending}
-            onClick={handleValidateOtp}
-            className="mt-[18px] w-full h-[48px] rounded-[8px] bg-[#3E2D1D] text-white hover:bg-[#764D2F] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            style={{ fontWeight: 590 }}
-          >
-            {validatePackageMutation.isPending ? 'Verifying...' : 'Continue'}
-          </button>
+          <p className={`${sfMed} text-[12px] text-[#8C8780] text-center mt-[12px]`} style={wdth}>
+            {validatePackageMutation.isPending ? 'Verifying code...' : 'Code validates automatically when all 5 digits are entered.'}
+          </p>
         </motion.div>
       </div>
     );

@@ -1,3 +1,4 @@
+import axios from 'axios';
 import { api } from '@/shared/utils/axios';
 import type { ApiMessage, ApiMessageData } from '@/features/auth/types/auth.types';
 import type {
@@ -33,7 +34,15 @@ export async function deleteUserPackage(id: string) {
 }
 
 export async function validateSharedPackage(payload: ValidatePackagePayload) {
-  const { data } = await api.post<ApiMessageData<BackendUserPackage>>('/auth/validate-package', payload);
+  const publicApi = axios.create({
+    baseURL: api.defaults.baseURL,
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    timeout: 30_000,
+  });
+
+  const { data } = await publicApi.post<ApiMessageData<BackendUserPackage>>('/auth/validate-package', payload);
   return data;
 }
 
